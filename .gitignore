@@ -1,0 +1,55 @@
+# ===== Android =====
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+
+# Build outputs
+android-project/app/build/
+android-project/build/
+android-project/.gradle/
+android-project/local.properties
+
+# NDK build intermediates
+android-project/app/.cxx/
+android-project/app/obj/
+android-project/app/libs/
+
+# ===== JDK (bundled, do not track) =====
+jdk-*/
+
+# ===== SDL2 (third-party, download separately) =====
+SDL2-*/
+
+# ===== IDE =====
+.idea/
+*.iml
+.vscode/
+*.code-workspace
+
+# ===== OS Files =====
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+*.zip
+
+# ===== Compiled Objects =====
+*.o
+*.so
+*.a
+*.dylib
+*.dll
+*.exe
+
+# ===== Logs & Debug =====
+*.log
+logs/
+crash/
+errors/
+
+# ===== Gemini / AI Agent =====
+.gemini/
