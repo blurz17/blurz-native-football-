@@ -347,15 +347,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         Log.v(TAG, "onCreate()");
         super.onCreate(savedInstanceState);
 
-        // [Samsung Android 14 hwuiTask crash fix - NUCLEAR]
-        // Samsung's Android 14 ignores android:hardwareAccelerated="false" and still
-        // creates hwuiTask threads that crash on a destroyed mutex (0x7191727928) in the
-        // Mali GPU driver when SDL creates its own EGL context on the SurfaceView.
-        // Fix: Force the DecorView to software rendering so hwuiTask threads are NEVER created.
-        // The game's SurfaceView still uses its own hardware-accelerated OpenGL context.
+        // Hardware acceleration is kept enabled for UI performance.
         mFullscreenModeActive = false;
-        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
-        getWindow().getDecorView().setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null);
 
         try {
             Thread.currentThread().setName("SDLActivity");

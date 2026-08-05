@@ -116,6 +116,8 @@ public class MobileControlsView extends View {
         buttons.add(new ActionButton(btnBaseX + btnSpacing * 0.8f, btnBaseY - btnSpacing * 0.2f, btnRad * 1.15f, "SHOOT", "TACKLE", 100, Color.argb(100, 200, 20, 20), Color.rgb(250, 60, 80)));
         // TOP: SPRINT (E) / DASH
         buttons.add(new ActionButton(btnBaseX - btnSpacing * 0.2f, btnBaseY - btnSpacing * 1.1f, btnRad, "SPRINT", "DASH", 101, Color.argb(100, 200, 120, 0), Color.rgb(250, 180, 40)));
+        // TOP RIGHT: PAUSE (ESCAPE)
+        buttons.add(new ActionButton(w * 0.9f, h * 0.12f, btnRad * 0.8f, "PAUSE", "PAUSE", 27, Color.argb(100, 100, 100, 100), Color.rgb(200, 200, 200)));
 
         textPaint.setTextSize(btnRad * 0.45f);
     }
