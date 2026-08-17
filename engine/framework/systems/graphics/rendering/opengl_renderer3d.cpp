@@ -956,8 +956,7 @@ struct GLfunctions {
         if (b == 0) firstBuffer_id = buffer_id;
         //printf("array size: %i\n", triangleCount * 3 * 3);
         mapping.glBindBuffer(GL_ARRAY_BUFFER, buffer_id);
-        mapping.glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), NULL, GetGLVertexBufferUsage(usage));
-        mapping.glBufferSubData(GL_ARRAY_BUFFER, 0, verticesDataSize * sizeof(float), vertices);
+        mapping.glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), vertices, GetGLVertexBufferUsage(usage));
 
 
         // generate a buffer for the indices
@@ -969,8 +968,7 @@ struct GLfunctions {
         }
         mapping.glGenBuffers(1, &iid);
         mapping.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iid);
-        mapping.glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), NULL, GetGLVertexBufferUsage(usage));
-        mapping.glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size() * sizeof(unsigned int), &indices[0]);
+        mapping.glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GetGLVertexBufferUsage(usage));
 
 
         #define BUFFER_OFFSET( i ) ((char *)NULL + (i))
@@ -1045,12 +1043,11 @@ struct GLfunctions {
         // the next 2 statements, as well as the invalidate_bit stuff in the 3rd statement, should do the same thing: orphaning the vertexbuffer.
         // however, on my current AMD (HD 6850), only the first seems to actually work! is this an AMD driver bug? can't find anything about it on the interwebz..
 
-        mapping.glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+        mapping.glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), vertices, GL_DYNAMIC_DRAW);
         //glInvalidateBufferData(vertexBufferID.bufferID);
         // float *ptr = (float*)mapping.glMapBufferRange(GL_ARRAY_BUFFER, 0, verticesDataSize * sizeof(float), GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT); // GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_INVALIDATE_RANGE_BIT |
         // memcpy(ptr, vertices, verticesDataSize * sizeof(float));
         // mapping.glUnmapBuffer(GL_ARRAY_BUFFER);
-        mapping.glBufferSubData(GL_ARRAY_BUFFER, 0, verticesDataSize * sizeof(float), vertices);
 
   //      glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), vertices, GL_DYNAMIC_DRAW);
 
