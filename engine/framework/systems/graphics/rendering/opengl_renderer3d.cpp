@@ -935,7 +935,7 @@ struct GLfunctions {
       bool pingPong = false;
       if (usage == e_VertexBufferUsage_DynamicDraw || usage == e_VertexBufferUsage_DynamicRead || usage == e_VertexBufferUsage_DynamicCopy ||
           usage == e_VertexBufferUsage_StreamDraw || usage == e_VertexBufferUsage_StreamRead || usage == e_VertexBufferUsage_StreamCopy) pingPong = true;
-      pingPong = false; // use orphaning instead
+      // pingPong = false; // use orphaning instead
       int number = 1;
       if (pingPong) number = 2;
 
