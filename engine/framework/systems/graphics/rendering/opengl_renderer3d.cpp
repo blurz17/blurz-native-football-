@@ -1117,7 +1117,7 @@ struct GLfunctions {
     // draw buffer
     if (count > 0) {
       #define BUFFER_OFFSET( i ) ((char *)NULL + (i))
-      mapping.glDrawRangeElements(GL_TRIANGLES, startIndex, startIndex + count, count, GL_UNSIGNED_INT, BUFFER_OFFSET(startIndex * sizeof(unsigned int)));
+      mapping.glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, BUFFER_OFFSET(startIndex * sizeof(unsigned int)));
     }
   }
 
