@@ -8,7 +8,7 @@ set JAVA_HOME=D:\unity\6000.4.2f1\Editor\Data\PlaybackEngines\AndroidPlayer\Open
 set GRADLE_USER_HOME=E:\.gradle
 
 echo Switching to non-spaced directory...
-cd /d "E:\MY-PROJECTS\android_native_football\android-project"
+cd /d "E:\MY-PROJECTS\android_native_football\platform\android"
 
 echo Starting Android Native Build...
 call gradlew.bat assembleDebug
