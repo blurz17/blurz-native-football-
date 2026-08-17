@@ -1003,11 +1003,11 @@ struct GLfunctions {
       int writeVertexArrayID = vertexBufferID.vertexArrayID;
 
       int pingPongReadSwitch = 0;
-      //bool pingPong = false;
+      bool pingPong = false;
       std::map<int, int>::iterator pingPongIter = VAOReadIndex.find(vertexBufferID.vertexArrayID);
       if (pingPongIter != VAOReadIndex.end()) {
         pingPongReadSwitch = pingPongIter->second;
-        //pingPong = true;
+        pingPong = true;
 
         pingPongIter->second++;
         if (pingPongIter->second == 2) pingPongIter->second = 0;
@@ -1027,27 +1027,13 @@ struct GLfunctions {
       }
 
       mapping.glBindVertexArray((GLuint)writeVertexArrayID);
-      mapping.glBindBuffer(GL_ARRAY_BUFFER, writeVertexBufferID); // todo: why is this necessary? shouldn't this be part of the vao?
+      mapping.glBindBuffer(GL_ARRAY_BUFFER, writeVertexBufferID);
 
-      //glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), vertices, GL_DYNAMIC_DRAW);
-
-  //    glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), NULL, GL_DYNAMIC_DRAW);
-
-  //    if (!pingPong) {
-        // i don't think we can use glMapBufferRange with GL_MAP_UNSYNCHRONIZED_BIT in a non-pingponged situation, but may want to test this sometimes
-  //      glBufferSubData(GL_ARRAY_BUFFER, 0, verticesDataSize * sizeof(float), vertices);
-  //    } else {
-        //glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), NULL, GL_STREAM_DRAW);
-        //float *ptr = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-
-        // the next 2 statements, as well as the invalidate_bit stuff in the 3rd statement, should do the same thing: orphaning the vertexbuffer.
-        // however, on my current AMD (HD 6850), only the first seems to actually work! is this an AMD driver bug? can't find anything about it on the interwebz..
-
-        mapping.glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), vertices, GL_DYNAMIC_DRAW);
-        //glInvalidateBufferData(vertexBufferID.bufferID);
-        // float *ptr = (float*)mapping.glMapBufferRange(GL_ARRAY_BUFFER, 0, verticesDataSize * sizeof(float), GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT); // GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_INVALIDATE_RANGE_BIT |
-        // memcpy(ptr, vertices, verticesDataSize * sizeof(float));
-        // mapping.glUnmapBuffer(GL_ARRAY_BUFFER);
+      if (!pingPong) {
+          mapping.glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), vertices, GL_DYNAMIC_DRAW);
+      } else {
+          mapping.glBufferSubData(GL_ARRAY_BUFFER, 0, verticesDataSize * sizeof(float), vertices);
+      }
 
   //      glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), vertices, GL_DYNAMIC_DRAW);
 
