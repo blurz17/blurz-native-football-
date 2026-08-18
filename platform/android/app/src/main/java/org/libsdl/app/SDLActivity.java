@@ -347,6 +347,13 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         Log.v(TAG, "onCreate()");
         super.onCreate(savedInstanceState);
 
+        // Allow drawing into the display cutout (notch) area
+        if (Build.VERSION.SDK_INT >= 28 /* Build.VERSION_CODES.P */) {
+            android.view.WindowManager.LayoutParams lp = getWindow().getAttributes();
+            lp.layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            getWindow().setAttributes(lp);
+        }
+
         // Hardware acceleration is kept enabled for UI performance.
         mFullscreenModeActive = false;
 
@@ -578,6 +585,25 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
            SDLActivity.handleNativeState();
            nativeFocusChanged(true);
+
+           // Safely enforce immersive mode without crashing Samsung Android 14
+           if (Build.VERSION.SDK_INT >= 30 /* Build.VERSION_CODES.R */) {
+               getWindow().setDecorFitsSystemWindows(false);
+               android.view.WindowInsetsController controller = getWindow().getInsetsController();
+               if (controller != null) {
+                   controller.hide(android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.navigationBars());
+                   controller.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+               }
+           } else {
+               getWindow().getDecorView().setSystemUiVisibility(
+                   android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                   | android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                   | android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                   | android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                   | android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                   | android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
+               );
+           }
 
         } else {
            nativeFocusChanged(false);
