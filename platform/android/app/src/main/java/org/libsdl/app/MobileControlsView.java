@@ -117,7 +117,7 @@ public class MobileControlsView extends View {
         // TOP: SPRINT (E) / DASH
         buttons.add(new ActionButton(btnBaseX - btnSpacing * 0.2f, btnBaseY - btnSpacing * 1.1f, btnRad, "SPRINT", "DASH", 101, Color.argb(100, 200, 120, 0), Color.rgb(250, 180, 40)));
         // TOP RIGHT: PAUSE (ESCAPE)
-        buttons.add(new ActionButton(w * 0.9f, h * 0.12f, btnRad * 0.8f, "PAUSE", "PAUSE", 27, Color.argb(100, 100, 100, 100), Color.rgb(200, 200, 200)));
+        buttons.add(new ActionButton(w * 0.9f, h * 0.12f, btnRad * 1.1f, "PAUSE", "PAUSE", 27, Color.argb(100, 100, 100, 100), Color.rgb(200, 200, 200)));
 
         textPaint.setTextSize(btnRad * 0.45f);
     }
@@ -309,7 +309,13 @@ public class MobileControlsView extends View {
                         if (btn.pointerId == pointerId) {
                             btn.pointerId = -1;
                             btn.isPressed = false;
-                            SDLActivity.setVirtualKey(btn.keycode, false);
+                            final int keycode = btn.keycode;
+                            postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    SDLActivity.setVirtualKey(keycode, false);
+                                }
+                            }, 50);
                         }
                     }
                 }
