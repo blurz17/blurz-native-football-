@@ -310,6 +310,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     }
 
     public static native void setVirtualKey(int keycode, boolean state);
+    public static native void setVirtualJoystickAxis(int axis, float value);
+    public static native void setVirtualJoystickButton(int button, boolean state);
 
     public static void initialize() {
         // The static nature of the singleton and Android quirkyness force us to initialize everything here

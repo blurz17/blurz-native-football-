@@ -33,6 +33,23 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualKey(
     event.key.repeat = 0;
     SDL_PushEvent(&event);
 }
+
+SDL_Joystick* virtual_joystick = nullptr;
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoystickAxis(JNIEnv* env, jclass cls, jint axis, jfloat value) {
+    if (virtual_joystick) {
+        if (value > 1.0f) value = 1.0f;
+        if (value < -1.0f) value = -1.0f;
+        Sint16 int_val = (Sint16)(value * 32767.0f);
+        SDL_JoystickSetVirtualAxis(virtual_joystick, axis, int_val);
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoystickButton(JNIEnv* env, jclass cls, jint button, jboolean pressed) {
+    if (virtual_joystick) {
+        SDL_JoystickSetVirtualButton(virtual_joystick, button, pressed ? SDL_PRESSED : SDL_RELEASED);
+    }
+}
 #endif
 
 namespace blunted {
@@ -69,6 +86,17 @@ namespace blunted {
     // init the joy!
 
     SDL_Init(SDL_INIT_JOYSTICK);
+    
+#ifdef __ANDROID__
+    // Create virtual joystick
+    if (!virtual_joystick) {
+        int device_index = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 2, 8, 0);
+        if (device_index >= 0) {
+            virtual_joystick = SDL_JoystickOpen(device_index);
+        }
+    }
+#endif
+
     for (int i = 0; i < SDL_NumJoysticks(); i++) {
       joystick[i] = SDL_JoystickOpen(i);
     }
@@ -116,19 +144,26 @@ namespace blunted {
         break;
       case SDL_JOYAXISMOTION:
         joyButtonPressedMutex.lock();
-        joyAxis[event.jaxis.which][event.jaxis.axis] = event.jaxis.value;
+        joyID = event.jaxis.which;
+        if (joyID < _JOYSTICK_MAX) {
+            joyAxis[joyID][event.jaxis.axis] = event.jaxis.value;
+        }
         joyButtonPressedMutex.unlock();
         break;
       case SDL_JOYBUTTONDOWN:
         joyButtonPressedMutex.lock();
-        joyID = event.jaxis.which;
-        joyButtonPressed[joyID][event.jbutton.button] = true;
+        joyID = event.jbutton.which;
+        if (joyID < _JOYSTICK_MAX && event.jbutton.button < _JOYSTICK_MAXBUTTONS) {
+            joyButtonPressed[joyID][event.jbutton.button] = true;
+        }
         joyButtonPressedMutex.unlock();
         break;
       case SDL_JOYBUTTONUP:
         joyButtonPressedMutex.lock();
-        joyID = event.jaxis.which;
-        joyButtonPressed[joyID][event.jbutton.button] = false;
+        joyID = event.jbutton.which;
+        if (joyID < _JOYSTICK_MAX && event.jbutton.button < _JOYSTICK_MAXBUTTONS) {
+            joyButtonPressed[joyID][event.jbutton.button] = false;
+        }
         joyButtonPressedMutex.unlock();
         break;
     }

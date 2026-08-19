@@ -108,16 +108,16 @@ public class MobileControlsView extends View {
         float btnSpacing = joyRadius * 1.3f;
         float btnRad = h * 0.08f; // Smaller
 
-        // BOTTOM: PASS (S) / PRESS
-        buttons.add(new ActionButton(btnBaseX, btnBaseY + btnSpacing * 0.8f, btnRad, "PASS", "PRESS", 115, Color.argb(100, 0, 150, 50), Color.rgb(50, 240, 110)));
-        // LEFT: THRU (W) / SWITCH
-        buttons.add(new ActionButton(btnBaseX - btnSpacing, btnBaseY, btnRad, "THRU", "SWITCH", 119, Color.argb(100, 0, 100, 200), Color.rgb(40, 210, 250)));
-        // RIGHT: SHOOT (D) / TACKLE
-        buttons.add(new ActionButton(btnBaseX + btnSpacing * 0.8f, btnBaseY - btnSpacing * 0.2f, btnRad * 1.15f, "SHOOT", "TACKLE", 100, Color.argb(100, 200, 20, 20), Color.rgb(250, 60, 80)));
-        // TOP: SPRINT (E) / DASH
-        buttons.add(new ActionButton(btnBaseX - btnSpacing * 0.2f, btnBaseY - btnSpacing * 1.1f, btnRad, "SPRINT", "DASH", 101, Color.argb(100, 200, 120, 0), Color.rgb(250, 180, 40)));
-        // TOP RIGHT: PAUSE (ESCAPE)
-        buttons.add(new ActionButton(w * 0.9f, h * 0.12f, btnRad * 1.1f, "PAUSE", "PAUSE", 27, Color.argb(100, 100, 100, 100), Color.rgb(200, 200, 200)));
+        // BOTTOM: PASS / PRESS (Button 0 = A)
+        buttons.add(new ActionButton(btnBaseX, btnBaseY + btnSpacing * 0.8f, btnRad, "PASS", "PRESS", 0, Color.argb(100, 0, 150, 50), Color.rgb(50, 240, 110)));
+        // LEFT: THRU / SWITCH (Button 3 = Y)
+        buttons.add(new ActionButton(btnBaseX - btnSpacing, btnBaseY, btnRad, "THRU", "SWITCH", 3, Color.argb(100, 0, 100, 200), Color.rgb(40, 210, 250)));
+        // RIGHT: SHOOT / TACKLE (Button 2 = X)
+        buttons.add(new ActionButton(btnBaseX + btnSpacing * 0.8f, btnBaseY - btnSpacing * 0.2f, btnRad * 1.15f, "SHOOT", "TACKLE", 2, Color.argb(100, 200, 20, 20), Color.rgb(250, 60, 80)));
+        // TOP: SPRINT / DASH (Button 5 = R1)
+        buttons.add(new ActionButton(btnBaseX - btnSpacing * 0.2f, btnBaseY - btnSpacing * 1.1f, btnRad, "SPRINT", "DASH", 5, Color.argb(100, 200, 120, 0), Color.rgb(250, 180, 40)));
+        // TOP RIGHT: PAUSE (Button 7 = Start)
+        buttons.add(new ActionButton(w * 0.9f, h * 0.12f, btnRad * 1.1f, "PAUSE", "PAUSE", 7, Color.argb(100, 100, 100, 100), Color.rgb(200, 200, 200)));
 
         textPaint.setTextSize(btnRad * 0.45f);
     }
@@ -232,11 +232,11 @@ public class MobileControlsView extends View {
                         
                         // ENTER (Bottom)
                         if (Math.hypot(x - btnBaseX, y - (btnBaseY + btnSpacing * 0.5f)) < btnRad * 2.5f) {
-                            SDLActivity.setVirtualKey(13, true); // SDLK_RETURN
+                            SDLActivity.setVirtualJoystickButton(0, true); // Button A = Activate
                         }
                         // ESCAPE (Top)
                         else if (Math.hypot(x - btnBaseX, y - (btnBaseY - btnSpacing * 0.8f)) < btnRad * 2.5f) {
-                            SDLActivity.setVirtualKey(27, true); // SDLK_ESCAPE
+                            SDLActivity.setVirtualJoystickButton(1, true); // Button B = Escape
                         }
                     }
                     break;
@@ -255,8 +255,8 @@ public class MobileControlsView extends View {
                         joyPointerId = -1;
                         updateMenuDpad(0, 0, 0);
                     } else {
-                        SDLActivity.setVirtualKey(13, false); // SDLK_RETURN
-                        SDLActivity.setVirtualKey(27, false); // SDLK_ESCAPE
+                        SDLActivity.setVirtualJoystickButton(0, false);
+                        SDLActivity.setVirtualJoystickButton(1, false);
                     }
                     break;
             }
@@ -280,7 +280,7 @@ public class MobileControlsView extends View {
                         if (dx * dx + dy * dy <= btn.radius * btn.radius * 2.5f && btn.pointerId == -1) {
                             btn.pointerId = pointerId;
                             btn.isPressed = true;
-                            SDLActivity.setVirtualKey(btn.keycode, true);
+                            SDLActivity.setVirtualJoystickButton(btn.keycode, true);
                             break;
                         }
                     }
@@ -313,7 +313,7 @@ public class MobileControlsView extends View {
                             postDelayed(new Runnable() {
                                 @Override
                                 public void run() {
-                                    SDLActivity.setVirtualKey(keycode, false);
+                                    SDLActivity.setVirtualJoystickButton(keycode, false);
                                 }
                             }, 50);
                         }
@@ -327,18 +327,15 @@ public class MobileControlsView extends View {
     }
     
     private void updateMenuDpad(float dx, float dy, float maxDist) {
-        boolean up = false, down = false, left = false, right = false;
         if (maxDist > 0 && Math.hypot(dx, dy) > maxDist * 0.2f) {
-            float angle = (float) Math.toDegrees(Math.atan2(dy, dx));
-            if (angle > -45 && angle <= 45) right = true;
-            else if (angle > 45 && angle <= 135) down = true;
-            else if (angle > 135 || angle <= -135) left = true;
-            else if (angle > -135 && angle <= -45) up = true;
+            float normX = dx / maxDist;
+            float normY = dy / maxDist;
+            SDLActivity.setVirtualJoystickAxis(0, normX);
+            SDLActivity.setVirtualJoystickAxis(1, normY);
+        } else {
+            SDLActivity.setVirtualJoystickAxis(0, 0f);
+            SDLActivity.setVirtualJoystickAxis(1, 0f);
         }
-        if (up != joyUp) { joyUp = up; SDLActivity.setVirtualKey(1073741906, up); }
-        if (down != joyDown) { joyDown = down; SDLActivity.setVirtualKey(1073741905, down); }
-        if (left != joyLeft) { joyLeft = left; SDLActivity.setVirtualKey(1073741904, left); }
-        if (right != joyRight) { joyRight = right; SDLActivity.setVirtualKey(1073741903, right); }
     }
 
     private void updateJoystick(float x, float y) {
@@ -356,32 +353,15 @@ public class MobileControlsView extends View {
 
         // Deadzone 20%
         if (dist < joyRadius * 0.2f) {
-            updateJoystickKeys(0, 0);
+            SDLActivity.setVirtualJoystickAxis(0, 0f);
+            SDLActivity.setVirtualJoystickAxis(1, 0f);
         } else {
-            updateJoystickKeys(dx, dy);
+            SDLActivity.setVirtualJoystickAxis(0, dx / joyRadius);
+            SDLActivity.setVirtualJoystickAxis(1, dy / joyRadius);
         }
     }
-
+    
     private void updateJoystickKeys(float dx, float dy) {
-        boolean up = false, down = false, left = false, right = false;
-
-        if (dx != 0 || dy != 0) {
-            float angle = (float) Math.toDegrees(Math.atan2(dy, dx));
-            // 8-way directional mapping
-            if (angle > -22.5 && angle <= 22.5) right = true;
-            else if (angle > 22.5 && angle <= 67.5) { right = true; down = true; }
-            else if (angle > 67.5 && angle <= 112.5) down = true;
-            else if (angle > 112.5 && angle <= 157.5) { down = true; left = true; }
-            else if (angle > 157.5 || angle <= -157.5) left = true;
-            else if (angle > -157.5 && angle <= -112.5) { up = true; left = true; }
-            else if (angle > -112.5 && angle <= -67.5) up = true;
-            else if (angle > -67.5 && angle <= -22.5) { up = true; right = true; }
-        }
-
-        // SDLK_UP = 1073741906, SDLK_DOWN = 1073741905, SDLK_RIGHT = 1073741903, SDLK_LEFT = 1073741904
-        if (up != joyUp) { joyUp = up; SDLActivity.setVirtualKey(1073741906, up); }
-        if (down != joyDown) { joyDown = down; SDLActivity.setVirtualKey(1073741905, down); }
-        if (left != joyLeft) { joyLeft = left; SDLActivity.setVirtualKey(1073741904, left); }
-        if (right != joyRight) { joyRight = right; SDLActivity.setVirtualKey(1073741903, right); }
+        // Obsolete, removed.
     }
 }
