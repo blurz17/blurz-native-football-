@@ -145,6 +145,9 @@ namespace blunted {
       case SDL_JOYAXISMOTION:
         joyButtonPressedMutex.lock();
         joyID = event.jaxis.which;
+#ifdef __ANDROID__
+        if (virtual_joystick && SDL_JoystickInstanceID(virtual_joystick) == joyID) joyID = 0;
+#endif
         if (joyID < _JOYSTICK_MAX) {
             joyAxis[joyID][event.jaxis.axis] = event.jaxis.value;
         }
@@ -153,6 +156,9 @@ namespace blunted {
       case SDL_JOYBUTTONDOWN:
         joyButtonPressedMutex.lock();
         joyID = event.jbutton.which;
+#ifdef __ANDROID__
+        if (virtual_joystick && SDL_JoystickInstanceID(virtual_joystick) == joyID) joyID = 0;
+#endif
         if (joyID < _JOYSTICK_MAX && event.jbutton.button < _JOYSTICK_MAXBUTTONS) {
             joyButtonPressed[joyID][event.jbutton.button] = true;
         }
@@ -161,6 +167,9 @@ namespace blunted {
       case SDL_JOYBUTTONUP:
         joyButtonPressedMutex.lock();
         joyID = event.jbutton.which;
+#ifdef __ANDROID__
+        if (virtual_joystick && SDL_JoystickInstanceID(virtual_joystick) == joyID) joyID = 0;
+#endif
         if (joyID < _JOYSTICK_MAX && event.jbutton.button < _JOYSTICK_MAXBUTTONS) {
             joyButtonPressed[joyID][event.jbutton.button] = false;
         }
