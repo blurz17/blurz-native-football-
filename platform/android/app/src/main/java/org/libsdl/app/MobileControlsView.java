@@ -374,6 +374,11 @@ public class MobileControlsView extends View {
         if (maxDist > 0 && Math.hypot(dx, dy) > maxDist * 0.2f) {
             float normX = dx / maxDist;
             float normY = dy / maxDist;
+            
+            // Clamp to [-1.0, 1.0] to prevent Sint16 overflow in SDL
+            normX = Math.max(-1.0f, Math.min(1.0f, normX));
+            normY = Math.max(-1.0f, Math.min(1.0f, normY));
+            
             SDLActivity.setVirtualJoystickAxis(0, normX);
             SDLActivity.setVirtualJoystickAxis(1, normY);
         } else {

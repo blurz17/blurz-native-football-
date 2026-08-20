@@ -143,6 +143,7 @@ namespace blunted {
     Renderer3D *renderer3D = graphicsSystem->GetRenderer3D();
 
     // poke lights
+#ifndef __ANDROID__
     if (shadowSkipFrameCounter == 0) {
       boost::intrusive_ptr<GraphicsTaskCommand_RenderShadowMaps> renderShadowMaps(new GraphicsTaskCommand_RenderShadowMaps());
       taskManager->EnqueueWork(renderShadowMaps, true);
@@ -150,6 +151,7 @@ namespace blunted {
 
       renderShadowMaps->Wait();
     }
+#endif
 
     // poke camera
     boost::intrusive_ptr<GraphicsTaskCommand_RenderCamera> renderCamera(new GraphicsTaskCommand_RenderCamera());
@@ -283,7 +285,7 @@ namespace blunted {
 
 
       // prepare shadow maps
-
+#ifndef __ANDROID__
       if (shadowSkipFrameCounter == 0) {
         std::deque < boost::intrusive_ptr<Light> >::iterator lightIter = visibleLights.begin();
         while (lightIter != visibleLights.end()) {
@@ -295,6 +297,7 @@ namespace blunted {
           lightIter++;
         }
       }
+#endif
 
 
       // enqueue camera view
