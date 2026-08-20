@@ -1386,6 +1386,20 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         return SDLActivity.mSurface.getNativeSurface();
     }
 
+    /**
+     * This method is called by C++ engine using JNI to update possession state.
+     */
+    public static void setPossession(boolean attacking) {
+        if (mSingleton != null && mControls != null) {
+            mSingleton.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mControls.setAttacking(attacking);
+                }
+            });
+        }
+    }
+
     // Input
 
     /**

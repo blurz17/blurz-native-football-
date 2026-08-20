@@ -29,6 +29,8 @@ public class MobileControlsView extends View {
     private float joyRadius = 200f;
     private float joyHandleRadius = 80f;
     private int joyPointerId = -1;
+    private boolean isJoyFloating = false;
+    private float defaultJoyBaseX, defaultJoyBaseY;
 
     // Active keys from joystick
     private boolean joyUp, joyDown, joyLeft, joyRight;
@@ -38,19 +40,21 @@ public class MobileControlsView extends View {
         float cx, cy, radius;
         String labelOffense;
         String labelDefense;
-        int keycode;
+        int keycodeOffense;
+        int keycodeDefense;
         int pointerId = -1;
         boolean isPressed = false;
         int colorBase;
         int colorBorder;
 
-        ActionButton(float cx, float cy, float radius, String labelOffense, String labelDefense, int keycode, int colorBase, int colorBorder) {
+        ActionButton(float cx, float cy, float radius, String labelOffense, String labelDefense, int keycodeOffense, int keycodeDefense, int colorBase, int colorBorder) {
             this.cx = cx;
             this.cy = cy;
             this.radius = radius;
             this.labelOffense = labelOffense;
             this.labelDefense = labelDefense;
-            this.keycode = keycode;
+            this.keycodeOffense = keycodeOffense;
+            this.keycodeDefense = keycodeDefense;
             this.colorBase = colorBase;
             this.colorBorder = colorBorder;
         }
@@ -70,11 +74,11 @@ public class MobileControlsView extends View {
 
     private void init() {
         bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        bgPaint.setColor(Color.argb(70, 0, 0, 0));
+        bgPaint.setColor(Color.argb(80, 20, 20, 20));
         bgPaint.setStyle(Paint.Style.FILL);
 
         handlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        handlePaint.setColor(Color.argb(180, 50, 200, 255));
+        handlePaint.setColor(Color.argb(200, 220, 220, 220));
         handlePaint.setStyle(Paint.Style.FILL);
 
         btnBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -93,33 +97,46 @@ public class MobileControlsView extends View {
         super.onSizeChanged(w, h, oldw, oldh);
 
         // Joystick on the left
-        joyBaseX = w * 0.15f;
-        joyBaseY = h * 0.75f;
+        defaultJoyBaseX = w * 0.15f;
+        defaultJoyBaseY = h * 0.75f;
+        joyBaseX = defaultJoyBaseX;
+        joyBaseY = defaultJoyBaseY;
         joyHandleX = joyBaseX;
         joyHandleY = joyBaseY;
 
-        joyRadius = h * 0.16f; // Smaller
+        joyRadius = h * 0.22f; // Increased for better accuracy
         joyHandleRadius = joyRadius * 0.4f;
 
-        // Buttons on the right (Diamond layout)
+        // Buttons on the right (eFootball Layout)
         buttons.clear();
-        float btnBaseX = w * 0.85f;
-        float btnBaseY = h * 0.75f;
-        float btnSpacing = joyRadius * 1.3f;
-        float btnRad = h * 0.08f; // Smaller
+        
+        float dashX = w * 0.88f;
+        float dashY = h * 0.80f;
+        float dashRad = h * 0.11f; // Dash is the biggest
+        
+        float normalRad = h * 0.08f;
+        float spacingX = w * 0.13f;
+        float spacingY = h * 0.22f;
 
-        // BOTTOM: PASS / PRESS (Button 0 = A)
-        buttons.add(new ActionButton(btnBaseX, btnBaseY + btnSpacing * 0.8f, btnRad, "PASS", "PRESS", 0, Color.argb(100, 0, 150, 50), Color.rgb(50, 240, 110)));
-        // LEFT: THRU / SWITCH (Button 3 = Y)
-        buttons.add(new ActionButton(btnBaseX - btnSpacing, btnBaseY, btnRad, "THRU", "SWITCH", 3, Color.argb(100, 0, 100, 200), Color.rgb(40, 210, 250)));
-        // RIGHT: SHOOT / TACKLE (Button 2 = X)
-        buttons.add(new ActionButton(btnBaseX + btnSpacing * 0.8f, btnBaseY - btnSpacing * 0.2f, btnRad * 1.15f, "SHOOT", "TACKLE", 2, Color.argb(100, 200, 20, 20), Color.rgb(250, 60, 80)));
-        // TOP: SPRINT / DASH (Button 5 = R1)
-        buttons.add(new ActionButton(btnBaseX - btnSpacing * 0.2f, btnBaseY - btnSpacing * 1.1f, btnRad, "SPRINT", "DASH", 5, Color.argb(100, 200, 120, 0), Color.rgb(250, 180, 40)));
-        // TOP RIGHT: PAUSE (Button 7 = Start)
-        buttons.add(new ActionButton(w * 0.9f, h * 0.12f, btnRad * 1.1f, "PAUSE", "PAUSE", 7, Color.argb(100, 100, 100, 100), Color.rgb(200, 200, 200)));
+        int baseCol = Color.argb(120, 30, 80, 30); // Dark green
+        int borderCol = Color.argb(150, 150, 200, 150);
+        
+        // PASS (Left of Dash)
+        buttons.add(new ActionButton(dashX - spacingX, dashY + h * 0.02f, normalRad, "Pass", "Switch", 0, 4, baseCol, borderCol));
+        
+        // DASH (Bottom Right)
+        buttons.add(new ActionButton(dashX, dashY, dashRad, "Dash", "Dash", 5, 5, baseCol, borderCol));
+        
+        // THROUGH (Left of Shoot, Above Pass)
+        buttons.add(new ActionButton(dashX - spacingX * 0.9f, dashY - spacingY, normalRad, "Through", "Press", 3, 0, baseCol, borderCol));
+        
+        // SHOOT (Above Dash)
+        buttons.add(new ActionButton(dashX - w * 0.02f, dashY - spacingY - h * 0.02f, normalRad, "Shoot", "Clear", 2, 1, baseCol, borderCol));
+        
+        // TOP RIGHT CORNER: PAUSE
+        buttons.add(new ActionButton(w * 0.95f, h * 0.12f, normalRad * 0.7f, "Pause", "Pause", 7, 7, Color.argb(80, 50, 50, 50), borderCol));
 
-        textPaint.setTextSize(btnRad * 0.45f);
+        textPaint.setTextSize(normalRad * 0.45f);
     }
 
     @Override
@@ -163,14 +180,24 @@ public class MobileControlsView extends View {
         }
 
         // Draw Match Mode
-        // Draw Joystick Base
-        bgPaint.setShader(new RadialGradient(joyBaseX, joyBaseY, joyRadius, Color.argb(80, 20, 20, 20), Color.argb(20, 20, 20, 20), Shader.TileMode.CLAMP));
+        // Draw Joystick Base (More visible!)
+        bgPaint.setShader(new RadialGradient(joyBaseX, joyBaseY, joyRadius, Color.argb(120, 60, 60, 60), Color.argb(40, 30, 30, 30), Shader.TileMode.CLAMP));
         canvas.drawCircle(joyBaseX, joyBaseY, joyRadius, bgPaint);
+        
+        // Draw Joystick Base Border
+        btnBorderPaint.setColor(Color.argb(100, 200, 200, 200));
+        btnBorderPaint.setAlpha(100);
+        canvas.drawCircle(joyBaseX, joyBaseY, joyRadius, btnBorderPaint);
 
-        // Draw Joystick Handle
-        float hScale = joyPointerId != -1 ? 1.1f : 1.0f;
-        handlePaint.setShader(new RadialGradient(joyHandleX, joyHandleY, joyHandleRadius * hScale, Color.argb(220, 100, 220, 255), Color.argb(150, 40, 180, 240), Shader.TileMode.CLAMP));
+        // Draw Joystick Handle (More visible!)
+        float hScale = joyPointerId != -1 ? 1.15f : 1.0f;
+        handlePaint.setShader(new RadialGradient(joyHandleX, joyHandleY, joyHandleRadius * hScale, Color.argb(255, 255, 255, 255), Color.argb(200, 200, 200, 200), Shader.TileMode.CLAMP));
         canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius * hScale, handlePaint);
+        
+        // Draw a slight border for the handle to make it pop
+        btnBorderPaint.setColor(Color.argb(200, 100, 100, 100));
+        btnBorderPaint.setAlpha(150);
+        canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius * hScale, btnBorderPaint);
 
         // Draw Buttons
         for (ActionButton btn : buttons) {
@@ -184,15 +211,20 @@ public class MobileControlsView extends View {
             btnBorderPaint.setAlpha(btn.isPressed ? 255 : 180);
             canvas.drawCircle(btn.cx, btn.cy, r, btnBorderPaint);
 
-            // Draw Offense label (Main)
-            textPaint.setTextSize(r * 0.45f);
-            textPaint.setColor(Color.WHITE);
-            canvas.drawText(btn.labelOffense, btn.cx, btn.cy - (r * 0.1f), textPaint);
-            
-            // Draw Defense label (Alternative, slightly smaller below)
+            // Draw Label
+            String label = isAttacking ? btn.labelOffense : btn.labelDefense;
             textPaint.setTextSize(r * 0.35f);
-            textPaint.setColor(Color.argb(200, 255, 255, 255));
-            canvas.drawText(btn.labelDefense, btn.cx, btn.cy + (r * 0.4f), textPaint);
+            textPaint.setColor(btn.isPressed ? Color.rgb(200, 200, 200) : Color.WHITE);
+            canvas.drawText(label, btn.cx, btn.cy + (r * 0.1f), textPaint);
+        }
+    }
+
+    public boolean isAttacking = true;
+
+    public void setAttacking(boolean attacking) {
+        if (this.isAttacking != attacking) {
+            this.isAttacking = attacking;
+            postInvalidate();
         }
     }
 
@@ -268,9 +300,14 @@ public class MobileControlsView extends View {
         switch (action) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN:
-                if (x < getWidth() * 0.4f && joyPointerId == -1) {
-                    // Joystick area
+                if (x < getWidth() * 0.45f && joyPointerId == -1) {
+                    // Joystick area - make it floating!
                     joyPointerId = pointerId;
+                    isJoyFloating = true;
+                    joyBaseX = x;
+                    joyBaseY = y;
+                    joyHandleX = x;
+                    joyHandleY = y;
                     updateJoystick(x, y);
                 } else {
                     // Button area
@@ -280,7 +317,7 @@ public class MobileControlsView extends View {
                         if (dx * dx + dy * dy <= btn.radius * btn.radius * 2.5f && btn.pointerId == -1) {
                             btn.pointerId = pointerId;
                             btn.isPressed = true;
-                            SDLActivity.setVirtualJoystickButton(btn.keycode, true);
+                            SDLActivity.setVirtualJoystickButton(isAttacking ? btn.keycodeOffense : btn.keycodeDefense, true);
                             break;
                         }
                     }
@@ -301,19 +338,26 @@ public class MobileControlsView extends View {
             case MotionEvent.ACTION_CANCEL:
                 if (pointerId == joyPointerId) {
                     joyPointerId = -1;
+                    isJoyFloating = false;
+                    joyBaseX = defaultJoyBaseX;
+                    joyBaseY = defaultJoyBaseY;
                     joyHandleX = joyBaseX;
                     joyHandleY = joyBaseY;
-                    updateJoystickKeys(0, 0); // Release all
+                    SDLActivity.setVirtualJoystickAxis(0, 0f);
+                    SDLActivity.setVirtualJoystickAxis(1, 0f);
                 } else {
                     for (ActionButton btn : buttons) {
                         if (btn.pointerId == pointerId) {
                             btn.pointerId = -1;
                             btn.isPressed = false;
-                            final int keycode = btn.keycode;
+                            final int keycode = isAttacking ? btn.keycodeOffense : btn.keycodeDefense;
                             postDelayed(new Runnable() {
                                 @Override
                                 public void run() {
                                     SDLActivity.setVirtualJoystickButton(keycode, false);
+                                    // Also clear both just in case state changed while held
+                                    SDLActivity.setVirtualJoystickButton(btn.keycodeOffense, false);
+                                    SDLActivity.setVirtualJoystickButton(btn.keycodeDefense, false);
                                 }
                             }, 50);
                         }

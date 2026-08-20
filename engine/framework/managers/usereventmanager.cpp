@@ -50,6 +50,33 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoys
         SDL_JoystickSetVirtualButton(virtual_joystick, button, pressed ? SDL_PRESSED : SDL_RELEASED);
     }
 }
+
+extern "C" void Android_SetPossession(bool attacking) {
+    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+    if (!env) return;
+    
+    jobject activity = (jobject)SDL_AndroidGetActivity();
+    if (!activity) return;
+    
+    jclass cls = env->GetObjectClass(activity);
+    if (!cls) {
+        env->ExceptionClear();
+        env->DeleteLocalRef(activity);
+        return;
+    }
+    
+    jmethodID mid = env->GetStaticMethodID(cls, "setPossession", "(Z)V");
+    if (mid) {
+        env->CallStaticVoidMethod(cls, mid, attacking ? JNI_TRUE : JNI_FALSE);
+    }
+    
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+    }
+    
+    env->DeleteLocalRef(cls);
+    env->DeleteLocalRef(activity);
+}
 #endif
 
 namespace blunted {

@@ -31,6 +31,7 @@
 #ifdef __ANDROID__
 #include <jni.h>
 #include <SDL.h>
+extern "C" void Android_SetPossession(bool attacking);
 #endif
 
 const unsigned int replaySize_ms = 10000;
@@ -1236,6 +1237,26 @@ void Match::Process() {
 
     positionLogFile << bla.c_str();
   }
+
+#ifdef __ANDROID__
+    static bool lastPossession = true;
+    bool currentPossession = lastPossession; // default to previous state if tied
+    for (int teamID = 0; teamID < 2; teamID++) {
+        if (teams[teamID]->GetHumanGamerCount() > 0) {
+            // Use BestPossessionTeamID instead of HasPossession() so UI doesn't 
+            // flicker during passes and properly attributes possession to the goalie
+            int bestTeam = GetBestPossessionTeamID();
+            if (bestTeam != -1) {
+                currentPossession = (bestTeam == teamID);
+            }
+            break;
+        }
+    }
+    if (currentPossession != lastPossession) {
+        lastPossession = currentPossession;
+        Android_SetPossession(currentPossession);
+    }
+#endif
 
   iterations.Lock();
   iterations.data++;
