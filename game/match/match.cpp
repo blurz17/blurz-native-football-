@@ -437,8 +437,10 @@ Match::Match(MatchData *matchData, const std::vector<IHIDevice*> &controllers) :
   sig_OnCreatedMatch(this);
   if (Verbose()) printf("set..\n");
 #ifndef GPFB_HEADLESS
+#ifndef __ANDROID__
   LoadingMatchPage *loadingMatchPage = static_cast<LoadingMatchPage*>(menuTask->GetWindowManager()->GetPageFactory()->GetMostRecentlyCreatedPage());
   loadingMatchPage->Close();
+#endif
 
 #ifdef __ANDROID__
   JNIEnv *env = (JNIEnv *)SDL_AndroidGetJNIEnv();

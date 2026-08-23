@@ -413,9 +413,6 @@ struct GLfunctions {
 
 #ifdef __ANDROID__
     SDL_GetWindowSize(window, &this->context_width, &this->context_height);
-    
-    // Attempt to force vsync to fix Android frame timing
-    SDL_GL_SetSwapInterval(1);
 #endif
 
 

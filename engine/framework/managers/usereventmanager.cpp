@@ -18,6 +18,8 @@
 #include "usereventmanager.hpp"
 
 #include "environmentmanager.hpp"
+#include "engine/main.hpp"
+#include "game/match/match.hpp"
 
 #ifdef __ANDROID__
 #include <jni.h>
@@ -48,6 +50,16 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoys
 extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoystickButton(JNIEnv* env, jclass cls, jint button, jboolean pressed) {
     if (virtual_joystick) {
         SDL_JoystickSetVirtualButton(virtual_joystick, button, pressed ? SDL_PRESSED : SDL_RELEASED);
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_pauseMatch(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask) {
+        Match* match = gTask->GetMatch();
+        if (match) {
+            match->Pause(true);
+        }
     }
 }
 

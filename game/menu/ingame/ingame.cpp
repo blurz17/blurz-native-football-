@@ -23,14 +23,43 @@ IngamePage::IngamePage(Gui2WindowManager *windowManager, const Gui2PageData &pag
 
   Gui2Root *root = windowManager->GetRoot();
 
-  Gui2Button *buttonGamePlan = new Gui2Button(windowManager, "button_gameplan", 0, 0, 30, 3, "game plan");
-  Gui2Button *buttonControllerSelect = new Gui2Button(windowManager, "button_controllerselect", 0, 0, 30, 3, "controller select");
-  Gui2Button *buttonCameraSettings = new Gui2Button(windowManager, "button_camerasettings", 0, 0, 30, 3, "camera settings");
-  Gui2Button *buttonVisualOptions = new Gui2Button(windowManager, "button_visualoptions", 0, 0, 30, 3, "visual options");
-  Gui2Button *buttonSystemSettings = new Gui2Button(windowManager, "button_systemsettings", 0, 0, 30, 3, "system settings");
-  Gui2Button *buttonReplay = new Gui2Button(windowManager, "button_replay", 0, 0, 30, 3, "replay");
-  Gui2Button *buttonPreQuit = new Gui2Button(windowManager, "button_quit", 0, 0, 30, 3, "forfeit match");
+  // Full screen semi-transparent overlay
+  Gui2Image *overlayBg = new Gui2Image(windowManager, "image_ingame_overlay", 0, 0, 100, 100);
+  overlayBg->LoadImage("media/menu/backgrounds/black.png");
+  // Assuming Gui2View has some alpha/color setting; for now it just draws the image.
+  // Actually, we can rely on the image's own alpha or just leave it.
+  this->AddView(overlayBg);
+  overlayBg->Show();
 
+  // Modal Background
+  float modalW = 40;
+  float modalH = 65;
+  float modalX = 50 - modalW/2;
+  float modalY = 50 - modalH/2;
+  Gui2Image *modalBg = new Gui2Image(windowManager, "image_ingame_modalbg", modalX, modalY, modalW, modalH);
+  modalBg->LoadImage("media/menu/scoreboard_bg.png"); // Re-use modern bg
+  this->AddView(modalBg);
+  modalBg->Show();
+
+  // Menu Title
+  Gui2Caption *title = new Gui2Caption(windowManager, "caption_ingame_title", modalX, modalY + 2, modalW, 5, "PAUSE MENU");
+  title->SetColor(Vector3(20, 230, 160)); // FC Mobile Neon Teal
+  this->AddView(title);
+  title->Show();
+
+  // Buttons
+  float btnW = modalW * 0.8f;
+  float btnH = 4;
+  Gui2Button *buttonResume = new Gui2Button(windowManager, "button_resume", 0, 0, btnW, btnH, "RESUME MATCH");
+  Gui2Button *buttonGamePlan = new Gui2Button(windowManager, "button_gameplan", 0, 0, btnW, btnH, "GAME PLAN");
+  Gui2Button *buttonControllerSelect = new Gui2Button(windowManager, "button_controllerselect", 0, 0, btnW, btnH, "CONTROLLERS");
+  Gui2Button *buttonCameraSettings = new Gui2Button(windowManager, "button_camerasettings", 0, 0, btnW, btnH, "CAMERA");
+  Gui2Button *buttonVisualOptions = new Gui2Button(windowManager, "button_visualoptions", 0, 0, btnW, btnH, "VISUALS");
+  Gui2Button *buttonSystemSettings = new Gui2Button(windowManager, "button_systemsettings", 0, 0, btnW, btnH, "SETTINGS");
+  Gui2Button *buttonReplay = new Gui2Button(windowManager, "button_replay", 0, 0, btnW, btnH, "REPLAY");
+  Gui2Button *buttonPreQuit = new Gui2Button(windowManager, "button_quit", 0, 0, btnW, btnH, "FORFEIT MATCH");
+
+  buttonResume->sig_OnClick.connect(boost::bind(&IngamePage::GoResume, this));
   buttonGamePlan->sig_OnClick.connect(boost::bind(&IngamePage::GoGamePlan, this));
   buttonControllerSelect->sig_OnClick.connect(boost::bind(&IngamePage::GoControllerSelect, this));
   buttonCameraSettings->sig_OnClick.connect(boost::bind(&IngamePage::GoCameraSettings, this));
@@ -39,28 +68,35 @@ IngamePage::IngamePage(Gui2WindowManager *windowManager, const Gui2PageData &pag
   buttonReplay->sig_OnClick.connect(boost::bind(&IngamePage::GoReplay, this));
   buttonPreQuit->sig_OnClick.connect(boost::bind(&IngamePage::GoPreQuit, this));
 
+  Gui2Grid *grid = new Gui2Grid(windowManager, "grid", modalX + (modalW - btnW)/2, modalY + 10, btnW, modalH - 12);
 
-  Gui2Grid *grid = new Gui2Grid(windowManager, "grid", 10, 10, 80, 80);
-
-  grid->AddView(buttonGamePlan, 0, 0);
-  grid->AddView(buttonControllerSelect, 1, 0);
-  grid->AddView(buttonCameraSettings, 2, 0);
-  grid->AddView(buttonVisualOptions, 3, 0);
-  grid->AddView(buttonSystemSettings, 4, 0);
-  grid->AddView(buttonReplay, 5, 0);
-  grid->AddView(buttonPreQuit, 6, 0);
+  grid->AddView(buttonResume, 0, 0);
+  grid->AddView(buttonGamePlan, 1, 0);
+  grid->AddView(buttonControllerSelect, 2, 0);
+  grid->AddView(buttonCameraSettings, 3, 0);
+  grid->AddView(buttonVisualOptions, 4, 0);
+  grid->AddView(buttonSystemSettings, 5, 0);
+  grid->AddView(buttonReplay, 6, 0);
+  grid->AddView(buttonPreQuit, 7, 0);
 
   grid->UpdateLayout(0.5);
 
   this->AddView(grid);
   grid->Show();
 
-  buttonGamePlan->SetFocus();
+  buttonResume->SetFocus();
 
   this->Show();
 }
 
 IngamePage::~IngamePage() {
+}
+
+void IngamePage::GoResume() {
+  GetMenuTask()->ReleaseAllButtons();
+  GetGameTask()->GetMatch()->Pause(false);
+  this->Exit();
+  delete this;
 }
 
 void IngamePage::GoGamePlan() {

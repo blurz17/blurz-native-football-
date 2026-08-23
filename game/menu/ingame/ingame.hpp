@@ -24,6 +24,7 @@ class IngamePage : public Gui2Page {
     IngamePage(Gui2WindowManager *windowManager, const Gui2PageData &pageData);
     virtual ~IngamePage();
 
+    void GoResume();
     void GoGamePlan();
     void GoControllerSelect();
     void GoCameraSettings();

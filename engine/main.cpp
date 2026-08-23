@@ -311,7 +311,20 @@ extern "C" __attribute__((visibility("default"))) int SDL_main(int argc, char** 
 int main(int argc, const char** argv) {
 #endif
   config = new Properties();
-  if (argc > 1) configFile = argv[1];
+  if (argc > 1) {
+    if (std::string(argv[1]) == "--start-match") {
+#ifdef __ANDROID__
+      setenv("SKIP_MAIN_MENU", "1", 1);
+      if (argc > 2) setenv("TEAM1_ID", argv[2], 1);
+      if (argc > 3) setenv("TEAM2_ID", argv[3], 1);
+      if (argc > 4) setenv("MATCH_DIFFICULTY", argv[4], 1);
+      if (argc > 5) setenv("MATCH_DURATION", argv[5], 1);
+      if (argc > 6) setenv("AUDIO_VOLUME", argv[6], 1);
+#endif
+    } else {
+      configFile = argv[1];
+    }
+  }
   config->LoadFile(configFile.c_str());
 
   Initialize(*config);

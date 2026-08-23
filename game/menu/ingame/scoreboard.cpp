@@ -99,6 +99,12 @@ Gui2ScoreBoard::Gui2ScoreBoard(Gui2WindowManager *windowManager, Match *match) :
   teamLogo[1]->LoadImage(match->GetTeam(1)->GetTeamData()->GetLogoUrl());
   teamLogo[1]->Show();
 
+  // Add the pause button back to the top right since this is Android and we need a way to pause
+  Gui2Image* pauseIcon = new Gui2Image(windowManager, "game_scoreboard_pause", width_percent - (height_percent * 2.0f) / windowManager->GetAspectRatio() - 5.0f, 0, (height_percent * 1.5f) / windowManager->GetAspectRatio(), height_percent * 0.8f);
+  this->AddView(pauseIcon);
+  pauseIcon->LoadImage("media/menu/pause_icon.png");
+  pauseIcon->Show();
+
   this->Show();
 }
 
