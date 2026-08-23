@@ -55,6 +55,7 @@ class MenuTask : public Gui2Task {
     virtual ~MenuTask();
 
     virtual void ProcessPhase();
+    bool m_quickStarted;
 
     bool QuickStart();
     void QuitGame();

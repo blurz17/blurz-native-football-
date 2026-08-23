@@ -293,6 +293,28 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      * @return arguments for the native application.
      */
     protected String[] getArguments() {
+        Intent intent = getIntent();
+        if (intent != null && intent.getBooleanExtra("startQuickMatch", false)) {
+            String home = intent.getStringExtra("homeTeamId");
+            String away = intent.getStringExtra("awayTeamId");
+            String diff = intent.getStringExtra("matchDifficulty");
+            String dur = intent.getStringExtra("matchDuration");
+            String vol = intent.getStringExtra("audioVolume");
+            if (home == null) home = "3";
+            if (away == null) away = "8";
+            if (diff == null) diff = "0.5";
+            if (dur == null) dur = "0.5";
+            if (vol == null) vol = "0.8";
+
+            return new String[]{
+                "--start-match",
+                home,
+                away,
+                diff,
+                dur,
+                vol
+            };
+        }
         return new String[0];
     }
 
@@ -303,6 +325,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             @Override
             public void run() {
                 if (mControls != null) {
+                    mControls.setVisibility(View.VISIBLE);
                     mControls.setMatchMode(matchMode);
                 }
             }
@@ -312,6 +335,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     public static native void setVirtualKey(int keycode, boolean state);
     public static native void setVirtualJoystickAxis(int axis, float value);
     public static native void setVirtualJoystickButton(int button, boolean state);
+    public static native void pauseMatch();
 
     public static void initialize() {
         // The static nature of the singleton and Android quirkyness force us to initialize everything here
@@ -338,6 +362,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         // We use setZOrderMediaOverlay(true) instead of setZOrderOnTop(true) so that Android Views 
         // (like MobileControlsView) can be drawn on top of the game surface!
         surface.setZOrderMediaOverlay(true);
+        // Make the SurfaceView transparent until OpenGL renders its first frame!
+        surface.getHolder().setFormat(android.graphics.PixelFormat.TRANSPARENT);
         return surface;
     }
 
@@ -434,6 +460,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         mLayout.addView(mSurface);
 
         mControls = new MobileControlsView(this);
+        Intent intent = getIntent();
+        boolean isQuickMatch = intent != null && intent.getBooleanExtra("startQuickMatch", false);
+        mControls.setVisibility(isQuickMatch ? View.GONE : View.VISIBLE);
         mLayout.addView(mControls, new RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT, 
             RelativeLayout.LayoutParams.MATCH_PARENT));
@@ -453,6 +482,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         }
 
         // Make window transparent so the MediaOverlay SurfaceView behind it is visible!
+        // This also allows LoadingMatchActivity to show through while the C++ engine is loading!
         getWindow().setBackgroundDrawableResource(android.R.color.transparent);
 
         setContentView(mLayout);
@@ -464,12 +494,27 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         // getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(this);
 
         // Get filename from "Open with" of another application
-        Intent intent = getIntent();
-        if (intent != null && intent.getData() != null) {
-            String filename = intent.getData().getPath();
-            if (filename != null) {
-                Log.v(TAG, "Got filename: " + filename);
-                SDLActivity.onNativeDropFile(filename);
+        intent = getIntent();
+        if (intent != null) {
+            if (intent.getBooleanExtra("startQuickMatch", false)) {
+                nativeSetenv("SKIP_MAIN_MENU", "1");
+                String homeId = intent.getStringExtra("homeTeamId");
+                if (homeId != null) nativeSetenv("TEAM1_ID", homeId);
+                String awayId = intent.getStringExtra("awayTeamId");
+                if (awayId != null) nativeSetenv("TEAM2_ID", awayId);
+                String diff = intent.getStringExtra("matchDifficulty");
+                if (diff != null) nativeSetenv("MATCH_DIFFICULTY", diff);
+                String dur = intent.getStringExtra("matchDuration");
+                if (dur != null) nativeSetenv("MATCH_DURATION", dur);
+                String vol = intent.getStringExtra("audioVolume");
+                if (vol != null) nativeSetenv("AUDIO_VOLUME", vol);
+            }
+            if (intent.getData() != null) {
+                String filename = intent.getData().getPath();
+                if (filename != null) {
+                    Log.v(TAG, "Got filename: " + filename);
+                    SDLActivity.onNativeDropFile(filename);
+                }
             }
         }
     }
@@ -501,13 +546,30 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     protected void onPause() {
         Log.v(TAG, "onPause()");
         super.onPause();
+        
+        // 1. Immediately pause the match simulation (thread-safe JNI call)
+        try {
+            SDLActivity.pauseMatch();
+        } catch (Throwable e) {
+            Log.e(TAG, "Failed to pause match", e);
+        }
+
+        // 2. Send ESC with delayed release so the engine actually detects it
+        try {
+            SDLActivity.setVirtualKey(27, true); // SDLK_ESCAPE
+            // Don't release immediately — the engine needs time to poll it
+        } catch (Throwable e) {
+            Log.e(TAG, "Failed to send pause key event", e);
+        }
 
         if (mHIDDeviceManager != null) {
             mHIDDeviceManager.setFrozen(true);
         }
-        if (!mHasMultiWindow) {
-            pauseNativeThread();
-        }
+
+        // 3. ALWAYS pause the native thread — do NOT gate on mHasMultiWindow.
+        // On API 24+, mHasMultiWindow=true caused this to be skipped, leaving
+        // the engine running against a destroyed surface for hundreds of ms.
+        pauseNativeThread();
     }
 
     @Override
@@ -515,31 +577,36 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         Log.v(TAG, "onResume()");
         super.onResume();
 
+        // Release any stuck ESC key from onPause
+        try {
+            SDLActivity.setVirtualKey(27, false);
+        } catch (Throwable e) {
+            // Native lib may not be loaded yet on first launch
+        }
+
         if (mHIDDeviceManager != null) {
             mHIDDeviceManager.setFrozen(false);
         }
-        if (!mHasMultiWindow) {
-            resumeNativeThread();
-        }
+
+        // ALWAYS resume the native thread
+        resumeNativeThread();
     }
+
 
     @Override
     protected void onStop() {
         Log.v(TAG, "onStop()");
         super.onStop();
-        if (mHasMultiWindow) {
-            pauseNativeThread();
-        }
+        // Native thread pause is now handled unconditionally in onPause()
     }
 
     @Override
     protected void onStart() {
         Log.v(TAG, "onStart()");
         super.onStart();
-        if (mHasMultiWindow) {
-            resumeNativeThread();
-        }
+        // Native thread resume is now handled unconditionally in onResume()
     }
+
 
     public static int getCurrentOrientation() {
         int result = SDL_ORIENTATION_UNKNOWN;
@@ -673,6 +740,12 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         }
 
         SDLActivity.nativeQuit();
+
+        // When the game ends, since we cleared the entire UI stack to save memory,
+        // we must manually restart the MainMenuActivity so the app doesn't just close.
+        Intent intent = new Intent(this, org.libsdl.app.ui.MainMenuActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
 
         super.onDestroy();
     }

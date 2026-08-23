@@ -5,6 +5,7 @@
 #include "menutask.hpp"
 
 #include "game/match/match.hpp"
+#include "engine/data/matchdata.hpp"
 
 #include "pagefactory.hpp"
 
@@ -86,7 +87,8 @@ MenuTask::MenuTask(float aspectRatio, float margin, TTF_Font *defaultFont, TTF_F
   PageFactory *pageFactory = new PageFactory();
   windowManager->SetPageFactory(pageFactory);
 
-  if (!QuickStart()) {
+  m_quickStarted = QuickStart();
+  if (!m_quickStarted) {
 
     queuedFixture->team1KitNum = 1;
     queuedFixture->team2KitNum = 2;
@@ -115,10 +117,29 @@ MenuTask::MenuTask(float aspectRatio, float margin, TTF_Font *defaultFont, TTF_F
     // 6 == man utd
     // 7 == psv
     // 8 == real madrid
-    queuedFixture->teamID1 = "3";
-    queuedFixture->teamID2 = "8";
-    queuedFixture->team1KitNum = 2;
+    const char* team1Env = getenv("TEAM1_ID");
+    const char* team2Env = getenv("TEAM2_ID");
+    queuedFixture->teamID1 = team1Env ? std::string(team1Env) : "3";
+    queuedFixture->teamID2 = team2Env ? std::string(team2Env) : "8";
+    queuedFixture->team1KitNum = 1;
     queuedFixture->team2KitNum = 2;
+
+    // Read match settings from Android UI (passed via env vars)
+    const char* diffEnv = getenv("MATCH_DIFFICULTY");
+    if (diffEnv) {
+      GetConfiguration()->Set("match_difficulty", atof(diffEnv));
+      GetConfiguration()->SaveFile(GetConfigFilename());
+    }
+    const char* durEnv = getenv("MATCH_DURATION");
+    if (durEnv) {
+      GetConfiguration()->Set("match_duration", atof(durEnv));
+      GetConfiguration()->SaveFile(GetConfigFilename());
+    }
+    const char* volEnv = getenv("AUDIO_VOLUME");
+    if (volEnv) {
+      GetConfiguration()->Set("audio_volume", atof(volEnv));
+      GetConfiguration()->SaveFile(GetConfigFilename());
+    }
 
     menuAction = e_MenuAction_Menu;
 
@@ -143,20 +164,36 @@ void MenuTask::ProcessPhase() {
     windowManager->GetPagePath()->Clear();
 
     GetGameTask()->Action(e_GameTaskMessage_StopMatch);
-    GetGameTask()->Action(e_GameTaskMessage_StartMenuScene);
 
     Properties properties;
-    if (!QuickStart()) {
+#ifdef __ANDROID__
+    if (!m_quickStarted) {
+      GetGameTask()->Action(e_GameTaskMessage_StartMenuScene);
+      EnvironmentManager::GetInstance().SignalQuit();
+    } else {
+      m_quickStarted = false;
+      
+      MatchData *matchData = new MatchData(GetTeamID(0), GetTeamID(1));
+      SetMatchData(matchData);
+      
+      menuAction = e_MenuAction_Game; // Instantly start game next frame
+    }
+#else
+    if (!m_quickStarted) {
       if (!IsReleaseVersion()) {
         windowManager->GetPageFactory()->CreatePage((int)e_PageID_MainMenu, properties, 0);
       } else {
         windowManager->GetPageFactory()->CreatePage((int)e_PageID_Intro, properties, 0);
       }
     } else {
+      m_quickStarted = false;
       windowManager->GetPageFactory()->CreatePage((int)e_PageID_LoadingMatch, properties, 0);
     }
+#endif
 
-  } else if (menuAction == e_MenuAction_Game) {
+  } 
+  
+  if (menuAction == e_MenuAction_Game) {
 
     GetGameTask()->Action(e_GameTaskMessage_StopMenuScene);
     GetGameTask()->Action(e_GameTaskMessage_StartMatch);
@@ -167,7 +204,15 @@ void MenuTask::ProcessPhase() {
 }
 
 bool MenuTask::QuickStart() {
-  return !IsReleaseVersion() && EnvironmentManager::GetInstance().GetTime_ms() < 10000; // after 5 seconds, quickstart disabled (== after > 0 matches have been played)
+  const char* skipMenu = getenv("SKIP_MAIN_MENU");
+  if (skipMenu && std::string(skipMenu) == "1") {
+#ifdef __ANDROID__
+    unsetenv("SKIP_MAIN_MENU");
+#endif
+    return true;
+  }
+  
+  return !IsReleaseVersion() && EnvironmentManager::GetInstance().GetTime_ms() < 10000;
 }
 
 void MenuTask::QuitGame() {
