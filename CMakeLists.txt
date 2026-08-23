@@ -67,7 +67,7 @@ if(ANDROID)
         SDL2_gfx
         ODE
         sqlite3
-        OpenAL
+        # OpenAL
     )
 else()
     # PC/Windows/Mac Build

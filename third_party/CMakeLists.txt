@@ -18,7 +18,7 @@ set(ALSOFT_UTILS OFF CACHE BOOL "" FORCE)
 set(ALSOFT_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(ALSOFT_TESTS OFF CACHE BOOL "" FORCE)
 set(ALSOFT_INSTALL OFF CACHE BOOL "" FORCE)
-add_subdirectory(openal-soft)
+# add_subdirectory(openal-soft)
 add_subdirectory(sqlite)
 
 set(ODE_WITH_DEMOS OFF CACHE BOOL "" FORCE)

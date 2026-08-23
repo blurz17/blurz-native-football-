@@ -8,11 +8,11 @@
 #include "interface_audiorenderer.hpp"
 
 #ifdef __APPLE__
-#include <OpenAL/al.h>
-#include <OpenAL/alc.h>
+// #include <OpenAL/al.h>
+// #include <OpenAL/alc.h>
 #else
-#include <AL/al.h>
-#include <AL/alc.h>
+// #include <AL/al.h>
+// #include <AL/alc.h>
 #endif
 
 namespace blunted {
@@ -38,9 +38,9 @@ namespace blunted {
       void operator()();
 
     protected:
-      ALCcontext *context;
+      void *context;
 
-      std::map<ALuint, ALuint> bufferSourceMapping;
+      std::map<unsigned int, unsigned int> bufferSourceMapping;
 
   };
 
