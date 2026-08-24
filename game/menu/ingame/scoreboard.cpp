@@ -12,10 +12,10 @@
 
 using namespace blunted;
 
-Gui2ScoreBoard::Gui2ScoreBoard(Gui2WindowManager *windowManager, Match *match) : Gui2View(windowManager, "scoreboard", 2, 2, 96, 4), match(match) {
-  x_percent = 2;
+Gui2ScoreBoard::Gui2ScoreBoard(Gui2WindowManager *windowManager, Match *match) : Gui2View(windowManager, "scoreboard", 35, 2, 30, 4), match(match) {
+  x_percent = 35;
   y_percent = 2;
-  width_percent = 96;
+  width_percent = 30;
   height_percent = 4;
 
   Vector3 textColor = 255;
@@ -26,38 +26,34 @@ Gui2ScoreBoard::Gui2ScoreBoard(Gui2WindowManager *windowManager, Match *match) :
   int x, y, w, h;
   windowManager->GetCoordinates(x_percent, y_percent, width_percent, height_percent, x, y, w, h);
 
-  // percentages
+  // percentages relative to width_percent (30)
   float xOffset[9];
-  xOffset[0] = 1; // league logo
-  xOffset[1] = 5; // time
-  xOffset[2] = 15; // t1 logo
-  xOffset[3] = 19; // t1 name
-  xOffset[4] = 25; // t1 score
-  xOffset[5] = 29; // t2 logo
-  xOffset[6] = 33; // t2 name
-  xOffset[7] = 39; // t2 score
-  xOffset[8] = 43; // end
+  xOffset[0] = 0; // league logo (not used)
+  xOffset[1] = 1; // time
+  xOffset[2] = 8; // t1 logo
+  xOffset[3] = 11; // t1 name
+  xOffset[4] = 14; // t1 score
+  xOffset[5] = 16; // t2 logo
+  xOffset[6] = 19; // t2 name
+  xOffset[7] = 22; // t2 score
+  xOffset[8] = 30; // end
+
   float relToAbsMultiplier = w / (width_percent * 1.0f);
   content_yOffset = 0.2f;
   float content_xOffset = 0.2f;
 
-  float bgAlpha = 100.0f;
+  float bgAlpha = 180.0f;
 
-  Gui2Image *bg = new Gui2Image(windowManager, "image_scoreboard_bg", 0, 0, xOffset[8] + 1, height_percent);
+  Gui2Image *bg = new Gui2Image(windowManager, "image_scoreboard_bg", 0, 0, xOffset[8], height_percent);
   bg->LoadImage("media/menu/scoreboard_bg.png");
   this->AddView(bg);
   bg->Show();
 
-  leagueLogo = new Gui2Image(windowManager, "game_scoreboard_leaguelogo", xOffset[0], 0, height_percent / windowManager->GetAspectRatio(), height_percent);
-  this->AddView(leagueLogo);
-  leagueLogo->LoadImage("media/menu/league.png"); // todo: actual league picca
-  leagueLogo->Show();
-
-  timeCaption = new Gui2Caption(windowManager, "game_scoreboard_timecaption", xOffset[1] + content_xOffset, 0, 5, height_percent * 0.9f, "0:00");
-  teamNameCaption[0] = new Gui2Caption(windowManager, "game_scoreboard_team1name", xOffset[3] + content_xOffset, 0, 5, height_percent * 0.9f, match->GetTeam(0)->GetTeamData()->GetShortName());
-  teamNameCaption[1] = new Gui2Caption(windowManager, "game_scoreboard_team2name", xOffset[6] + content_xOffset, 0, 5, height_percent * 0.9f, match->GetTeam(1)->GetTeamData()->GetShortName());
-  goalCountCaption[0] = new Gui2Caption(windowManager, "game_scoreboard_team1goals", xOffset[4] + content_xOffset, 0, 5, height_percent * 0.9f, "0");
-  goalCountCaption[1] = new Gui2Caption(windowManager, "game_scoreboard_team2goals", xOffset[7] + content_xOffset, 0, 5, height_percent * 0.9f, "0");
+  timeCaption = new Gui2Caption(windowManager, "game_scoreboard_timecaption", xOffset[1] + content_xOffset, content_yOffset, 8, height_percent * 0.9f, "0:00");
+  teamNameCaption[0] = new Gui2Caption(windowManager, "game_scoreboard_team1name", xOffset[3] + content_xOffset, content_yOffset, 5, height_percent * 0.9f, match->GetTeam(0)->GetTeamData()->GetShortName());
+  teamNameCaption[1] = new Gui2Caption(windowManager, "game_scoreboard_team2name", xOffset[6] + content_xOffset, content_yOffset, 5, height_percent * 0.9f, match->GetTeam(1)->GetTeamData()->GetShortName());
+  goalCountCaption[0] = new Gui2Caption(windowManager, "game_scoreboard_team1goals", xOffset[4] + content_xOffset, content_yOffset, 3, height_percent * 0.9f, "0");
+  goalCountCaption[1] = new Gui2Caption(windowManager, "game_scoreboard_team2goals", xOffset[7] + content_xOffset, content_yOffset, 3, height_percent * 0.9f, "0");
 
   timeCaption->SetColor(textColor);
   timeCaption->SetOutlineColor(textOutlineColor);
@@ -70,10 +66,7 @@ Gui2ScoreBoard::Gui2ScoreBoard(Gui2WindowManager *windowManager, Match *match) :
   goalCountCaption[1]->SetColor(textColor);
   goalCountCaption[1]->SetOutlineColor(textOutlineColor);
 
-  tvLogo = new Gui2Image(windowManager, "game_scoreboard_tvlogo", width_percent - (height_percent * 2.0f) / windowManager->GetAspectRatio(), 0, (height_percent * 2.0f) / windowManager->GetAspectRatio(), height_percent);
-  this->AddView(tvLogo);
-  tvLogo->LoadImage("media/menu/tvlogo.png");
-  tvLogo->Show();
+  // tvLogo not needed for pes21 style
 
   this->AddView(timeCaption);
   timeCaption->Show();
@@ -98,12 +91,6 @@ Gui2ScoreBoard::Gui2ScoreBoard(Gui2WindowManager *windowManager, Match *match) :
   this->AddView(teamLogo[1]);
   teamLogo[1]->LoadImage(match->GetTeam(1)->GetTeamData()->GetLogoUrl());
   teamLogo[1]->Show();
-
-  // Add the pause button back to the top right since this is Android and we need a way to pause
-  Gui2Image* pauseIcon = new Gui2Image(windowManager, "game_scoreboard_pause", width_percent - (height_percent * 2.0f) / windowManager->GetAspectRatio() - 5.0f, 0, (height_percent * 1.5f) / windowManager->GetAspectRatio(), height_percent * 0.8f);
-  this->AddView(pauseIcon);
-  pauseIcon->LoadImage("media/menu/pause_icon.png");
-  pauseIcon->Show();
 
   this->Show();
 }

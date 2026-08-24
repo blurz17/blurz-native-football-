@@ -8,6 +8,7 @@
 #include "engine/framework/managers/environmentmanager.hpp"
 #include "engine/framework/managers/taskmanager.hpp"
 #include "engine/core/log.hpp"
+#include "engine/core/utils.hpp"
 
 namespace blunted {
 
@@ -164,6 +165,8 @@ namespace blunted {
 
     while (EnvironmentManager::GetInstance().GetQuit() == false || GetSequenceCount() > 0) {
 
+      EnvironmentManager::GetInstance().WaitIfPaused();
+
       if (EnvironmentManager::GetInstance().GetQuit()) {
 
         // let sequences finish
@@ -192,8 +195,17 @@ namespace blunted {
       }
 
       unsigned long time_ms = EnvironmentManager::GetInstance().GetTime_ms();
-      unsigned long timeDiff_ms = time_ms - previousTime_ms;
+      unsigned long timeDiff_ms = 0;
+      if (time_ms > previousTime_ms) {
+        timeDiff_ms = time_ms - previousTime_ms;
+      } else if (time_ms < previousTime_ms) {
+        Log(e_Error, "Scheduler", "Run", "WARNING: Time went backwards! time_ms=" + int_to_str(time_ms) + " prev=" + int_to_str(previousTime_ms));
+      }
       previousTime_ms = time_ms;
+      
+      if (timeDiff_ms > 2000) {
+        Log(e_Error, "Scheduler", "Run", "Massive time skip detected! timeDiff_ms=" + int_to_str(timeDiff_ms));
+      }
 
       cleanUpTimeOffset += timeDiff_ms;
 

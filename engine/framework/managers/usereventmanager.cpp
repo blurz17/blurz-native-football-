@@ -63,6 +63,27 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_pauseMatch(JNI
     }
 }
 
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_pauseEngine(JNIEnv* env, jclass cls, jboolean paused) {
+    auto* envMgr = EnvironmentManager::GetInstancePtr();
+    if (envMgr) {
+        envMgr->SetPaused(paused);
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_forceQuitEngine(JNIEnv* env, jclass cls) {
+    auto* envMgr = EnvironmentManager::GetInstancePtr();
+    if (envMgr) {
+        envMgr->SignalQuit();
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_triggerInGamePause(JNIEnv* env, jclass cls) {
+    auto* uem = UserEventManager::GetInstancePtr();
+    if (uem) {
+        uem->SetKeyboardState(SDLK_ESCAPE, true);
+    }
+}
+
 extern "C" void Android_SetPossession(bool attacking) {
     JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
     if (!env) return;

@@ -10,6 +10,10 @@
 #include "engine/core/types/singleton.hpp"
 #include "engine/core/types/lockable.hpp"
 
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
+
 namespace blunted {
 
   class EnvironmentManager : public Singleton<EnvironmentManager> {
@@ -24,10 +28,19 @@ namespace blunted {
       unsigned long GetTime_ms();
       void Pause_ms(int duration);
 
+      void SetPaused(bool paused);
+      bool IsPaused() const;
+      void WaitIfPaused();
+
     protected:
       Lockable<bool> quit;
       unsigned long startTime_ms;
       boost::posix_time::ptime startTime;
+
+      std::atomic<bool> isPaused{false};
+      std::mutex pauseMutex;
+      std::condition_variable pauseCondition;
+      boost::posix_time::ptime pauseStartTime;
 
   };
 

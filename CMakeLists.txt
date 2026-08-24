@@ -73,3 +73,43 @@ else()
     # PC/Windows/Mac Build
     add_executable(gameplayfootball ${ENGINE_SOURCES} ${GAME_SOURCES})
 endif()
+
+# Tests
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+list(REMOVE_ITEM ENGINE_SOURCES "${ENGINE_DIR}/main.cpp")
+
+file(GLOB_RECURSE TEST_SOURCES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/*.hpp"
+)
+list(REMOVE_ITEM TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test/test_main.cpp")
+
+if(TEST_SOURCES)
+    add_executable(run_tests ${TEST_SOURCES} ${ENGINE_SOURCES} ${GAME_SOURCES})
+    target_link_libraries(run_tests
+        gtest_main
+        SDL2
+        SDL2_image
+        SDL2_ttf
+        SDL2_gfx
+        ODE
+        sqlite3
+    )
+    if(NOT ANDROID)
+        include(GoogleTest)
+        gtest_discover_tests(run_tests)
+    endif()
+    
+    if(ANDROID)
+        target_compile_definitions(run_tests PRIVATE GPFB_ANDROID)
+        target_link_libraries(run_tests ${log-lib} ${android-lib} GL ${GLESv2-lib} ${GLESv3-lib} ${EGL-lib} dl)
+    endif()
+endif()

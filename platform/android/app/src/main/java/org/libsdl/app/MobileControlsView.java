@@ -134,7 +134,7 @@ public class MobileControlsView extends View {
         buttons.add(new ActionButton(dashX - w * 0.02f, dashY - spacingY - h * 0.02f, normalRad, "Shoot", "Clear", 2, 1, baseCol, borderCol));
         
         // TOP RIGHT CORNER: PAUSE
-        buttons.add(new ActionButton(w * 0.95f, h * 0.12f, normalRad * 0.7f, "Pause", "Pause", 7, 7, Color.argb(80, 50, 50, 50), borderCol));
+        buttons.add(new ActionButton(w * 0.95f, h * 0.06f, normalRad * 0.7f, "Pause", "Pause", 7, 7, Color.argb(80, 50, 50, 50), borderCol));
 
         textPaint.setTextSize(normalRad * 0.45f);
     }
@@ -204,18 +204,67 @@ public class MobileControlsView extends View {
             float scale = btn.isPressed ? 0.85f : 1.0f;
             float r = btn.radius * scale;
 
-            btnBgPaint.setShader(new RadialGradient(btn.cx, btn.cy, r, btn.colorBase, Color.argb(50, 20, 20, 20), Shader.TileMode.CLAMP));
-            canvas.drawCircle(btn.cx, btn.cy, r, btnBgPaint);
-
-            btnBorderPaint.setColor(btn.colorBorder);
-            btnBorderPaint.setAlpha(btn.isPressed ? 255 : 180);
-            canvas.drawCircle(btn.cx, btn.cy, r, btnBorderPaint);
-
-            // Draw Label
-            String label = isAttacking ? btn.labelOffense : btn.labelDefense;
-            textPaint.setTextSize(r * 0.35f);
-            textPaint.setColor(btn.isPressed ? Color.rgb(200, 200, 200) : Color.WHITE);
-            canvas.drawText(label, btn.cx, btn.cy + (r * 0.1f), textPaint);
+            if (btn.keycodeOffense == 7) {
+                // Custom drawing for the Pause button based on the reference image
+                float bw = r * 2.2f;
+                float bh = r * 1.5f;
+                float left = btn.cx - bw / 2f;
+                float top = btn.cy - bh / 2f;
+                float right = btn.cx + bw / 2f;
+                float bottom = btn.cy + bh / 2f;
+                
+                // Outer rounded rectangle (semi-transparent white)
+                Paint pauseBg = new Paint(Paint.ANTI_ALIAS_FLAG);
+                pauseBg.setColor(Color.argb(160, 240, 255, 240)); // Slightly greenish white tint like image
+                pauseBg.setStyle(Paint.Style.FILL);
+                if (btn.isPressed) pauseBg.setColor(Color.argb(200, 200, 255, 200));
+                float cornerRadius = r * 0.3f;
+                canvas.drawRoundRect(left, top, right, bottom, cornerRadius, cornerRadius, pauseBg);
+                
+                // Inner dark green circle
+                Paint pauseCircle = new Paint(Paint.ANTI_ALIAS_FLAG);
+                pauseCircle.setColor(Color.argb(150, 60, 90, 60)); // Dark green/grey tint
+                pauseCircle.setStyle(Paint.Style.FILL);
+                canvas.drawCircle(btn.cx, btn.cy, r * 0.7f, pauseCircle);
+                
+                // Two vertical black bars (Pause Icon)
+                Paint pauseBars = new Paint(Paint.ANTI_ALIAS_FLAG);
+                pauseBars.setColor(Color.argb(220, 20, 30, 20));
+                pauseBars.setStyle(Paint.Style.FILL);
+                
+                float barW = r * 0.15f;
+                float barH = r * 0.5f;
+                float barSpacing = r * 0.18f;
+                
+                float barTop = btn.cy - barH / 2f;
+                float barBottom = btn.cy + barH / 2f;
+                
+                // Left bar
+                canvas.drawRoundRect(btn.cx - barSpacing - barW, barTop, btn.cx - barSpacing, barBottom, barW/3, barW/3, pauseBars);
+                // Right bar
+                canvas.drawRoundRect(btn.cx + barSpacing, barTop, btn.cx + barSpacing + barW, barBottom, barW/3, barW/3, pauseBars);
+                
+                // Draw a very thin horizontal line passing across the button like in the image
+                Paint thinLine = new Paint(Paint.ANTI_ALIAS_FLAG);
+                thinLine.setColor(Color.argb(200, 255, 255, 255));
+                thinLine.setStrokeWidth(2f);
+                canvas.drawLine(left - r*0.5f, btn.cy, btn.cx - barSpacing - barW - 2f, btn.cy, thinLine);
+                canvas.drawLine(btn.cx + barSpacing + barW + 2f, btn.cy, right + r*0.5f, btn.cy, thinLine);
+                
+            } else {
+                btnBgPaint.setShader(new RadialGradient(btn.cx, btn.cy, r, btn.colorBase, Color.argb(50, 20, 20, 20), Shader.TileMode.CLAMP));
+                canvas.drawCircle(btn.cx, btn.cy, r, btnBgPaint);
+                
+                btnBorderPaint.setColor(btn.colorBorder);
+                btnBorderPaint.setAlpha(btn.isPressed ? 255 : 180);
+                canvas.drawCircle(btn.cx, btn.cy, r, btnBorderPaint);
+                
+                // Draw Label
+                String label = isAttacking ? btn.labelOffense : btn.labelDefense;
+                textPaint.setTextSize(r * 0.35f);
+                textPaint.setColor(btn.isPressed ? Color.rgb(200, 200, 200) : Color.WHITE);
+                canvas.drawText(label, btn.cx, btn.cy + (r * 0.1f), textPaint);
+            }
         }
     }
 
@@ -317,7 +366,11 @@ public class MobileControlsView extends View {
                         if (dx * dx + dy * dy <= btn.radius * btn.radius * 2.5f && btn.pointerId == -1) {
                             btn.pointerId = pointerId;
                             btn.isPressed = true;
-                            SDLActivity.setVirtualJoystickButton(isAttacking ? btn.keycodeOffense : btn.keycodeDefense, true);
+                            if (btn.keycodeOffense == 7) {
+                                SDLActivity.triggerInGamePause();
+                            } else {
+                                SDLActivity.setVirtualJoystickButton(isAttacking ? btn.keycodeOffense : btn.keycodeDefense, true);
+                            }
                             break;
                         }
                     }
@@ -351,15 +404,24 @@ public class MobileControlsView extends View {
                             btn.pointerId = -1;
                             btn.isPressed = false;
                             final int keycode = isAttacking ? btn.keycodeOffense : btn.keycodeDefense;
-                            postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    SDLActivity.setVirtualJoystickButton(keycode, false);
-                                    // Also clear both just in case state changed while held
-                                    SDLActivity.setVirtualJoystickButton(btn.keycodeOffense, false);
-                                    SDLActivity.setVirtualJoystickButton(btn.keycodeDefense, false);
-                                }
-                            }, 50);
+                            if (btn.keycodeOffense == 7) {
+                                postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        SDLActivity.setVirtualKey(27, false);
+                                    }
+                                }, 200);
+                            } else {
+                                postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        SDLActivity.setVirtualJoystickButton(keycode, false);
+                                        // Also clear both just in case state changed while held
+                                        SDLActivity.setVirtualJoystickButton(btn.keycodeOffense, false);
+                                        SDLActivity.setVirtualJoystickButton(btn.keycodeDefense, false);
+                                    }
+                                }, 50);
+                            }
                         }
                     }
                 }

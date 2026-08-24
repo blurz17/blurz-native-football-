@@ -11,7 +11,8 @@ echo Switching to non-spaced directory...
 cd /d "E:\MY-PROJECTS\android_native_football\platform\android"
 
 echo Starting Android Native Build (Release)...
-call gradlew.bat assembleRelease
+call gradlew.bat --stop
+call gradlew.bat clean assembleRelease
 
 if %errorlevel% neq 0 (
     echo ------------------------------------------

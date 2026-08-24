@@ -336,6 +336,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     public static native void setVirtualJoystickAxis(int axis, float value);
     public static native void setVirtualJoystickButton(int button, boolean state);
     public static native void pauseMatch();
+    public static native void pauseEngine(boolean paused);
+    public static native void forceQuitEngine();
+    public static native void triggerInGamePause();
 
     public static void initialize() {
         // The static nature of the singleton and Android quirkyness force us to initialize everything here
@@ -554,7 +557,14 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             Log.e(TAG, "Failed to pause match", e);
         }
 
-        // 2. Send ESC with delayed release so the engine actually detects it
+        // 2. Suspend the C++ engine scheduler completely
+        try {
+            SDLActivity.pauseEngine(true);
+        } catch (Throwable e) {
+            Log.e(TAG, "Failed to pause engine scheduler", e);
+        }
+
+        // 3. Send ESC with delayed release so the engine actually detects it
         try {
             SDLActivity.setVirtualKey(27, true); // SDLK_ESCAPE
             // Don't release immediately — the engine needs time to poll it
@@ -566,9 +576,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             mHIDDeviceManager.setFrozen(true);
         }
 
-        // 3. ALWAYS pause the native thread — do NOT gate on mHasMultiWindow.
-        // On API 24+, mHasMultiWindow=true caused this to be skipped, leaving
-        // the engine running against a destroyed surface for hundreds of ms.
+        // 4. ALWAYS pause the native thread (blocks OpenGLRenderer3D via Android_PauseSem)
         pauseNativeThread();
     }
 
@@ -588,16 +596,29 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             mHIDDeviceManager.setFrozen(false);
         }
 
-        // ALWAYS resume the native thread
+        // 1. Resume the native thread (unblocks Android_ResumeSem)
         resumeNativeThread();
+        
+        // 2. Wake up the engine scheduler
+        try {
+            SDLActivity.pauseEngine(false);
+        } catch (Throwable e) {
+            Log.e(TAG, "Failed to resume engine scheduler", e);
+        }
     }
-
 
     @Override
     protected void onStop() {
         Log.v(TAG, "onStop()");
         super.onStop();
         // Native thread pause is now handled unconditionally in onPause()
+        
+        // Defensive: ensure engine is paused even if onPause was somehow incomplete
+        try {
+            SDLActivity.pauseEngine(true);
+        } catch (Throwable e) {
+            Log.e(TAG, "Failed to ensure engine pause in onStop", e);
+        }
     }
 
     @Override
@@ -726,14 +747,26 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
            return;
         }
 
-        if (SDLActivity.mSDLThread != null) {
+        // 1. Unblock the event pump if paused, so it can read SDL_QUIT!
+        resumeNativeThread();
+        
+        // 2. Direct signal to the Scheduler thread bypassing SDL events
+        try {
+            SDLActivity.forceQuitEngine();
+        } catch (Throwable e) {
+            Log.e(TAG, "Failed to force quit engine", e);
+        }
 
-            // Send Quit event to "SDLThread" thread
+        if (SDLActivity.mSDLThread != null) {
+            // Send Quit event to "SDLThread" thread (Graphics Thread polling events)
             SDLActivity.nativeSendQuit();
 
             // Wait for "SDLThread" thread to end
             try {
-                SDLActivity.mSDLThread.join();
+                SDLActivity.mSDLThread.join(3000); // 3 second timeout
+                if (SDLActivity.mSDLThread.isAlive()) {
+                    Log.e(TAG, "SDLThread did not exit within timeout!");
+                }
             } catch(Exception e) {
                 Log.v(TAG, "Problem stopping SDLThread: " + e);
             }
