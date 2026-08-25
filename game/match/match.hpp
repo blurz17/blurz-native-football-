@@ -131,7 +131,7 @@ class Match {
 
     void ResetSituation(const Vector3 &focusPos);
 
-    void Pause(bool doPause) { pause = doPause; }
+    void Pause(bool doPause);
     bool GetPause() { return pause; }
     void SetMatchPhase(e_MatchPhase newMatchPhase);
     e_MatchPhase GetMatchPhase() const { return matchPhase; }

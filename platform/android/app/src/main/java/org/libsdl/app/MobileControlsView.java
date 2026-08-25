@@ -31,6 +31,8 @@ public class MobileControlsView extends View {
     private int joyPointerId = -1;
     private boolean isJoyFloating = false;
     private float defaultJoyBaseX, defaultJoyBaseY;
+    
+    private int pressedMenuIndex = -1;
 
     // Active keys from joystick
     private boolean joyUp, joyDown, joyLeft, joyRight;
@@ -144,38 +146,41 @@ public class MobileControlsView extends View {
         super.onDraw(canvas);
 
         if (!isMatchMode) {
-            // Draw Menu D-PAD
-            float dpadX = getWidth() * 0.2f;
-            float dpadY = getHeight() * 0.7f;
-            float dpadRad = getHeight() * 0.25f;
+            // FULL TOUCH PES 21 STYLE PAUSE MENU
+            Paint overlay = new Paint(Paint.ANTI_ALIAS_FLAG);
+            overlay.setColor(Color.argb(190, 10, 15, 20));
+            canvas.drawRect(0, 0, getWidth(), getHeight(), overlay);
             
-            bgPaint.setShader(new RadialGradient(dpadX, dpadY, dpadRad, Color.argb(80, 20, 20, 20), Color.argb(20, 20, 20, 20), Shader.TileMode.CLAMP));
-            canvas.drawCircle(dpadX, dpadY, dpadRad, bgPaint);
+            textPaint.setColor(Color.WHITE);
+            textPaint.setTextSize(getHeight() * 0.1f);
+            textPaint.setTextAlign(Paint.Align.LEFT);
+            canvas.drawText("MATCH PAUSED", getWidth() * 0.12f, getHeight() * 0.2f, textPaint);
             
-            // Draw D-PAD Arrows/Labels
-            textPaint.setTextSize(dpadRad * 0.2f);
-            textPaint.setColor(Color.argb(150, 255, 255, 255));
-            canvas.drawText("UP", dpadX, dpadY - dpadRad * 0.6f, textPaint);
-            canvas.drawText("DOWN", dpadX, dpadY + dpadRad * 0.8f, textPaint);
-            canvas.drawText("LEFT", dpadX - dpadRad * 0.6f, dpadY + dpadRad * 0.1f, textPaint);
-            canvas.drawText("RIGHT", dpadX + dpadRad * 0.6f, dpadY + dpadRad * 0.1f, textPaint);
-
-            // Draw Menu Buttons (Enter / Back)
-            float btnBaseX = getWidth() * 0.85f;
-            float btnBaseY = getHeight() * 0.75f;
-            float btnRad = getHeight() * 0.08f;
-            float btnSpacing = getHeight() * 0.16f;
-
-            // ENTER button (bottom)
-            btnBgPaint.setShader(new RadialGradient(btnBaseX, btnBaseY + btnSpacing * 0.5f, btnRad, Color.argb(100, 0, 150, 50), Color.argb(50, 20, 20, 20), Shader.TileMode.CLAMP));
-            canvas.drawCircle(btnBaseX, btnBaseY + btnSpacing * 0.5f, btnRad, btnBgPaint);
-            canvas.drawText("ENTER", btnBaseX, btnBaseY + btnSpacing * 0.5f + dpadRad * 0.05f, textPaint);
-
-            // ESCAPE button (top)
-            btnBgPaint.setShader(new RadialGradient(btnBaseX, btnBaseY - btnSpacing * 0.8f, btnRad, Color.argb(100, 200, 20, 20), Color.argb(50, 20, 20, 20), Shader.TileMode.CLAMP));
-            canvas.drawCircle(btnBaseX, btnBaseY - btnSpacing * 0.8f, btnRad, btnBgPaint);
-            canvas.drawText("BACK", btnBaseX, btnBaseY - btnSpacing * 0.8f + dpadRad * 0.05f, textPaint);
-
+            float btnW = getWidth() * 0.4f;
+            float btnH = getHeight() * 0.11f;
+            float startX = getWidth() * 0.55f;
+            float startY = getHeight() * 0.12f;
+            float spacing = getHeight() * 0.13f;
+            
+            String[] menuItems = {"RESUME MATCH", "SQUAD MANAGEMENT", "MATCH SETTINGS", "CAMERA SETTINGS", "COMMAND LIST", "FORFEIT MATCH"};
+            
+            for (int i = 0; i < menuItems.length; i++) {
+                float y = startY + (i * spacing);
+                
+                Paint btnBg = new Paint(Paint.ANTI_ALIAS_FLAG);
+                btnBg.setColor(Color.argb(pressedMenuIndex == i ? 180 : 80, 40, 80, 140));
+                canvas.drawRect(startX, y, startX + btnW, y + btnH, btnBg);
+                
+                Paint btnBorder = new Paint(Paint.ANTI_ALIAS_FLAG);
+                btnBorder.setStyle(Paint.Style.STROKE);
+                btnBorder.setStrokeWidth(3f);
+                btnBorder.setColor(Color.argb(200, 100, 150, 255));
+                canvas.drawRect(startX, y, startX + btnW, y + btnH, btnBorder);
+                
+                textPaint.setTextSize(btnH * 0.45f);
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                canvas.drawText(menuItems[i], startX + btnW / 2, y + btnH * 0.65f, textPaint);
+            }
             return;
         }
 
@@ -293,55 +298,79 @@ public class MobileControlsView extends View {
         float y = event.getY(pointerIndex);
 
         if (!isMatchMode) {
-            // MENU MODE (D-PAD + ENTER/BACK)
+            float btnW = getWidth() * 0.4f;
+            float btnH = getHeight() * 0.11f;
+            float startX = getWidth() * 0.55f;
+            float startY = getHeight() * 0.12f;
+            float spacing = getHeight() * 0.13f;
+
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
                 case MotionEvent.ACTION_POINTER_DOWN:
-                    // D-PAD Left (Up, Down, Left, Right)
-                    float dpadX = getWidth() * 0.2f;
-                    float dpadY = getHeight() * 0.7f;
-                    float dpadRad = getHeight() * 0.25f;
-                    if (x < getWidth() * 0.5f) {
-                        joyPointerId = pointerId;
-                        updateMenuDpad(x - dpadX, y - dpadY, dpadRad);
-                    } else {
-                        // Buttons Right (Enter, Esc)
-                        float btnBaseX = getWidth() * 0.85f;
-                        float btnBaseY = getHeight() * 0.75f;
-                        float btnRad = getHeight() * 0.08f;
-                        float btnSpacing = getHeight() * 0.16f;
-                        
-                        // ENTER (Bottom)
-                        if (Math.hypot(x - btnBaseX, y - (btnBaseY + btnSpacing * 0.5f)) < btnRad * 2.5f) {
-                            SDLActivity.setVirtualJoystickButton(0, true); // Button A = Activate
-                        }
-                        // ESCAPE (Top)
-                        else if (Math.hypot(x - btnBaseX, y - (btnBaseY - btnSpacing * 0.8f)) < btnRad * 2.5f) {
-                            SDLActivity.setVirtualJoystickButton(1, true); // Button B = Escape
-                        }
-                    }
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    for (int i = 0; i < event.getPointerCount(); i++) {
-                        int pId = event.getPointerId(i);
-                        if (pId == joyPointerId) {
-                            updateMenuDpad(event.getX(i) - getWidth() * 0.2f, event.getY(i) - getHeight() * 0.7f, getHeight() * 0.25f);
+                    for (int i = 0; i < 6; i++) {
+                        float itemY = startY + (i * spacing);
+                        if (x >= startX && x <= startX + btnW && y >= itemY && y <= itemY + btnH) {
+                            pressedMenuIndex = i;
+                            invalidate();
+                            return true;
                         }
                     }
                     break;
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_POINTER_UP:
-                case MotionEvent.ACTION_CANCEL:
-                    if (pointerId == joyPointerId) {
-                        joyPointerId = -1;
-                        updateMenuDpad(0, 0, 0);
-                    } else {
-                        SDLActivity.setVirtualJoystickButton(0, false);
-                        SDLActivity.setVirtualJoystickButton(1, false);
+                    if (pressedMenuIndex != -1) {
+                        final int index = pressedMenuIndex;
+                        pressedMenuIndex = -1;
+                        invalidate();
+                        
+                        if (index == 0) {
+                            // Resume Match
+                            SDLActivity.setVirtualKey(27, true);
+                            postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    SDLActivity.setVirtualKey(27, false);
+                                }
+                            }, 50);
+                        } else if (index == 1) {
+                            // Squad Management
+                            getContext().startActivity(new android.content.Intent(getContext(), org.libsdl.app.ui.GamePlanActivity.class));
+                        } else if (index == 2) {
+                            // Match Settings
+                            getContext().startActivity(new android.content.Intent(getContext(), org.libsdl.app.ui.SettingsActivity.class));
+                        } else if (index == 3) {
+                            // Camera Settings
+                            getContext().startActivity(new android.content.Intent(getContext(), org.libsdl.app.ui.CameraSettingsActivity.class));
+                        } else if (index == 4) {
+                            // Command List
+                            getContext().startActivity(new android.content.Intent(getContext(), org.libsdl.app.ui.CommandListActivity.class));
+                        } else if (index == 5) {
+                            // Forfeit Match Dialog
+                            new android.app.AlertDialog.Builder(getContext())
+                                .setTitle("FORFEIT MATCH")
+                                .setMessage("Are you sure you want to forfeit this match?")
+                                .setPositiveButton("YES, FORFEIT", new android.content.DialogInterface.OnClickListener() {
+                                    public void onClick(android.content.DialogInterface dialog, int which) {
+                                        SDLActivity.setVirtualKey(53, true); // SDLK_5
+                                        postDelayed(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                SDLActivity.setVirtualKey(53, false);
+                                            }
+                                        }, 50);
+                                    }
+                                })
+                                .setNegativeButton("CANCEL", null)
+                                .show();
+                        }
+                        return true;
                     }
                     break;
+                case MotionEvent.ACTION_CANCEL:
+                    pressedMenuIndex = -1;
+                    invalidate();
+                    break;
             }
-            invalidate();
             return true;
         }
 
@@ -367,7 +396,7 @@ public class MobileControlsView extends View {
                             btn.pointerId = pointerId;
                             btn.isPressed = true;
                             if (btn.keycodeOffense == 7) {
-                                SDLActivity.triggerInGamePause();
+                                SDLActivity.setVirtualKey(27, true);
                             } else {
                                 SDLActivity.setVirtualJoystickButton(isAttacking ? btn.keycodeOffense : btn.keycodeDefense, true);
                             }
@@ -433,20 +462,7 @@ public class MobileControlsView extends View {
     }
     
     private void updateMenuDpad(float dx, float dy, float maxDist) {
-        if (maxDist > 0 && Math.hypot(dx, dy) > maxDist * 0.2f) {
-            float normX = dx / maxDist;
-            float normY = dy / maxDist;
-            
-            // Clamp to [-1.0, 1.0] to prevent Sint16 overflow in SDL
-            normX = Math.max(-1.0f, Math.min(1.0f, normX));
-            normY = Math.max(-1.0f, Math.min(1.0f, normY));
-            
-            SDLActivity.setVirtualJoystickAxis(0, normX);
-            SDLActivity.setVirtualJoystickAxis(1, normY);
-        } else {
-            SDLActivity.setVirtualJoystickAxis(0, 0f);
-            SDLActivity.setVirtualJoystickAxis(1, 0f);
-        }
+        // Obsolete, removed.
     }
 
     private void updateJoystick(float x, float y) {

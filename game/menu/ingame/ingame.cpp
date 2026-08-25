@@ -24,73 +24,60 @@ IngamePage::IngamePage(Gui2WindowManager *windowManager, const Gui2PageData &pag
 
   // Full screen semi-transparent overlay
   Gui2Image *overlayBg = new Gui2Image(windowManager, "image_ingame_overlay", 0, 0, 100, 100);
-  overlayBg->LoadImage("media/menu/backgrounds/black.png");
-  // Assuming Gui2View has some alpha/color setting; for now it just draws the image.
-  // Actually, we can rely on the image's own alpha or just leave it.
+  overlayBg->LoadImage("media/menu/backgrounds/black.png"); // Ensure this is a semi-transparent image
   this->AddView(overlayBg);
   overlayBg->Show();
 
-  // Modal Background
-  float modalW = 40;
-  float modalH = 65;
-  float modalX = 50 - modalW/2;
-  float modalY = 50 - modalH/2;
-  Gui2Image *modalBg = new Gui2Image(windowManager, "image_ingame_modalbg", modalX, modalY, modalW, modalH);
-  modalBg->LoadImage("media/menu/scoreboard_bg.png"); // Re-use modern bg
-  this->AddView(modalBg);
-  modalBg->Show();
-
   // Top Section: Team Logos, Names, and Score
   // Team 1
-  Gui2Image *t1Logo = new Gui2Image(windowManager, "pause_t1_logo", 20, 5, 12, 18);
+  Gui2Image *t1Logo = new Gui2Image(windowManager, "pause_t1_logo", 25, 5, 10, 15);
   t1Logo->LoadImage(match->GetTeam(0)->GetTeamData()->GetLogoUrl());
   this->AddView(t1Logo);
   t1Logo->Show();
 
-  // Menu Title
-  Gui2Caption *title = new Gui2Caption(windowManager, "caption_ingame_title", modalX, modalY + 2, modalW, 5, "PAUSE MENU");
-  title->SetColor(Vector3(20, 230, 160)); // FC Mobile Neon Teal
-  this->AddView(title);
-  title->Show();
-
-  Gui2Caption *t1Name = new Gui2Caption(windowManager, "pause_t1_name", 10, 24, 32, 4, match->GetTeam(0)->GetTeamData()->GetName());
+  Gui2Caption *t1Name = new Gui2Caption(windowManager, "pause_t1_name", 15, 22, 30, 4, match->GetTeam(0)->GetTeamData()->GetName());
   t1Name->SetColor(255);
   this->AddView(t1Name);
   t1Name->Show();
 
   // Score
   std::string scoreStr = int_to_str(match->GetMatchData()->GetGoalCount(0)) + " - " + int_to_str(match->GetMatchData()->GetGoalCount(1));
-  Gui2Caption *scoreCap = new Gui2Caption(windowManager, "pause_score", 40, 8, 20, 8, scoreStr);
+  Gui2Caption *scoreCap = new Gui2Caption(windowManager, "pause_score", 40, 7, 20, 10, scoreStr);
   scoreCap->SetColor(255);
   this->AddView(scoreCap);
   scoreCap->Show();
 
   // Team 2
-  Gui2Image *t2Logo = new Gui2Image(windowManager, "pause_t2_logo", 68, 5, 12, 18);
+  Gui2Image *t2Logo = new Gui2Image(windowManager, "pause_t2_logo", 65, 5, 10, 15);
   t2Logo->LoadImage(match->GetTeam(1)->GetTeamData()->GetLogoUrl());
   this->AddView(t2Logo);
   t2Logo->Show();
 
-  Gui2Caption *t2Name = new Gui2Caption(windowManager, "pause_t2_name", 58, 24, 32, 4, match->GetTeam(1)->GetTeamData()->GetName());
+  Gui2Caption *t2Name = new Gui2Caption(windowManager, "pause_t2_name", 55, 22, 30, 4, match->GetTeam(1)->GetTeamData()->GetName());
   t2Name->SetColor(255);
   this->AddView(t2Name);
   t2Name->Show();
 
-  // Buttons Grid
-  float btnW = 26;
-  float btnH = 18;
-  float startX = 8;
-  
-  Gui2Button *buttonGamePlan = new Gui2Button(windowManager, "button_gameplan", 0, 0, btnW, btnH, "Squad Management");
-  Gui2Button *buttonControllerSelect = new Gui2Button(windowManager, "button_controllerselect", 0, 0, btnW, btnH, "Controls List");
-  Gui2Button *buttonSystemSettings = new Gui2Button(windowManager, "button_systemsettings", 0, 0, btnW, btnH, "General Settings");
-  Gui2Button *buttonCameraSettings = new Gui2Button(windowManager, "button_camerasettings", 0, 0, btnW, btnH, "Camera Settings");
-  Gui2Button *buttonVisualOptions = new Gui2Button(windowManager, "button_visualoptions", 0, 0, btnW, btnH, "Sound Settings");
-  Gui2Button *buttonPreQuit = new Gui2Button(windowManager, "button_quit", 0, 0, btnW, btnH, "Forfeit Match");
-  Gui2Button *buttonReplay = new Gui2Button(windowManager, "button_replay", 0, 0, btnW, btnH, "REPLAY");
+  // PES21 Mobile Style Layout
+  // Left side: Match Info (already set up above, maybe adjust positions)
+  // Right side: Vertical stack of wide buttons
 
-  // Back Button
-  Gui2Button *buttonResume = new Gui2Button(windowManager, "button_resume", startX, 85, btnW*0.6f, btnH*0.4f, "< Back");
+  float btnX = 60.0f; // Right side
+  float btnW = 35.0f;
+  float btnH = 10.0f;
+  float spacing = 12.0f;
+  float startY = 15.0f;
+  
+  Gui2Button *buttonResume = new Gui2Button(windowManager, "button_resume", btnX, startY, btnW, btnH, "Resume Match");
+  Gui2Button *buttonGamePlan = new Gui2Button(windowManager, "button_gameplan", btnX, startY + spacing * 1, btnW, btnH, "Squad Management");
+  Gui2Button *buttonSystemSettings = new Gui2Button(windowManager, "button_systemsettings", btnX, startY + spacing * 2, btnW, btnH, "Match Settings");
+  Gui2Button *buttonCameraSettings = new Gui2Button(windowManager, "button_camerasettings", btnX, startY + spacing * 3, btnW, btnH, "Camera Settings");
+  Gui2Button *buttonControllerSelect = new Gui2Button(windowManager, "button_controllerselect", btnX, startY + spacing * 4, btnW, btnH, "Command List");
+  Gui2Button *buttonPreQuit = new Gui2Button(windowManager, "button_quit", btnX, startY + spacing * 5, btnW, btnH, "Forfeit Match");
+
+  // Visual options isn't usually prominent on mobile pause, we can hide it or put it in Match Settings
+  // We'll leave it out of the main stack to keep it clean, or we can add it:
+  Gui2Button *buttonVisualOptions = new Gui2Button(windowManager, "button_visualoptions", btnX, startY + spacing * 6, btnW, btnH, "Sound Settings");
 
   // Wire signals
   buttonResume->sig_OnClick.connect(boost::bind(&IngamePage::GoResume, this));
@@ -99,32 +86,15 @@ IngamePage::IngamePage(Gui2WindowManager *windowManager, const Gui2PageData &pag
   buttonCameraSettings->sig_OnClick.connect(boost::bind(&IngamePage::GoCameraSettings, this));
   buttonVisualOptions->sig_OnClick.connect(boost::bind(&IngamePage::GoVisualOptions, this));
   buttonSystemSettings->sig_OnClick.connect(boost::bind(&IngamePage::GoSystemSettings, this));
-  buttonReplay->sig_OnClick.connect(boost::bind(&IngamePage::GoReplay, this));
   buttonPreQuit->sig_OnClick.connect(boost::bind(&IngamePage::GoPreQuit, this));
 
-  Gui2Grid *grid = new Gui2Grid(windowManager, "grid", modalX + (modalW - btnW)/2, modalY + 10, btnW, modalH - 12);
-  
+  this->AddView(buttonResume); buttonResume->Show();
   this->AddView(buttonGamePlan); buttonGamePlan->Show();
-  this->AddView(buttonControllerSelect); buttonControllerSelect->Show();
   this->AddView(buttonSystemSettings); buttonSystemSettings->Show();
   this->AddView(buttonCameraSettings); buttonCameraSettings->Show();
+  this->AddView(buttonControllerSelect); buttonControllerSelect->Show();
   this->AddView(buttonVisualOptions); buttonVisualOptions->Show();
   this->AddView(buttonPreQuit); buttonPreQuit->Show();
-  this->AddView(buttonReplay); buttonReplay->Show();
-  this->AddView(buttonResume); buttonResume->Show();
-
-  grid->AddView(buttonResume, 0, 0);
-  grid->AddView(buttonGamePlan, 1, 0);
-  grid->AddView(buttonControllerSelect, 2, 0);
-  grid->AddView(buttonCameraSettings, 3, 0);
-  grid->AddView(buttonVisualOptions, 4, 0);
-  grid->AddView(buttonSystemSettings, 5, 0);
-  grid->AddView(buttonReplay, 6, 0);
-  grid->AddView(buttonPreQuit, 7, 0);
-  grid->UpdateLayout(0.5);
-  
-  this->AddView(grid);
-  grid->Show();
 
   buttonResume->SetFocus();
   this->Show();

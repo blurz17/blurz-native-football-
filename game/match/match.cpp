@@ -463,6 +463,23 @@ Match::Match(MatchData *matchData, const std::vector<IHIDevice*> &controllers) :
 Match::~Match() {
 }
 
+void Match::Pause(bool doPause) {
+  pause = doPause;
+#ifdef __ANDROID__
+  JNIEnv *env = (JNIEnv *)SDL_AndroidGetJNIEnv();
+  jobject activity = (jobject)SDL_AndroidGetActivity();
+  if (env && activity) {
+      jclass cls = env->GetObjectClass(activity);
+      jmethodID mid = env->GetMethodID(cls, "setMatchMode", "(Z)V");
+      if (mid) {
+          env->CallVoidMethod(activity, mid, !pause);
+      }
+      env->DeleteLocalRef(cls);
+      env->DeleteLocalRef(activity);
+  }
+#endif
+}
+
 void Match::Exit() {
   if (Verbose()) printf("exiting match.. ");
 

@@ -176,6 +176,8 @@ void MenuTask::ProcessPhase() {
       MatchData *matchData = new MatchData(GetTeamID(0), GetTeamID(1));
       SetMatchData(matchData);
       
+      windowManager->GetPageFactory()->CreatePage((int)e_PageID_Game, properties, 0);
+      
       menuAction = e_MenuAction_Game; // Instantly start game next frame
     }
 #else

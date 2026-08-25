@@ -18,6 +18,7 @@ using namespace blunted;
 
 GamePage::GamePage(Gui2WindowManager *windowManager, const Gui2PageData &pageData) : Gui2Page(windowManager, pageData), match(0) {
 
+#ifndef __ANDROID__
   Gui2Caption *betaSign = new Gui2Caption(windowManager, "caption_betasign", 0, 0, 0, 2, "gameplay football public beta 2 v0.2");
   betaSign->SetColor(Vector3(180, 180, 180));
   betaSign->SetTransparency(0.3f);
@@ -25,6 +26,7 @@ GamePage::GamePage(Gui2WindowManager *windowManager, const Gui2PageData &pageDat
   float w = betaSign->GetTextWidthPercent();
   betaSign->SetPosition(50 - w * 0.5f, 97.0f);
   betaSign->Show();
+#endif
 
   this->Show();
 
@@ -143,9 +145,41 @@ void GamePage::ProcessKeyboardEvent(KeyboardEvent *event) {
 
     if (Verbose()) printf ("team belonging to this controller seems to be %i\n", teamID);
 
+    if (Verbose()) printf ("team belonging to this controller seems to be %i\n", teamID);
+
+    if (match) {
+      match->Pause(!match->GetPause());
+    }
+    return;
+  }
+
+  // Virtual touch menu commands from MobileControlsView
+  if (event->GetKeyOnce(SDLK_1)) {
     Properties properties;
-    properties.Set("teamID", teamID);
-    CreatePage((int)e_PageID_Ingame, properties);
+    properties.Set("teamID", 0); // Need team ID, we'll assume 0 for now
+    CreatePage((int)e_PageID_GamePlan, properties);
+    return;
+  }
+  if (event->GetKeyOnce(SDLK_2)) {
+    CreatePage((int)e_PageID_Settings);
+    return;
+  }
+  if (event->GetKeyOnce(SDLK_3)) {
+    CreatePage((int)e_PageID_Camera);
+    return;
+  }
+  if (event->GetKeyOnce(SDLK_4)) {
+    Properties properties;
+    properties.SetBool("isInGame", true);
+    CreatePage((int)e_PageID_ControllerSelect, properties);
+    return;
+  }
+  if (event->GetKeyOnce(SDLK_5)) {
+    GetMenuTask()->SetMenuAction(e_MenuAction_Menu);
+    if (match) {
+        match->Pause(false);
+        match->Exit();
+    }
     return;
   }
 
@@ -181,9 +215,9 @@ void GamePage::ProcessJoystickEvent(JoystickEvent *event) {
 
         if (Verbose()) printf ("team belonging to this controller seems to be %i\n", teamID);
 
-        Properties properties;
-        properties.Set("teamID", teamID);
-        CreatePage((int)e_PageID_Ingame, properties);
+        if (match) {
+          match->Pause(!match->GetPause());
+        }
         return;
       }
 

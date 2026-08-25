@@ -117,6 +117,21 @@
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
             android:exported="false" />
 
+        <activity android:name=".ui.CameraSettingsActivity"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:exported="false" />
+
+        <activity android:name=".ui.CommandListActivity"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:exported="false" />
+
+        <activity android:name=".ui.GamePlanActivity"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:exported="false" />
+
         <activity android:name="SDLActivity"
             android:label="@string/app_name"
             android:alwaysRetainTaskState="true"
