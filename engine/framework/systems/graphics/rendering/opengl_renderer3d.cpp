@@ -1508,19 +1508,11 @@ struct GLfunctions {
     switch (pixelFormat) {
 
       case e_InternalPixelFormat_RGB8:      format = GL_RGB8; break;
-#ifdef __ANDROID__
-      case e_InternalPixelFormat_SRGB8:     format = GL_RGB8; break;
-#else
       case e_InternalPixelFormat_SRGB8:     format = GL_SRGB8; break;
-#endif
       case e_InternalPixelFormat_RGB16:     format = GL_RGB16; break;
       case e_InternalPixelFormat_RGBA4:     format = GL_RGBA4; break;
       case e_InternalPixelFormat_RGBA8:     format = GL_RGBA8; break;
-#ifdef __ANDROID__
-      case e_InternalPixelFormat_SRGBA8:    format = GL_RGBA8; break;
-#else
       case e_InternalPixelFormat_SRGBA8:    format = GL_SRGB8_ALPHA8; break;
-#endif
       case e_InternalPixelFormat_RGBA16:    format = GL_RGBA16; break;
       case e_InternalPixelFormat_RGBA16F:   format = GL_RGBA16F; break;
       case e_InternalPixelFormat_RGBA32F:   format = GL_RGBA32F; break;

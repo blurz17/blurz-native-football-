@@ -260,6 +260,7 @@ public class MatchOptionsActivity extends Activity {
             intent.putExtra("matchDuration", String.valueOf(duration));
             intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
             startActivity(intent);
+            finish();
         });
 
         LinearLayout.LayoutParams startParams = new LinearLayout.LayoutParams(

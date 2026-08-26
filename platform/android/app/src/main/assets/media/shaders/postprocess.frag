@@ -61,22 +61,79 @@ void main(void) {
   texCoord.y /= contextHeight;
 
   vec4 accum = texture(map_accumulation, texCoord);
-  vec3 fragColor = accum.rgb;
+  vec3 base = accum.rgb;
+
+  vec4 modifier = texture(map_modifier, texCoord);
+
+  // edge blur
+  if (modifier.r > 0.0) {
+    vec3 smoothPixel = vec3(0.0, 0.0, 0.0);
+    smoothPixel += texture(map_accumulation, texCoord + vec2(0.0, 1.0 / contextHeight)).xyz;
+    smoothPixel += texture(map_accumulation, texCoord + vec2(1.0 / contextWidth, 0.0)).xyz;
+    smoothPixel += texture(map_accumulation, texCoord + vec2(0.0, -1.0 / contextHeight)).xyz;
+    smoothPixel += texture(map_accumulation, texCoord + vec2(-1.0 / contextWidth, 0.0)).xyz;
+    smoothPixel *= 0.25;
+    base = base * (1.0 - modifier.r) + smoothPixel * modifier.r;
+    //base = base * (1.0 - modifier.r) + vec3(0, 0, 0) * modifier.r * 0.5 + smoothPixel * modifier.r * 0.5; // cartooney effect
+    //base = base * (1.0 - modifier.r) + vec3(0, 0, 0) * modifier.r * 0.8 + smoothPixel * modifier.r * 0.2; // cartooney effect
+  }
+
+
+  // SSAO blur
+
+  int SSAO_blurSize = 4;
+
+  float SSAO = 0.0; // texture(map_modifier, texCoord).g;
+
+  vec2 texelSize = 1.0 / vec2(textureSize(map_modifier, 0));
+  vec2 hlim = vec2(float(-SSAO_blurSize) * 0.5 + 0.5);
+  for (int x = 0; x < SSAO_blurSize; ++x) {
+    for (int y = 0; y < SSAO_blurSize; ++y) {
+      vec2 offset = (hlim + vec2(float(x), float(y))) * texelSize;
+      SSAO += texture(map_modifier, texCoord + offset).g;
+    }
+  }
+  SSAO = SSAO / float(SSAO_blurSize * SSAO_blurSize);
+  //SSAO = clamp(SSAO * 3.0 - 2.0, 0.0, 1.0);
+
+  //vec3 fragColor = vec3(SSAO);
+  vec3 fragColor = base * SSAO;
+
+
+  // fog
 
   float depth = texture(map_depth, texCoord).x;
+
+  // convert from non-linear to linear
   float fragDepth = cameraClip.y / (depth - cameraClip.x);
+
+//  vec3 fogColor = vec3(0.84, 0.98, 1.0);
+//  vec3 fogColor = vec3(1.0, 0.9, 0.86);
+//  vec3 fogColor = vec3(0.85, 0.65, 1.0);
   vec3 fogColor = vec3(0.85, 0.85, 0.9);
+
   float fogFactor = clamp(fragDepth * 0.01 * (1.0 - fogScale) - 0.16 * fogScale, 0.0, 0.25);
 
-  fragColor = mix(fragColor, fogColor, fogFactor);
+  fragColor = fragColor * (1.0 - fogFactor) + fogColor * fogFactor;
   if (depth > 0.999) fragColor = fogColor; // fill 'background'/sky
 
   float brightness = 1.0;
-  float contrastBias = 0.3;
-  float saturation = 0.95;
+  float contrastBias = 0.3;//0.1; // 0 == normal .. 1 == 'fake hdri'
+  float saturation = 0.95 * (0.4 + SSAO * 0.6); // SSAO shadows are less saturated
+
+
 
   fragColor = ContrastSaturationBrightness(fragColor, brightness, 1.0, saturation);
   fragColor = AlternateContrast(fragColor, contrastBias);
-  
-  stdout = vec4(clamp(fragColor, 0.0, 1.0), 1.0);
+  fragColor = clamp(fragColor, 0.0, 1.0);
+
+  // Manual gamma correction because GL_FRAMEBUFFER_SRGB is disabled on Android
+  float gamma = 2.2;
+  fragColor.r = GammaCorrection(fragColor.r, gamma);
+  fragColor.g = GammaCorrection(fragColor.g, gamma);
+  fragColor.b = GammaCorrection(fragColor.b, gamma);
+
+  //gl_FragColor = vec4(fragColor, 1.0);
+  //fragColor = vec3(0, 0.5, 1.0);
+  stdout = vec4(fragColor, 1.0);
 }
