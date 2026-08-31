@@ -2,14 +2,14 @@
 // this work is public domain. the code is undocumented, scruffy, untested, and should generally not be used for anything important.
 // i do not offer support, so don't ask. to be used for inspiration :)
 
-#include "engine/main.hpp"
+#include "main.hpp"
 
-#include "engine/utils.hpp"
+#include "utils.hpp"
 
 #ifndef GPFB_HEADLESS
-#include "engine/framework/systems/graphics/resources/texture.hpp"
+#include "systems/graphics/resources/texture.hpp"
 #endif
-#include "engine/framework/managers/resourcemanagerpool.hpp"
+#include "managers/resourcemanagerpool.hpp"
 
 float GetQuantizedDirectionBias() {
   return GetConfiguration()->GetReal("gameplay_quantizeddirectionbias", _default_QuantizedDirectionBias);

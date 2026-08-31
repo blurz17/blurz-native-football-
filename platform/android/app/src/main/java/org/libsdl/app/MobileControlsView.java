@@ -136,7 +136,7 @@ public class MobileControlsView extends View {
         buttons.add(new ActionButton(dashX - w * 0.02f, dashY - spacingY - h * 0.02f, normalRad, "Shoot", "Clear", 2, 1, baseCol, borderCol));
         
         // TOP RIGHT CORNER: PAUSE
-        buttons.add(new ActionButton(w * 0.95f, h * 0.06f, normalRad * 0.7f, "Pause", "Pause", 7, 7, Color.argb(80, 50, 50, 50), borderCol));
+        buttons.add(new ActionButton(w * 0.95f, h * 0.06f, normalRad * 0.4f, "Pause", "Pause", 7, 7, Color.argb(80, 50, 50, 50), borderCol));
 
         textPaint.setTextSize(normalRad * 0.45f);
     }
@@ -425,8 +425,7 @@ public class MobileControlsView extends View {
                     joyBaseY = defaultJoyBaseY;
                     joyHandleX = joyBaseX;
                     joyHandleY = joyBaseY;
-                    SDLActivity.setVirtualJoystickAxis(0, 0f);
-                    SDLActivity.setVirtualJoystickAxis(1, 0f);
+                    updateJoystickKeys(0, 0);
                 } else {
                     for (ActionButton btn : buttons) {
                         if (btn.pointerId == pointerId) {
@@ -480,15 +479,32 @@ public class MobileControlsView extends View {
 
         // Deadzone 20%
         if (dist < joyRadius * 0.2f) {
-            SDLActivity.setVirtualJoystickAxis(0, 0f);
-            SDLActivity.setVirtualJoystickAxis(1, 0f);
+            updateJoystickKeys(0, 0);
         } else {
-            SDLActivity.setVirtualJoystickAxis(0, dx / joyRadius);
-            SDLActivity.setVirtualJoystickAxis(1, dy / joyRadius);
+            updateJoystickKeys(dx, dy);
         }
     }
     
     private void updateJoystickKeys(float dx, float dy) {
-        // Obsolete, removed.
+        boolean up = false, down = false, left = false, right = false;
+
+        if (dx != 0 || dy != 0) {
+            float angle = (float) Math.toDegrees(Math.atan2(dy, dx));
+            // 8-way directional mapping
+            if (angle > -22.5 && angle <= 22.5) right = true;
+            else if (angle > 22.5 && angle <= 67.5) { right = true; down = true; }
+            else if (angle > 67.5 && angle <= 112.5) down = true;
+            else if (angle > 112.5 && angle <= 157.5) { down = true; left = true; }
+            else if (angle > 157.5 || angle <= -157.5) left = true;
+            else if (angle > -157.5 && angle <= -112.5) { up = true; left = true; }
+            else if (angle > -112.5 && angle <= -67.5) up = true;
+            else if (angle > -67.5 && angle <= -22.5) { up = true; right = true; }
+        }
+
+        // SDLK_UP = 1073741906, SDLK_DOWN = 1073741905, SDLK_RIGHT = 1073741903, SDLK_LEFT = 1073741904
+        if (up != joyUp) { joyUp = up; SDLActivity.setVirtualKey(1073741906, up); }
+        if (down != joyDown) { joyDown = down; SDLActivity.setVirtualKey(1073741905, down); }
+        if (left != joyLeft) { joyLeft = left; SDLActivity.setVirtualKey(1073741904, left); }
+        if (right != joyRight) { joyRight = right; SDLActivity.setVirtualKey(1073741903, right); }
     }
 }

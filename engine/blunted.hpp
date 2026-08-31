@@ -5,7 +5,7 @@
 #ifndef _HPP_BLUNTED
 #define _HPP_BLUNTED
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
 namespace blunted {
 

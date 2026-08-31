@@ -1,11 +1,11 @@
 #ifndef _HPP_OBJECT_JOINT
 #define _HPP_OBJECT_JOINT
 
-#include "engine/defines.hpp"
-#include "engine/scene/object.hpp"
-#include "engine/core/types/interpreter.hpp"
-#include "engine/core/math/quaternion.hpp"
-#include "engine/core/math/vector3.hpp"
+#include "defines.hpp"
+#include "scene/object.hpp"
+#include "types/interpreter.hpp"
+#include "base/math/quaternion.hpp"
+#include "base/math/vector3.hpp"
 
 namespace blunted {
 

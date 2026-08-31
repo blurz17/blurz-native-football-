@@ -4,7 +4,7 @@
 
 #include "sound.hpp"
 
-#include "engine/framework/systems/isystemobject.hpp"
+#include "systems/isystemobject.hpp"
 
 namespace blunted {
 

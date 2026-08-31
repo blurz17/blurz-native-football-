@@ -4,8 +4,8 @@
 
 #include "xmlloader.hpp"
 
-#include "engine/core/utils.hpp"
-#include "engine/core/log.hpp"
+#include "base/utils.hpp"
+#include "base/log.hpp"
 
 namespace blunted {
 

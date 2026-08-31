@@ -5,7 +5,7 @@
 #ifndef _HPP_DBQUERY
 #define _HPP_DBQUERY
 
-#include "engine/main.hpp"
+#include "main.hpp"
 
 using namespace blunted;
 

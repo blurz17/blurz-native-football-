@@ -5,7 +5,7 @@
 #ifndef _HPP_WORKERTHREAD
 #define _HPP_WORKERTHREAD
 
-#include "engine/core/types/thread.hpp"
+#include "types/thread.hpp"
 
 namespace blunted {
 

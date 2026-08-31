@@ -3,9 +3,9 @@
 // i do not offer support, so don't ask. to be used for inspiration :)
 
 #include "footballanimationextension.hpp"
-#include "engine/utils/animation.hpp"
+#include "../animation.hpp"
 
-#include "engine/core/utils.hpp"
+#include "base/utils.hpp"
 
 namespace blunted {
 

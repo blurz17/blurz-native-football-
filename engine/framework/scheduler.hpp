@@ -5,10 +5,10 @@
 #ifndef _HPP_SCHEDULER
 #define _HPP_SCHEDULER
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
-#include "engine/framework/systems/isystemtask.hpp"
-#include "engine/core/types/iusertask.hpp"
+#include "systems/isystemtask.hpp"
+#include "types/iusertask.hpp"
 #include "tasksequence.hpp"
 
 namespace blunted {

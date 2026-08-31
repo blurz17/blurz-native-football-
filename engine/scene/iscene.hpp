@@ -5,11 +5,11 @@
 #ifndef _HPP_INTERFACE_SCENE
 #define _HPP_INTERFACE_SCENE
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
-#include "engine/core/types/subject.hpp"
+#include "types/subject.hpp"
 
-#include "engine/framework/systems/isystemscene.hpp"
+#include "systems/isystemscene.hpp"
 
 namespace blunted {
 

@@ -293,28 +293,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      * @return arguments for the native application.
      */
     protected String[] getArguments() {
-        Intent intent = getIntent();
-        if (intent != null && intent.getBooleanExtra("startQuickMatch", false)) {
-            String home = intent.getStringExtra("homeTeamId");
-            String away = intent.getStringExtra("awayTeamId");
-            String diff = intent.getStringExtra("matchDifficulty");
-            String dur = intent.getStringExtra("matchDuration");
-            String vol = intent.getStringExtra("audioVolume");
-            if (home == null) home = "3";
-            if (away == null) away = "8";
-            if (diff == null) diff = "0.5";
-            if (dur == null) dur = "0.5";
-            if (vol == null) vol = "0.8";
-
-            return new String[]{
-                "--start-match",
-                home,
-                away,
-                diff,
-                dur,
-                vol
-            };
-        }
         return new String[0];
     }
 

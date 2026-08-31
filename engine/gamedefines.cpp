@@ -2,12 +2,12 @@
 // this work is public domain. the code is undocumented, scruffy, untested, and should generally not be used for anything important.
 // i do not offer support, so don't ask. to be used for inspiration :)
 
-#include "engine/gamedefines.hpp"
+#include "gamedefines.hpp"
 
-#include "engine/core/log.hpp"
-#include "engine/core/utils.hpp"
+#include "base/log.hpp"
+#include "base/utils.hpp"
 
-#include "engine/main.hpp"
+#include "main.hpp"
 
 struct index3 { int index[3]; };
 

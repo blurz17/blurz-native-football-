@@ -4,13 +4,13 @@
 
 #include "teamdata.hpp"
 
-#include "engine/utils/database.hpp"
+#include "utils/database.hpp"
 
-#include "engine/core/utils.hpp"
+#include "base/utils.hpp"
 
-#include "engine/main.hpp"
-#include "engine/gamedefines.hpp"
-#include "engine/utils/xmlloader.hpp"
+#include "../main.hpp"
+#include "gamedefines.hpp"
+#include "utils/xmlloader.hpp"
 
 #include <boost/algorithm/string.hpp>
 

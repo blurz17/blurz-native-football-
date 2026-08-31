@@ -6,7 +6,7 @@
 
 #include "scene3d.hpp"
 
-#include "engine/scene/objectfactory.hpp"
+#include "scene/objectfactory.hpp"
 
 namespace blunted {
 

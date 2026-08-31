@@ -5,11 +5,11 @@
 #ifndef _HPP_OBJECTFACTORY
 #define _HPP_OBJECTFACTORY
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
 #include "object.hpp"
 
-#include "engine/core/types/singleton.hpp"
+#include "types/singleton.hpp"
 
 namespace blunted {
 

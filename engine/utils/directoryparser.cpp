@@ -4,7 +4,7 @@
 
 #include "directoryparser.hpp"
 
-#include "engine/core/log.hpp"
+#include "base/log.hpp"
 
 namespace fs = boost::filesystem;
 

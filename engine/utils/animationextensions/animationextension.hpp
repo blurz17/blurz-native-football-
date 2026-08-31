@@ -5,7 +5,7 @@
 #ifndef _HPP_ANIMATIONEXTENSION
 #define _HPP_ANIMATIONEXTENSION
 
-#include "engine/core/math/vector3.hpp"
+#include "base/math/vector3.hpp"
 
 namespace blunted {
 

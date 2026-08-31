@@ -4,10 +4,10 @@
 
 #include "workerthread.hpp"
 
-#include "engine/core/log.hpp"
+#include "base/log.hpp"
 
-#include "engine/framework/managers/taskmanager.hpp"
-#include "engine/core/utils.hpp"
+#include "managers/taskmanager.hpp"
+#include "base/utils.hpp"
 
 namespace blunted {
 

@@ -4,7 +4,7 @@
 
 #include "animation.hpp"
 
-#include "engine/core/utils.hpp"
+#include "base/utils.hpp"
 
 #include <stdio.h>
 

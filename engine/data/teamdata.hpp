@@ -5,10 +5,10 @@
 #ifndef _HPP_TEAMDATA
 #define _HPP_TEAMDATA
 
-#include "engine/defines.hpp"
-#include "engine/core/properties.hpp"
+#include "defines.hpp"
+#include "base/properties.hpp"
 
-#include "engine/gamedefines.hpp"
+#include "../gamedefines.hpp"
 #include "playerdata.hpp"
 
 struct TeamTactics {

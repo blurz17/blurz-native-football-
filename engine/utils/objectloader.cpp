@@ -4,14 +4,14 @@
 
 #include "objectloader.hpp"
 
-#include "engine/core/utils.hpp"
-#include "engine/core/types/resource.hpp"
-#include "engine/scene/resources/geometrydata.hpp"
-#include "engine/scene/objects/geometry.hpp"
-#include "engine/scene/objects/light.hpp"
-#include "engine/scene/objects/joint.hpp"
-#include "engine/framework/managers/resourcemanagerpool.hpp"
-#include "engine/scene/objectfactory.hpp"
+#include "base/utils.hpp"
+#include "types/resource.hpp"
+#include "scene/resources/geometrydata.hpp"
+#include "scene/objects/geometry.hpp"
+#include "scene/objects/light.hpp"
+#include "scene/objects/joint.hpp"
+#include "managers/resourcemanagerpool.hpp"
+#include "scene/objectfactory.hpp"
 
 namespace blunted {
 

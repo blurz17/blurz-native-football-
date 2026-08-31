@@ -5,13 +5,13 @@
 #ifndef _HPP_TASKSEQUENCE
 #define _HPP_TASKSEQUENCE
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
-#include "engine/core/types/command.hpp"
+#include "types/command.hpp"
 
-#include "engine/framework/systems/isystem.hpp"
-#include "engine/framework/systems/isystemtask.hpp"
-#include "engine/core/types/iusertask.hpp"
+#include "systems/isystem.hpp"
+#include "systems/isystemtask.hpp"
+#include "types/iusertask.hpp"
 
 namespace blunted {
 

@@ -5,11 +5,11 @@
 #ifndef _HPP_UTILS_THREADHUD
 #define _HPP_UTILS_THREADHUD
 
-#include "engine/framework/managers/resourcemanager.hpp"
-#include "engine/core/types/thread.hpp"
-#include "engine/scene/resources/surface.hpp"
-#include "engine/scene/scene2d/scene2d.hpp"
-#include "engine/scene/objects/image2d.hpp"
+#include "managers/resourcemanager.hpp"
+#include "types/thread.hpp"
+#include "scene/resources/surface.hpp"
+#include "scene/scene2d/scene2d.hpp"
+#include "scene/objects/image2d.hpp"
 
 #include <SDL2/SDL_ttf.h>
 

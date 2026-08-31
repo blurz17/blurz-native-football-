@@ -4,19 +4,19 @@
 
 #include "objectfactory.hpp"
 
-#include "engine/core/log.hpp"
-#include "engine/core/utils.hpp"
+#include "base/log.hpp"
+#include "base/utils.hpp"
 
 #ifndef GPFB_HEADLESS
-#include "engine/scene/objects/camera.hpp"
-#include "engine/scene/objects/image2d.hpp"
-#include "engine/scene/objects/skybox.hpp"
-#include "engine/scene/objects/light.hpp"
-#include "engine/scene/objects/audioreceiver.hpp"
-#include "engine/scene/objects/sound.hpp"
+#include "scene/objects/camera.hpp"
+#include "scene/objects/image2d.hpp"
+#include "scene/objects/skybox.hpp"
+#include "scene/objects/light.hpp"
+#include "scene/objects/audioreceiver.hpp"
+#include "scene/objects/sound.hpp"
 #endif
-#include "engine/scene/objects/geometry.hpp"
-#include "engine/scene/objects/joint.hpp"
+#include "scene/objects/geometry.hpp"
+#include "scene/objects/joint.hpp"
 
 namespace blunted {
 

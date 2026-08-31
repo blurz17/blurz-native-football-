@@ -5,7 +5,7 @@
 #ifndef _HPP_DATABASE
 #define _HPP_DATABASE
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
 struct sqlite3;
 

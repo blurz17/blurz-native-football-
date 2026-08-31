@@ -5,12 +5,12 @@
 #ifndef _HPP_SCENE2D
 #define _HPP_SCENE2D
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
-#include "engine/scene/scene.hpp"
-#include "engine/scene/object.hpp"
-#include "engine/core/types/lockable.hpp"
-#include "engine/core/properties.hpp"
+#include "../scene.hpp"
+#include "../object.hpp"
+#include "types/lockable.hpp"
+#include "base/properties.hpp"
 
 namespace blunted {
 

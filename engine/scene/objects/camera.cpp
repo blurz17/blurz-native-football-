@@ -4,11 +4,11 @@
 
 #include "camera.hpp"
 
-#include "engine/framework/systems/isystemobject.hpp"
+#include "systems/isystemobject.hpp"
 
-#include "engine/scene/objects/light.hpp"
-#include "engine/scene/objects/geometry.hpp"
-#include "engine/scene/objects/skybox.hpp"
+#include "scene/objects/light.hpp"
+#include "scene/objects/geometry.hpp"
+#include "scene/objects/skybox.hpp"
 
 namespace blunted {
 

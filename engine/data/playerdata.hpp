@@ -5,12 +5,12 @@
 #ifndef _HPP_PLAYERDATA
 #define _HPP_PLAYERDATA
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
-#include "engine/gamedefines.hpp"
-#include "engine/utils.hpp"
+#include "../gamedefines.hpp"
+#include "../utils.hpp"
 
-#include "engine/core/properties.hpp"
+#include "base/properties.hpp"
 
 class PlayerData {
 

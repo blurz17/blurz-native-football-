@@ -5,19 +5,19 @@
 #ifndef _HPP_MAIN
 #define _HPP_MAIN
 
-#include "engine/blunted.hpp"
+#include "blunted.hpp"
 
 #ifndef GPFB_HEADLESS
-#include "engine/gametask.hpp"
-#include "game/menu/menutask.hpp"
-#include "engine/input/ihidevice.hpp"
+#include "gametask.hpp"
+#include "menu/menutask.hpp"
+#include "hid/ihidevice.hpp"
 
-#include "engine/framework/systems/graphics/graphics_system.hpp"
+#include "systems/graphics/graphics_system.hpp"
 #endif
 
-#include "engine/core/properties.hpp"
+#include "base/properties.hpp"
 
-#include "engine/utils/database.hpp"
+#include "utils/database.hpp"
 #include "sqlite3.h"
 
 enum e_DebugMode {

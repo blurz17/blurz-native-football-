@@ -5,12 +5,12 @@
 #ifndef _HPP_OBJECT_IMAGE2D
 #define _HPP_OBJECT_IMAGE2D
 
-#include "engine/defines.hpp"
-#include "engine/scene/object.hpp"
-#include "engine/scene/resources/surface.hpp"
-#include "engine/core/types/interpreter.hpp"
-#include "engine/core/math/vector3.hpp"
-#include "engine/core/geometry/line.hpp"
+#include "defines.hpp"
+#include "scene/object.hpp"
+#include "scene/resources/surface.hpp"
+#include "types/interpreter.hpp"
+#include "base/math/vector3.hpp"
+#include "base/geometry/line.hpp"
 
 #include <SDL2/SDL_ttf.h>
 

@@ -5,12 +5,12 @@
 #ifndef _HPP_UTILS_SPLITGEOMETRY
 #define _HPP_UTILS_SPLITGEOMETRY
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
-#include "engine/scene/scene3d/scene3d.hpp"
-#include "engine/scene/scene3d/node.hpp"
+#include "scene/scene3d/scene3d.hpp"
+#include "scene/scene3d/node.hpp"
 
-#include "engine/scene/objects/geometry.hpp"
+#include "scene/objects/geometry.hpp"
 
 namespace blunted {
 

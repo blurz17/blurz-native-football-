@@ -5,13 +5,13 @@
 #ifndef _HPP_ANIMATION
 #define _HPP_ANIMATION
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
-#include "engine/scene/scene3d/node.hpp"
+#include "scene/scene3d/node.hpp"
 
 #include "animationextensions/animationextension.hpp"
 
-#include "engine/utils/xmlloader.hpp"
+#include "utils/xmlloader.hpp"
 
 namespace blunted {
 

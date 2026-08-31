@@ -5,8 +5,8 @@
 #ifndef _HPP_RESOURCES_SURFACE
 #define _HPP_RESOURCES_SURFACE
 
-#include "engine/core/sdl_surface.hpp"
-#include "engine/core/types/resource.hpp"
+#include "base/sdl_surface.hpp"
+#include "types/resource.hpp"
 
 namespace blunted {
 

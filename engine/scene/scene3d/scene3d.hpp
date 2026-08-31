@@ -5,17 +5,17 @@
 #ifndef _HPP_SCENE3D
 #define _HPP_SCENE3D
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
 #include "node.hpp"
 
-#include "engine/scene/scene.hpp"
-#include "engine/scene/object.hpp"
-#include "engine/core/types/lockable.hpp"
+#include "../scene.hpp"
+#include "../object.hpp"
+#include "types/lockable.hpp"
 
-#include "engine/core/utils.hpp"
+#include "base/utils.hpp"
 
-#include "engine/core/geometry/plane.hpp"
+#include "base/geometry/plane.hpp"
 
 namespace blunted {
 

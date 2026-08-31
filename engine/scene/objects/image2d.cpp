@@ -4,9 +4,9 @@
 
 #include "image2d.hpp"
 
-#include "engine/core/log.hpp"
+#include "base/log.hpp"
 
-#include "engine/framework/systems/isystemobject.hpp"
+#include "systems/isystemobject.hpp"
 
 
 namespace blunted {

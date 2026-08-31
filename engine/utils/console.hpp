@@ -5,9 +5,9 @@
 #ifndef _HPP_UTILS_CONSOLE
 #define _HPP_UTILS_CONSOLE
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 #include "text2d.hpp"
-#include "engine/scene/scene2d/scene2d.hpp"
+#include "scene/scene2d/scene2d.hpp"
 
 namespace blunted {
 

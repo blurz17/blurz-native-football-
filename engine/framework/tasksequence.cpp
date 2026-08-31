@@ -4,10 +4,10 @@
 
 #include "tasksequence.hpp"
 
-#include "engine/framework/managers/taskmanager.hpp"
+#include "managers/taskmanager.hpp"
 
-#include "engine/framework/scheduler.hpp"
-#include "engine/blunted.hpp"
+#include "framework/scheduler.hpp"
+#include "blunted.hpp"
 
 namespace blunted {
 

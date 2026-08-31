@@ -5,12 +5,12 @@
 #ifndef _HPP_OBJECT_GEOMETRY
 #define _HPP_OBJECT_GEOMETRY
 
-#include "engine/defines.hpp"
-#include "engine/core/math/vector3.hpp"
-#include "engine/scene/object.hpp"
-#include "engine/scene/resources/geometrydata.hpp"
-#include "engine/core/types/interpreter.hpp"
-#include "engine/core/types/resource.hpp"
+#include "defines.hpp"
+#include "base/math/vector3.hpp"
+#include "scene/object.hpp"
+#include "scene/resources/geometrydata.hpp"
+#include "types/interpreter.hpp"
+#include "types/resource.hpp"
 
 namespace blunted {
 

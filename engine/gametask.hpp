@@ -5,16 +5,16 @@
 #ifndef _HPP_FOOTBALL_GAMETASK
 #define _HPP_FOOTBALL_GAMETASK
 
-#include "engine/core/types/iusertask.hpp"
-#include "engine/core/types/thread.hpp"
+#include "types/iusertask.hpp"
+#include "types/thread.hpp"
 
-#include "game/match/match.hpp"
-#include "game/menu/menuscene.hpp"
+#include "onthepitch/match.hpp"
+#include "menu/menuscene.hpp"
 
-#include "engine/input/keyboard.hpp"
-#include "engine/input/gamepad.hpp"
+#include "hid/keyboard.hpp"
+#include "hid/gamepad.hpp"
 
-#include "game/menu/menutask.hpp"
+#include "menu/menutask.hpp"
 
 using namespace blunted;
 

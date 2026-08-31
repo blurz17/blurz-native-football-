@@ -1,14 +1,14 @@
 #include "orbitcamera.hpp"
 
-#include "engine/core/math/bluntmath.hpp"
-#include "engine/framework/managers/environmentmanager.hpp"
-#include "engine/framework/managers/usereventmanager.hpp"
-#include "engine/framework/managers/systemmanager.hpp"
-#include "engine/framework/managers/resourcemanagerpool.hpp"
+#include "base/math/bluntmath.hpp"
+#include "managers/environmentmanager.hpp"
+#include "managers/usereventmanager.hpp"
+#include "managers/systemmanager.hpp"
+#include "managers/resourcemanagerpool.hpp"
 
-#include "engine/scene/objectfactory.hpp"
+#include "scene/objectfactory.hpp"
 
-#include "engine/blunted.hpp"
+#include "blunted.hpp"
 
 namespace blunted {
 

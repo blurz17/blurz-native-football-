@@ -4,9 +4,9 @@
 
 #include "console.hpp"
 
-#include "engine/core/log.hpp"
+#include "base/log.hpp"
 
-#include "engine/framework/managers/resourcemanagerpool.hpp"
+#include "managers/resourcemanagerpool.hpp"
 
 namespace blunted {
 

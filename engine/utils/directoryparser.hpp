@@ -5,13 +5,13 @@
 #ifndef _HPP_UTILS_DIRECTORYPARSER
 #define _HPP_UTILS_DIRECTORYPARSER
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #define BOOST_FILESYSTEM_VERSION 3
 #include "boost/filesystem.hpp"
 
-#include "engine/core/log.hpp"
+#include "base/log.hpp"
 
 namespace fs = boost::filesystem;
 

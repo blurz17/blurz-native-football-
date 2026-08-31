@@ -5,11 +5,11 @@
 #ifndef _HPP_SCENE3D_NODE
 #define _HPP_SCENE3D_NODE
 
-#include "engine/scene/object.hpp"
+#include "scene/object.hpp"
 
-#include "engine/core/types/spatial.hpp"
+#include "types/spatial.hpp"
 
-#include "engine/core/geometry/aabb.hpp"
+#include "base/geometry/aabb.hpp"
 
 namespace blunted {
 

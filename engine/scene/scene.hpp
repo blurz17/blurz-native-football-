@@ -5,11 +5,11 @@
 #ifndef _HPP_SCENE
 #define _HPP_SCENE
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
 #include "iscene.hpp"
 
-#include "engine/core/types/lockable.hpp"
+#include "types/lockable.hpp"
 
 namespace blunted {
 

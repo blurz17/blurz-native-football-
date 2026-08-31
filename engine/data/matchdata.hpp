@@ -5,9 +5,9 @@
 #ifndef _HPP_MATCHDATA
 #define _HPP_MATCHDATA
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
-#include "engine/gamedefines.hpp"
+#include "../gamedefines.hpp"
 
 #include "teamdata.hpp"
 

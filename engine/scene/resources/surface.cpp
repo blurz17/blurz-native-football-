@@ -4,7 +4,7 @@
 
 #include "surface.hpp"
 
-#include "engine/core/log.hpp"
+#include "base/log.hpp"
 
 #ifndef GPFB_HEADLESS
 #include "SDL2/SDL2_rotozoom.h"

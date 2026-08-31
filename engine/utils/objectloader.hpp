@@ -5,9 +5,9 @@
 #ifndef _HPP_UTILS_OBJECTLOADER
 #define _HPP_UTILS_OBJECTLOADER
 
-#include "engine/scene/scene3d/scene3d.hpp"
-#include "engine/scene/scene3d/node.hpp"
-#include "engine/utils/xmlloader.hpp"
+#include "scene/scene3d/scene3d.hpp"
+#include "scene/scene3d/node.hpp"
+#include "utils/xmlloader.hpp"
 
 namespace blunted {
 

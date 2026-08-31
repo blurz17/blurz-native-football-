@@ -5,14 +5,14 @@
 #ifndef _HPP_OBJECT_SOUND
 #define _HPP_OBJECT_SOUND
 
-#include "engine/defines.hpp"
-#include "engine/scene/object.hpp"
-#include "engine/core/types/interpreter.hpp"
-#include "engine/core/math/vector3.hpp"
-#include "engine/core/geometry/aabb.hpp"
-#include "engine/core/types/resource.hpp"
+#include "defines.hpp"
+#include "scene/object.hpp"
+#include "types/interpreter.hpp"
+#include "base/math/vector3.hpp"
+#include "base/geometry/aabb.hpp"
+#include "types/resource.hpp"
 
-#include "engine/scene/resources/soundbuffer.hpp"
+#include "../resources/soundbuffer.hpp"
 
 namespace blunted {
 

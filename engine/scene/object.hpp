@@ -5,11 +5,11 @@
 #ifndef _HPP_OBJECT
 #define _HPP_OBJECT
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
-#include "engine/core/types/subject.hpp"
-#include "engine/core/types/spatial.hpp"
-#include "engine/core/properties.hpp"
+#include "types/subject.hpp"
+#include "types/spatial.hpp"
+#include "base/properties.hpp"
 
 namespace blunted {
 

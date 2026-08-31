@@ -4,14 +4,14 @@
 
 #include "threadhud.hpp"
 
-#include "engine/framework/managers/taskmanager.hpp"
-#include "engine/core/utils.hpp"
-#include "engine/scene/objectfactory.hpp"
-#include "engine/framework/managers/systemmanager.hpp"
-#include "engine/framework/managers/resourcemanagerpool.hpp"
-#include "engine/framework/managers/usereventmanager.hpp"
+#include "managers/taskmanager.hpp"
+#include "base/utils.hpp"
+#include "scene/objectfactory.hpp"
+#include "managers/systemmanager.hpp"
+#include "managers/resourcemanagerpool.hpp"
+#include "managers/usereventmanager.hpp"
 
-#include "engine/blunted.hpp"
+#include "blunted.hpp"
 
 namespace blunted {
 

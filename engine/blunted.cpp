@@ -2,45 +2,45 @@
 // this work is public domain. the code is undocumented, scruffy, untested, and should generally not be used for anything important.
 // i do not offer support, so don't ask. to be used for inspiration :)
 
-#include "engine/blunted.hpp"
+#include "blunted.hpp"
 
-#include "engine/framework/scheduler.hpp"
+#include "framework/scheduler.hpp"
 
-#include "engine/scene/objects/camera.hpp"
-#include "engine/scene/objects/image2d.hpp"
-#include "engine/scene/objects/geometry.hpp"
-#include "engine/scene/objects/skybox.hpp"
-#include "engine/scene/objects/light.hpp"
-#include "engine/scene/objects/joint.hpp"
-#include "engine/scene/objects/audioreceiver.hpp"
-#include "engine/scene/objects/sound.hpp"
+#include "scene/objects/camera.hpp"
+#include "scene/objects/image2d.hpp"
+#include "scene/objects/geometry.hpp"
+#include "scene/objects/skybox.hpp"
+#include "scene/objects/light.hpp"
+#include "scene/objects/joint.hpp"
+#include "scene/objects/audioreceiver.hpp"
+#include "scene/objects/sound.hpp"
 
-#include "engine/scene/objectfactory.hpp"
+#include "scene/objectfactory.hpp"
 
-#include "engine/scene/resources/surface.hpp"
-#include "engine/scene/resources/geometrydata.hpp"
+#include "scene/resources/surface.hpp"
+#include "scene/resources/geometrydata.hpp"
 
-#include "engine/framework/scheduler.hpp"
+#include "framework/scheduler.hpp"
 
-#include "engine/framework/managers/systemmanager.hpp"
-#include "engine/framework/managers/taskmanager.hpp"
-#include "engine/framework/managers/usereventmanager.hpp"
-#include "engine/framework/managers/environmentmanager.hpp"
-#include "engine/framework/managers/scenemanager.hpp"
-#include "engine/framework/managers/resourcemanager.hpp"
-#include "engine/framework/managers/resourcemanagerpool.hpp"
+#include "managers/systemmanager.hpp"
+#include "managers/taskmanager.hpp"
+#include "managers/usereventmanager.hpp"
+#include "managers/environmentmanager.hpp"
+#include "managers/scenemanager.hpp"
+#include "managers/resourcemanager.hpp"
+#include "managers/resourcemanagerpool.hpp"
 
-#include "engine/framework/systems/isystem.hpp"
+#include "systems/isystem.hpp"
 
-#include "engine/core/log.hpp"
-#include "engine/core/utils.hpp"
-#include "engine/core/properties.hpp"
+#include "base/log.hpp"
+#include "base/utils.hpp"
+#include "base/properties.hpp"
 
-#include "engine/utils/loaders/aseloader.hpp"
-#include "engine/utils/loaders/imageloader.hpp"
-#include "engine/utils/loaders/wavloader.hpp"
+#include "loaders/aseloader.hpp"
+#include "loaders/imageloader.hpp"
+#include "loaders/wavloader.hpp"
 
-#include "engine/utils/console.hpp"
+#include "utils/console.hpp"
 
 #include "SDL2/SDL_ttf.h"
 

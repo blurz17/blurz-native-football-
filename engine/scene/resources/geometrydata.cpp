@@ -4,9 +4,9 @@
 
 #include "geometrydata.hpp"
 
-#include "engine/framework/systems/isystemobject.hpp"
+#include "systems/isystemobject.hpp"
 
-#include "engine/core/geometry/trianglemeshutils.hpp"
+#include "base/geometry/trianglemeshutils.hpp"
 
 namespace blunted {
 

@@ -6,13 +6,13 @@
 // VK: TODO: Remove this deprecated class from compilation and from the project
 #include "text2d.hpp"
 
-#include "engine/framework/managers/resourcemanagerpool.hpp"
-#include "engine/framework/managers/systemmanager.hpp"
+#include "managers/resourcemanagerpool.hpp"
+#include "managers/systemmanager.hpp"
 
-#include "engine/scene/iscene.hpp"
-#include "engine/scene/objectfactory.hpp"
+#include "scene/iscene.hpp"
+#include "scene/objectfactory.hpp"
 
-#include "engine/core/sdl_surface.hpp"
+#include "base/sdl_surface.hpp"
 
 namespace blunted {
 

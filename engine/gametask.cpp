@@ -2,15 +2,15 @@
 // this work is public domain. the code is undocumented, scruffy, untested, and should generally not be used for anything important.
 // i do not offer support, so don't ask. to be used for inspiration :)
 
-#include "engine/gametask.hpp"
+#include "gametask.hpp"
 
-#include "engine/main.hpp"
+#include "main.hpp"
 
-#include "engine/framework/scheduler.hpp"
-#include "engine/framework/managers/taskmanager.hpp"
-#include "engine/framework/managers/resourcemanagerpool.hpp"
+#include "framework/scheduler.hpp"
+#include "managers/taskmanager.hpp"
+#include "managers/resourcemanagerpool.hpp"
 
-#include "engine/blunted.hpp"
+#include "blunted.hpp"
 
 void UploadFullbodyModel::Update() {
   for (unsigned int i = 0; i < geometryToUpload.size(); i++) {

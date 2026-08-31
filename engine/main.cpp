@@ -6,31 +6,31 @@
 #include <windows.h>
 #endif
 
-#include "engine/main.hpp"
+#include "main.hpp"
 
-#include "engine/core/utils.hpp"
-#include "engine/core/math/bluntmath.hpp"
+#include "base/utils.hpp"
+#include "base/math/bluntmath.hpp"
 
-#include "engine/scene/scene2d/scene2d.hpp"
-#include "engine/scene/scene3d/scene3d.hpp"
+#include "scene/scene2d/scene2d.hpp"
+#include "scene/scene3d/scene3d.hpp"
 
-#include "engine/framework/managers/resourcemanagerpool.hpp"
-#include "engine/utils/objectloader.hpp"
-#include "engine/scene/objectfactory.hpp"
+#include "managers/resourcemanagerpool.hpp"
+#include "utils/objectloader.hpp"
+#include "scene/objectfactory.hpp"
 
-#include "engine/framework/systems/audio/audio_system.hpp"
+#include "systems/audio/audio_system.hpp"
 
-#include "engine/framework/scheduler.hpp"
+#include "framework/scheduler.hpp"
 
-#include "engine/framework/managers/systemmanager.hpp"
-#include "engine/framework/managers/scenemanager.hpp"
+#include "managers/systemmanager.hpp"
+#include "managers/scenemanager.hpp"
 
-#include "engine/core/log.hpp"
+#include "base/log.hpp"
 
-#include "engine/core/types/thread.hpp"
-#include "engine/utils/threadhud.hpp"
+#include "types/thread.hpp"
+#include "utils/threadhud.hpp"
 
-#include "engine/utils/orbitcamera.hpp"
+#include "utils/orbitcamera.hpp"
 
 #include "SDL2/SDL_ttf.h"
 
@@ -273,7 +273,7 @@ class ThreadHudThread : public Thread {
 #include <SDL2/SDL_system.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "engine/asset_list.hpp"
+#include "asset_list.hpp"
 
 void ExtractAsset(const char* assetFile, const std::string& destFile) {
   SDL_RWops* src = SDL_RWFromFile(assetFile, "rb");
@@ -311,20 +311,7 @@ extern "C" __attribute__((visibility("default"))) int SDL_main(int argc, char** 
 int main(int argc, const char** argv) {
 #endif
   config = new Properties();
-  if (argc > 1) {
-    if (std::string(argv[1]) == "--start-match") {
-#ifdef __ANDROID__
-      setenv("SKIP_MAIN_MENU", "1", 1);
-      if (argc > 2) setenv("TEAM1_ID", argv[2], 1);
-      if (argc > 3) setenv("TEAM2_ID", argv[3], 1);
-      if (argc > 4) setenv("MATCH_DIFFICULTY", argv[4], 1);
-      if (argc > 5) setenv("MATCH_DURATION", argv[5], 1);
-      if (argc > 6) setenv("AUDIO_VOLUME", argv[6], 1);
-#endif
-    } else {
-      configFile = argv[1];
-    }
-  }
+  if (argc > 1) configFile = argv[1];
   config->LoadFile(configFile.c_str());
 
   Initialize(*config);

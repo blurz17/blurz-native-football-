@@ -4,7 +4,7 @@
 
 #include "database.hpp"
 
-#include "engine/core/log.hpp"
+#include "base/log.hpp"
 
 #include "sqlite3.h"
 

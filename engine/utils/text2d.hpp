@@ -7,11 +7,11 @@
 #ifndef _HPP_UTILS_TEXT2D
 #define _HPP_UTILS_TEXT2D
 // VK: TODO: Remove this deprecated class from compilation and from the project
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
-#include "engine/scene/objects/image2d.hpp"
+#include "scene/objects/image2d.hpp"
 
-#include "engine/scene/scene2d/scene2d.hpp"
+#include "scene/scene2d/scene2d.hpp"
 
 #include "SDL2/SDL.h"
 #include <SDL2/SDL_ttf.h>

@@ -4,11 +4,11 @@
 
 #include "geometry.hpp"
 
-#include "engine/core/log.hpp"
+#include "base/log.hpp"
 
-#include "engine/framework/systems/isystemobject.hpp"
+#include "systems/isystemobject.hpp"
 
-#include "engine/framework/managers/resourcemanagerpool.hpp"
+#include "managers/resourcemanagerpool.hpp"
 
 namespace blunted {
 

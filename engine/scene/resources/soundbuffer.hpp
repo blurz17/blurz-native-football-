@@ -5,7 +5,7 @@
 #ifndef _HPP_RESOURCES_SOUNDBUFFER
 #define _HPP_RESOURCES_SOUNDBUFFER
 
-#include "engine/core/types/resource.hpp"
+#include "types/resource.hpp"
 
 namespace blunted {
 

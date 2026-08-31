@@ -5,9 +5,9 @@
 #ifndef _HPP_GAMEDEFINES
 #define _HPP_GAMEDEFINES
 
-#include "engine/defines.hpp"
+#include "defines.hpp"
 
-#include "engine/core/math/vector3.hpp"
+#include "base/math/vector3.hpp"
 
 #ifndef GPFB_HEADLESS
 #include <SDL2/SDL.h> // for key ids

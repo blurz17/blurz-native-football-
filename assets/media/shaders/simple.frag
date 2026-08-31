@@ -25,7 +25,9 @@ layout(location = 2) out vec4 stdout2;
 void main(void) {
 
   vec4 base = texture(map_albedo, frag_texcoord.st);
-  if (base.a < 0.12) discard;
+  if (base.a < 0.5) discard;
+  // Manual SRGB to Linear conversion (Android fallback for GL_SRGB8)
+  base.rgb = pow(base.rgb, vec3(2.2));
   vec3 bump;
   if (materialbools.x == 1.0) {
     bump = normalize(texture(map_normal, frag_texcoord.st).xyz * 2.0 - 1.0);
@@ -62,7 +64,9 @@ void main(void) {
   bumpNormal = normalize(bumpNormal);
 
   stdout0 = vec4(base.rgb, spec);
-  stdout1 = vec4(bumpNormal.xyz, materialparams.x);
+  // Encode normals from [-1,1] to [0,1] range for RGBA8 framebuffer compatibility
+  // (gl4es downgrades RGBA16F to RGBA8 which clamps negative values)
+  stdout1 = vec4(bumpNormal.xyz * 0.5 + 0.5, materialparams.x);
   //gl_FragData[2] = vec4(frag_position.xyz, illumination); // *fixed* position data is needed for the ssao ambient shader. maybe a bit inefficient? in the other shaders, position is calculated on the fly
   stdout2 = vec4(0.0, 0.0, 0.0, illumination); // free channels! for future use, methinks :)
 }

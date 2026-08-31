@@ -5,9 +5,9 @@
 #ifndef _HPP_FOOTBALL_UTILS
 #define _HPP_FOOTBALL_UTILS
 
-#include "engine/gamedefines.hpp"
+#include "gamedefines.hpp"
 
-#include "engine/scene/objects/camera.hpp"
+#include "scene/objects/camera.hpp"
 
 #include <boost/circular_buffer.hpp>
 

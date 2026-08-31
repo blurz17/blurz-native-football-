@@ -4,10 +4,10 @@
 
 #include "splitgeometry.hpp"
 
-#include "engine/core/utils.hpp"
-#include "engine/scene/objectfactory.hpp"
-#include "engine/framework/managers/resourcemanagerpool.hpp"
-#include "engine/core/geometry/trianglemeshutils.hpp"
+#include "base/utils.hpp"
+#include "scene/objectfactory.hpp"
+#include "managers/resourcemanagerpool.hpp"
+#include "base/geometry/trianglemeshutils.hpp"
 
 namespace blunted {
 

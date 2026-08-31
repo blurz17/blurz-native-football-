@@ -5,12 +5,12 @@
 #ifndef _UTILS_ORBITCAMERA
 #define _UTILS_ORBITCAMERA
 
-#include "engine/core/types/command.hpp"
-#include "engine/core/types/iusertask.hpp"
+#include "types/command.hpp"
+#include "types/iusertask.hpp"
 
-#include "engine/scene/objects/camera.hpp"
-#include "engine/scene/scene3d/scene3d.hpp"
-#include "engine/scene/objects/light.hpp"
+#include "scene/objects/camera.hpp"
+#include "scene/scene3d/scene3d.hpp"
+#include "scene/objects/light.hpp"
 
 namespace blunted {
 

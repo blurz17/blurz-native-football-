@@ -1,15 +1,15 @@
 #include "scene2d.hpp"
 
 // todo
-#include "engine/scene/objects/image2d.hpp"
-#include "engine/scene/objects/geometry.hpp"
+#include "scene/objects/image2d.hpp"
+#include "scene/objects/geometry.hpp"
 
-#include "engine/framework/systems/isystemscene.hpp"
+#include "systems/isystemscene.hpp"
 
-#include "engine/framework/managers/environmentmanager.hpp"
-#include "engine/framework/managers/systemmanager.hpp"
+#include "managers/environmentmanager.hpp"
+#include "managers/systemmanager.hpp"
 
-#include "engine/scene/objectfactory.hpp"
+#include "scene/objectfactory.hpp"
 
 namespace blunted {
 

@@ -5,12 +5,12 @@
 #ifndef _HPP_OBJECT_LIGHT
 #define _HPP_OBJECT_LIGHT
 
-#include "engine/defines.hpp"
-#include "engine/scene/object.hpp"
-#include "engine/core/types/interpreter.hpp"
-#include "engine/core/math/quaternion.hpp"
-#include "engine/core/math/vector3.hpp"
-#include "engine/core/geometry/aabb.hpp"
+#include "defines.hpp"
+#include "scene/object.hpp"
+#include "types/interpreter.hpp"
+#include "base/math/quaternion.hpp"
+#include "base/math/vector3.hpp"
+#include "base/geometry/aabb.hpp"
 
 namespace blunted {
 
