@@ -65,7 +65,7 @@ float GetEdge(vec2 pos) {
   for (int i = 0; i < 9; i++) {
     float depth = texture(map_depth, pos + offsets[i] * 0.001).x;
     depths[i] = cameraClip.y / (depth - cameraClip.x);
-    normals[i] = texture(map_normal, pos + offsets[i] * 0.001).xyz;
+    normals[i] = texture(map_normal, pos + offsets[i] * 0.001).xyz * 2.0 - 1.0;
   }
 
   vec4 deltas1;
@@ -138,7 +138,8 @@ void main(void) {
   vec2 noiseScale = vec2(contextWidth / 4.0, contextHeight / 4.0);
   float SSAO_radius = 0.18;//0.12;
 
-  vec3 normal = texture(map_normal, texCoord).xyz;
+  // Decode normals from [0,1] back to [-1,1] range (encoded in simple.frag for RGBA8 compatibility)
+  vec3 normal = texture(map_normal, texCoord).xyz * 2.0 - 1.0;
   float SSAO = 0.0;
 
   vec3 viewPosition = vec3(viewMatrix * vec4(worldPosition, 1.0));

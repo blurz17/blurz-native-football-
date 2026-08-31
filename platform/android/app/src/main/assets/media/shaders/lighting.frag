@@ -59,7 +59,8 @@ void main(void) {
   vec3 lightDir = normalize(lightPosition - worldPosition.xyz);
 
   vec4 normalshine = texture(map_normal, texCoord);
-  vec3 normal = normalize(normalshine.xyz);
+  // Decode normals from [0,1] back to [-1,1] range (encoded in simple.frag for RGBA8 compatibility)
+  vec3 normal = normalize(normalshine.xyz * 2.0 - 1.0);
 
   float nDotLD = dot(lightDir, normal);
   //if (nDotLD < 0.0) discard;

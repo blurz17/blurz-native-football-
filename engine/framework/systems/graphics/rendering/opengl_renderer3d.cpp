@@ -553,10 +553,12 @@ struct GLfunctions {
     currentShader = shaders.begin();
 
 
-    SDL_Surface *noise = IMG_Load("media/shaders/noise.png");
-    if (noise) {
-      noiseTexID = CreateTexture(e_InternalPixelFormat_RGB8, e_PixelFormat_RGB, noise->w, noise->h, false, true, false, false, false);
-      UpdateTexture(noiseTexID, noise, false, false);
+    SDL_Surface *noise_raw = IMG_Load("media/shaders/noise.png");
+    if (noise_raw) {
+      SDL_Surface *noise = SDL_ConvertSurfaceFormat(noise_raw, SDL_PIXELFORMAT_RGBA32, 0);
+      SDL_FreeSurface(noise_raw);
+      noiseTexID = CreateTexture(e_InternalPixelFormat_RGBA8, e_PixelFormat_RGBA, noise->w, noise->h, true, true, false, false, false);
+      UpdateTexture(noiseTexID, noise, true, false);
       SDL_FreeSurface(noise);
     } else {
       Log(e_Warning, "OpenGLRenderer3D", "CreateContext", "Failed to load media/shaders/noise.png");

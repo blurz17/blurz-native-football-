@@ -64,7 +64,9 @@ void main(void) {
   bumpNormal = normalize(bumpNormal);
 
   stdout0 = vec4(base.rgb, spec);
-  stdout1 = vec4(bumpNormal.xyz, materialparams.x);
+  // Encode normals from [-1,1] to [0,1] range for RGBA8 framebuffer compatibility
+  // (gl4es downgrades RGBA16F to RGBA8 which clamps negative values)
+  stdout1 = vec4(bumpNormal.xyz * 0.5 + 0.5, materialparams.x);
   //gl_FragData[2] = vec4(frag_position.xyz, illumination); // *fixed* position data is needed for the ssao ambient shader. maybe a bit inefficient? in the other shaders, position is calculated on the fly
   stdout2 = vec4(0.0, 0.0, 0.0, illumination); // free channels! for future use, methinks :)
 }
