@@ -1617,7 +1617,20 @@ struct GLfunctions {
     int height = source->h;
 
     SDL_LockSurface(source);
-    mapping.glTexImage2D(GL_TEXTURE_2D, 0, GetGLInternalPixelFormat(internalPixelFormat), width, height, 0, GetGLPixelFormat(pixelFormat), GL_UNSIGNED_BYTE, source->pixels);
+      GLenum type = GL_UNSIGNED_BYTE;
+#ifdef __ANDROID__
+      if (internalPixelFormat == e_InternalPixelFormat_RGBA16F ||
+          internalPixelFormat == e_InternalPixelFormat_RGBA32F ||
+          internalPixelFormat == e_InternalPixelFormat_DepthComponent32F) {
+          type = GL_FLOAT;
+      } else if (internalPixelFormat == e_InternalPixelFormat_DepthComponent16) {
+          type = GL_UNSIGNED_SHORT;
+      } else if (internalPixelFormat == e_InternalPixelFormat_DepthComponent24 ||
+                 internalPixelFormat == e_InternalPixelFormat_DepthComponent32) {
+          type = GL_UNSIGNED_INT;
+      }
+#endif
+      mapping.glTexImage2D(GL_TEXTURE_2D, 0, GetGLInternalPixelFormat(internalPixelFormat), width, height, 0, GetGLPixelFormat(pixelFormat), type, source->pixels);
     SDL_UnlockSurface(source);
 
     if (mipmaps) {

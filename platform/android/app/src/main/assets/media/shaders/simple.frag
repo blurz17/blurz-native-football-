@@ -25,7 +25,7 @@ layout(location = 2) out vec4 stdout2;
 void main(void) {
 
   vec4 base = texture(map_albedo, frag_texcoord.st);
-  if (base.a < 0.12) discard;
+  if (base.a < 0.5) discard;
   // Manual SRGB to Linear conversion (Android fallback for GL_SRGB8)
   base.rgb = pow(base.rgb, vec3(2.2));
   vec3 bump;

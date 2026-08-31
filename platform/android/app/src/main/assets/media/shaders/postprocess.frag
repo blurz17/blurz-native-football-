@@ -127,13 +127,10 @@ void main(void) {
   fragColor = AlternateContrast(fragColor, contrastBias);
   fragColor = clamp(fragColor, 0.0, 1.0);
 
-  // Manual gamma correction because GL_FRAMEBUFFER_SRGB is disabled on Android
-  float gamma = 2.2;
-  fragColor.r = GammaCorrection(fragColor.r, gamma);
-  fragColor.g = GammaCorrection(fragColor.g, gamma);
-  fragColor.b = GammaCorrection(fragColor.b, gamma);
+  // Manual gamma correction for Android (emulating GL_FRAMEBUFFER_SRGB hardware conversion)
+  fragColor = pow(fragColor, vec3(1.0 / 2.2));
 
-  //gl_FragColor = vec4(fragColor, 1.0);
+  //gl_FragColor = vec4(fragColor, 0);
   //fragColor = vec3(0, 0.5, 1.0);
-  stdout = vec4(fragColor, 1.0);
+  stdout = vec4(fragColor, 0);
 }
