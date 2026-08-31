@@ -53,7 +53,7 @@ Uint32 GetPitchDiffuseColor(SDL_Surface *pitchSurf, float xCoord, float yCoord) 
   float texScale = 0.32f;
   float randomNoiseMultiplier = 0.0f;
   float perlinNoiseMultiplier = 0.4f;
-  float brightness = 2.0f;
+  float brightness = 2.5f; // Increased from 2.0f for Android to match PC brightness
 
   float r, g, b;
 

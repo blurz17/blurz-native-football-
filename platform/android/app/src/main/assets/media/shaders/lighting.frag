@@ -102,25 +102,15 @@ void main(void) {
   float shaded = 1.0;
   if (has_shadow) {
 
-    const int poisson_size = 9;
+    const int poisson_size = 4;
     vec2 poisson[poisson_size];
-    // poisson[0] = vec2( 0.326, -0.406);
-    // poisson[1] = vec2(-0.840, -0.074);
-    // poisson[2] = vec2( 0.396,  0.457);
 
     poisson[0] = vec2( 0.500,  0.500);
     poisson[1] = vec2(-0.500,  0.500);
     poisson[2] = vec2( 0.500, -0.500);
     poisson[3] = vec2(-0.500, -0.500);
 
-    poisson[4] = vec2( 1.000,  0.000);
-    poisson[5] = vec2( 0.000,  1.000);
-    poisson[6] = vec2(-1.000,  0.000);
-    poisson[7] = vec2( 0.000, -1.000);
-
-    poisson[8] = vec2( 0.000,  0.000);
-
-    float offset = -0.0002;
+    float offset = -0.002;
     vec4 projectedFrag = lightViewProjectionMatrix * vec4(worldPosition, 1.0);
     for (int i = 0; i < poisson_size; i++) {
       float lightOccluderDist = textureProj(map_shadow, projectedFrag + (vec4(poisson[i], 0.0, 0.0) / 1500.0) + vec4(0.0, 0.0, offset, 0.0));

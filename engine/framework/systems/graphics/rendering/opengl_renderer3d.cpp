@@ -2111,7 +2111,7 @@ struct GLfunctions {
       SetUniformFloat("ambient", "contextWidth", (float)context_width);
       SetUniformFloat("ambient", "contextHeight", (float)context_height);
 
-      unsigned int kernelSize = 32;
+      unsigned int kernelSize = 8; // Match ambient.frag SSAO_kernelSize
       //SetUniformInt("ambient", "SSAO_kernelSize", kernelSize);
       float SSAO_kernel[kernelSize * 3];
       GeneratePoissonKernel(&SSAO_kernel[0], kernelSize);

@@ -164,7 +164,7 @@ namespace blunted {
         Renderer3D *renderer3D = caller->GetGraphicsScene()->GetGraphicsSystem()->GetRenderer3D();
         map.texture->GetResource()->SetRenderer3D(renderer3D);
         //map.texture->GetResource()->CreateTexture(e_InternalPixelFormat_DepthComponent32, e_PixelFormat_DepthComponent, 1024, 1024, false, false, false, true, true);
-        map.texture->GetResource()->CreateTexture(e_InternalPixelFormat_DepthComponent16, e_PixelFormat_DepthComponent, 2048, 2048, false, false, false, true, true);
+        map.texture->GetResource()->CreateTexture(e_InternalPixelFormat_DepthComponent16, e_PixelFormat_DepthComponent, 1024, 1024, false, false, false, true, true);
         //map.texture->GetResource()->CreateTexture(e_InternalPixelFormat_DepthComponent16, e_PixelFormat_DepthComponent, 4096, 4096, false, false, false, true, true); // filter on to get hardware shadowmap AA in shader: http://stackoverflow.com/questions/22419682/glsl-sampler2dshadow-and-shadow2d-clarification
         //map.texture->GetResource()->CreateTexture(e_InternalPixelFormat_DepthComponent32, e_PixelFormat_DepthComponent, 4096, 4096, false, false, false, true, true);
         //map.texture->GetResource()->CreateTexture(e_InternalPixelFormat_DepthComponent16, e_PixelFormat_DepthComponent, 8192, 8192, false, false, false, true, true);

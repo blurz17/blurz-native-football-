@@ -23,7 +23,7 @@ uniform float contextY;
 
 uniform vec2 cameraClip;
 
-const int SSAO_kernelSize = 32; // don't make larger than this: 32 is hardcoded in source, so no more sample positions exist
+const int SSAO_kernelSize = 8; // Reduced from 32 for mobile performance
 //uniform int SSAO_kernelSize; // won't work until glsl 4.3 or so.
 uniform vec3 SSAO_kernel[SSAO_kernelSize];
 
@@ -124,7 +124,7 @@ void main(void) {
 
   vec3 base = texture(map_albedo, texCoord).xyz;
 
-  float brightness = 0.5;
+  float brightness = 0.15;
 
   // blueish tint + brightness
   vec3 baseDesaturated = vec3((base.r + base.g + base.b) / 3.0);
@@ -170,7 +170,7 @@ void main(void) {
     //float rangeCheckFalloff = abs(-viewPosition.z - sampleDepth) < SSAO_radius ? 1.0 : 0.0;
     float rangeCheckFalloff = clamp((SSAO_radius - abs(-viewPosition.z - sampleDepth) * 0.5) / SSAO_radius, 0.0, 1.0); // gradual falloff version. * 0.4 == don't fall off all too gracefully; pow would be better (but slower!)
     // if actual fragment's depth is behind sample position, do not count
-    float rangeCheckInside = sampleDepth < -samplePos.z ? 1.0 : 0.0;
+    float rangeCheckInside = sampleDepth < -samplePos.z - 0.1 ? 1.0 : 0.0; // Added 0.1 bias for 16-bit depth buffer
 
     SSAO += rangeCheckFalloff * rangeCheckInside;
   }
@@ -180,7 +180,6 @@ void main(void) {
   SSAO = SSAO * 1.5 - 0.5; // exaggerate effect
   //SSAO *= SSAO; // exaggerate effect
   SSAO = clamp(SSAO, 0.0, 1.0);
-  SSAO = 1.0; //disable
 
 
   // self-illumination
