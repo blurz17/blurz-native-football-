@@ -28,9 +28,12 @@ import org.libsdl.app.R;
  */
 public class MainMenuActivity extends Activity {
 
+    public static MainMenuActivity instance;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        instance = this;
         BlurzTheme.applyImmersive(this);
 
         int dp12 = BlurzTheme.dpToPx(this, 12);
@@ -208,5 +211,17 @@ public class MainMenuActivity extends Activity {
         }
 
         return btn;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        BlurzTheme.applyImmersive(this);
+    }
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (instance == this) instance = null;
     }
 }

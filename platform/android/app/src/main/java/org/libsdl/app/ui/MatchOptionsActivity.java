@@ -38,6 +38,13 @@ public class MatchOptionsActivity extends Activity {
 
     private int homeTeamId;
     private int awayTeamId;
+    public static MatchOptionsActivity instance;
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (instance == this) instance = null;
+    }
 
     @Override
     protected void onResume() {
@@ -63,6 +70,7 @@ public class MatchOptionsActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        instance = this;
         BlurzTheme.applyImmersive(this);
 
         homeTeamId = getIntent().getIntExtra("homeTeamId", 3);
@@ -260,7 +268,6 @@ public class MatchOptionsActivity extends Activity {
             intent.putExtra("matchDuration", String.valueOf(duration));
             intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
             startActivity(intent);
-            finish();
         });
 
         LinearLayout.LayoutParams startParams = new LinearLayout.LayoutParams(

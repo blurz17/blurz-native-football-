@@ -46,9 +46,12 @@ public class TeamSelectActivity extends Activity {
     private TextView awaySelectedName;
     private TextView nextButton;
 
+    public static TeamSelectActivity instance;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        instance = this;
         BlurzTheme.applyImmersive(this);
 
         dbHelper = new DatabaseHelper(this);
@@ -428,5 +431,6 @@ public class TeamSelectActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         if (dbHelper != null) dbHelper.close();
+        if (instance == this) instance = null;
     }
 }

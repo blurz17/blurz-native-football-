@@ -75,6 +75,7 @@ class MenuTask : public Gui2Task {
     e_MenuAction menuAction;
 
     Lockable<QueuedFixture> queuedFixture; // todo: we can probably unlock this stuff
+    bool m_quickStarted;
 
 };
 

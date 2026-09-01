@@ -55,7 +55,11 @@ public final class BlurzTheme {
 
     /** Apply full-screen immersive mode to an Activity. */
     public static void applyImmersive(Activity activity) {
-        activity.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        try {
+            activity.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        } catch (Exception ignored) {
+            // Feature may have already been requested or content already set
+        }
         activity.getWindow().setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN

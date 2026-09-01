@@ -567,7 +567,7 @@ struct GLfunctions {
     // create buffers for overlay and simple quad rendering to use shaders instead of fixed pipeline
     InitializeOverlayAndQuadBuffers();
 
-    mapping.glClearColor(0, 0, 0, 0);
+    mapping.glClearColor(0, 0, 0, 1.0f);
     mapping.glClearDepth(1.0);
     mapping.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 

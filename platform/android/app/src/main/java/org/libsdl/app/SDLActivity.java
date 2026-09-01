@@ -306,6 +306,17 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                     mControls.setVisibility(View.VISIBLE);
                     mControls.setMatchMode(matchMode);
                 }
+                if (matchMode) {
+                    if (org.libsdl.app.ui.MatchOptionsActivity.instance != null) {
+                        org.libsdl.app.ui.MatchOptionsActivity.instance.finish();
+                    }
+                    if (org.libsdl.app.ui.TeamSelectActivity.instance != null) {
+                        org.libsdl.app.ui.TeamSelectActivity.instance.finish();
+                    }
+                    if (org.libsdl.app.ui.MainMenuActivity.instance != null) {
+                        org.libsdl.app.ui.MainMenuActivity.instance.finish();
+                    }
+                }
             }
         });
     }
@@ -343,8 +354,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         // We use setZOrderMediaOverlay(true) instead of setZOrderOnTop(true) so that Android Views 
         // (like MobileControlsView) can be drawn on top of the game surface!
         surface.setZOrderMediaOverlay(true);
-        // Make the SurfaceView transparent until OpenGL renders its first frame!
-        surface.getHolder().setFormat(android.graphics.PixelFormat.TRANSPARENT);
+        // Make the SurfaceView opaque to prevent any background apps/OS from bleeding through
+        surface.getHolder().setFormat(android.graphics.PixelFormat.OPAQUE);
         return surface;
     }
 
@@ -1969,6 +1980,12 @@ class SDLMain implements Runnable {
         if (SDLActivity.mSingleton != null && !SDLActivity.mSingleton.isFinishing()) {
             // Let's finish the Activity
             SDLActivity.mSDLThread = null;
+            
+            // Restart Main Menu when returning from match
+            Intent returnIntent = new Intent(SDLActivity.mSingleton, org.libsdl.app.ui.MainMenuActivity.class);
+            returnIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            SDLActivity.mSingleton.startActivity(returnIntent);
+            
             SDLActivity.mSingleton.finish();
         }  // else: Activity is already being destroyed
 
