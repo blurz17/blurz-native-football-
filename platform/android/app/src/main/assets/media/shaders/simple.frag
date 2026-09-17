@@ -26,8 +26,6 @@ void main(void) {
 
   vec4 base = texture(map_albedo, frag_texcoord.st);
   if (base.a < 0.5) discard;
-  // Manual SRGB to Linear conversion (Android fallback for GL_SRGB8)
-  base.rgb = pow(base.rgb, vec3(2.2));
   vec3 bump;
   if (materialbools.x == 1.0) {
     bump = normalize(texture(map_normal, frag_texcoord.st).xyz * 2.0 - 1.0);

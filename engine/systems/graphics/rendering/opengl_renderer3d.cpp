@@ -2129,7 +2129,7 @@ struct GLfunctions {
       SetUniformFloat("ambient", "contextWidth", (float)context_width);
       SetUniformFloat("ambient", "contextHeight", (float)context_height);
 
-      unsigned int kernelSize = 8; // Match ambient.frag SSAO_kernelSize
+      unsigned int kernelSize = 16; // Match ambient.frag SSAO_kernelSize
       //SetUniformInt("ambient", "SSAO_kernelSize", kernelSize);
       float SSAO_kernel[kernelSize * 3];
       GeneratePoissonKernel(&SSAO_kernel[0], kernelSize);
@@ -2166,11 +2166,19 @@ struct GLfunctions {
   }
 
   void OpenGLRenderer3D::SetFramebufferGammaCorrection(bool onOff) {
+#ifdef __ANDROID__
+    // On Android/OpenGL ES, GL_FRAMEBUFFER_SRGB is not reliably supported.
+    // postprocess.frag already applies manual gamma: pow(fragColor, vec3(1.0/2.2))
+    // Enabling GL_FRAMEBUFFER_SRGB on GPUs that support EXT_sRGB_write_control
+    // would cause double-gamma, crushing dark values. So we skip it entirely.
+    (void)onOff;
+#else
     if (onOff) {
       mapping.glEnable(GL_FRAMEBUFFER_SRGB);
     } else {
       mapping.glDisable(GL_FRAMEBUFFER_SRGB);
     }
+#endif
   }
 
   void OpenGLRenderer3D::UseShader(const std::string &name) {

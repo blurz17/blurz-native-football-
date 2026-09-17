@@ -23,7 +23,7 @@ uniform float contextY;
 
 uniform vec2 cameraClip;
 
-const int SSAO_kernelSize = 8; // Reduced from 32 for mobile performance
+const int SSAO_kernelSize = 16; // Increased from 8 for better quality (PC uses 32)
 //uniform int SSAO_kernelSize; // won't work until glsl 4.3 or so.
 uniform vec3 SSAO_kernel[SSAO_kernelSize];
 
@@ -178,7 +178,7 @@ void main(void) {
   SSAO /= float(SSAO_kernelSize);
   SSAO = 1.0 - SSAO;
   //SSAO = SSAO * 2.0 - 1.0; // exaggerate effect
-  SSAO = SSAO * 1.5 - 0.5; // exaggerate effect
+  SSAO = SSAO * 1.2 - 0.2; // softer exaggeration for 16 samples (PC uses * 1.5 - 0.5 with 32 samples)
   //SSAO *= SSAO; // exaggerate effect
   SSAO = clamp(SSAO, 0.0, 1.0);
 
