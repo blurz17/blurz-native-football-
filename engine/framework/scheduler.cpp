@@ -253,12 +253,25 @@ namespace blunted {
 
               if (program->taskSequence->GetSkippable()) {
                 // use relative time: don't mind if last frame lasted too long
-                timeUntilDueEntry_ms = (program->sequenceStartTime + program->taskSequence->GetSequenceTime()) - time_ms;
+                if (program->taskSequence->GetSequenceTime() == 0) {
+                  timeUntilDueEntry_ms = 0; // Don't build up negative priority debt if running unbounded
+                } else {
+                  timeUntilDueEntry_ms = (program->sequenceStartTime + program->taskSequence->GetSequenceTime()) - time_ms;
+                }
                 //printf("wiieee: %i .. %li .. %li\n", program->taskSequence->GetFrameTime(), time_ms, startTimeRel_ms);
               } else {
                 // use absolute time: if not enough iterations have been done to get to frametime * timesran, start immediately
                 timeUntilDueEntry_ms = (program->startTime + program->taskSequence->GetSequenceTime() * program->timesRan) - time_ms;
-                //printf("wiieee: %i .. %li .. %li\n", program->taskSequence->GetSequenceTime(), time_ms, timeUntilDueEntry_ms);
+                
+                // [Android Fix] Prevent spiral of death / rubber-banding
+                // If we fall behind by more than 50ms (5 physics frames), drop the missed frames.
+                // We do this by incrementing timesRan, which fast-forwards the engine's snapshot time
+                // so it doesn't try to catch up by running at 500% speed.
+                if (timeUntilDueEntry_ms < -50) {
+                  int droppedFrames = (-timeUntilDueEntry_ms) / program->taskSequence->GetSequenceTime();
+                  program->timesRan += droppedFrames;
+                  timeUntilDueEntry_ms += droppedFrames * program->taskSequence->GetSequenceTime();
+                }
               }
 
             }

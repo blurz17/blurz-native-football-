@@ -339,13 +339,13 @@ int main(int argc, const char** argv) {
   bool returnvalue = systemManager->RegisterSystem("GraphicsSystem", graphicsSystem);
   if (!returnvalue) Log(e_FatalError, "football", "main", "Could not register GraphicsSystem");
 
-  audioSystem = new AudioSystem();
-  returnvalue = systemManager->RegisterSystem("AudioSystem", audioSystem);
-  if (!returnvalue) Log(e_FatalError, "football", "main", "Could not register AudioSystem");
+  //audioSystem = new AudioSystem();
+  //returnvalue = systemManager->RegisterSystem("AudioSystem", audioSystem);
+  //if (!returnvalue) Log(e_FatalError, "Engine", "main", "Could not register AudioSystem");
 
   // todo: let systemmanager init systems?
   graphicsSystem->Initialize(*config);
-  audioSystem->Initialize(*config);
+  //audioSystem->Initialize(*config);
 
 
   // init scenes

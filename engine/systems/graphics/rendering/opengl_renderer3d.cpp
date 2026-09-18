@@ -415,6 +415,8 @@ struct GLfunctions {
     SDL_GetWindowSize(window, &this->context_width, &this->context_height);
 #endif
 
+    SDL_GL_SetSwapInterval(1);
+
 
     //    *reinterpret_cast<void**>(&(mapping.func)) =
     //    SDL_GL_GetProcAddress(#func); *reinterpret_cast<void**>(&(mapping.func))
