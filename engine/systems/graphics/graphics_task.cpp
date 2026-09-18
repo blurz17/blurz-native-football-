@@ -181,6 +181,11 @@ namespace blunted {
     // update: last frame time thing obviously doesn't work when only setting lastswaptime at next frame time, so waiting here for retrace again.
     //         kinda seems more fluent, though this may be psychological
 
+    // [Android Decoupling Fix] Do not synchronously wait for VSync on the scheduler thread!
+    // Renderer3D executes SwapBuffers asynchronously on its own OpenGL thread.
+    // Calling swapBuffers->Wait() here freezes the main engine thread for up to 16.6ms per frame,
+    // starving physics and causing the fast-slow speed inconsistency.
+    /*
     if (swapBuffers != boost::intrusive_ptr<Renderer3DMessage_SwapBuffers>()) {
       swapBuffers->Wait();
       unsigned long readyTime_ms = swapBuffers->GetReadyTime_ms();
@@ -191,6 +196,7 @@ namespace blunted {
       frameTimes_ms.Unlock();
       lastSwapTime_ms.SetData(readyTime_ms);
     }
+    */
 
 
     shadowSkipFrameCounter++;
