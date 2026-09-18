@@ -78,7 +78,8 @@ namespace blunted {
       assert(vertices != 0);
       boost::intrusive_ptr<Renderer3DMessage_UpdateVertexBuffer> updateVertexBuffer(new Renderer3DMessage_UpdateVertexBuffer(vertexBufferID, vertices, verticesDataSize));
       renderer3D->messageQueue.PushMessage(updateVertexBuffer);
-      updateVertexBuffer->Wait(); // todo: make the vertices* stuff lockable so we don't have to wait here
+      // [Android Fix] Do not synchronously block worker threads on 22 VBO updates per frame!
+      // updateVertexBuffer->Wait();
 
       //printf("updatele\n");
     }

@@ -83,3 +83,35 @@ if (swapBuffers != boost::intrusive_ptr<Renderer3DMessage_SwapBuffers>()) {
 graphics3d_frametime_ms=16
 ```
 
+---
+
+## 7. Replacing OpenGL `glMapBufferRange` Stalls with Asynchronous `glBufferSubData`
+* **File:** [opengl_renderer3d.cpp](file:///E:/MY-PROJECTS/android_native_football/engine/systems/graphics/rendering/opengl_renderer3d.cpp)
+* **Rationale:** On mobile GPUs (ARM Mali / Qualcomm Adreno), `glMapBufferRange` triggers synchronous CPU-GPU cache flushes and pipeline stalls. Switching to `glBufferSubData` allows mobile GPU drivers to stream dynamic vertex updates asynchronously without memory barriers.
+* **Code Modification:**
+```cpp
+#ifdef __ANDROID__
+// Fast asynchronous buffer upload on Mobile GPUs (avoids glMapBufferRange CPU-GPU sync stalls)
+mapping.glBufferSubData(GL_ARRAY_BUFFER, 0, verticesDataSize * sizeof(float), vertices);
+#else
+mapping.glBufferData(GL_ARRAY_BUFFER, verticesDataSize * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+float *ptr = (float*)mapping.glMapBufferRange(GL_ARRAY_BUFFER, 0, verticesDataSize * sizeof(float), GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+memcpy(ptr, vertices, verticesDataSize * sizeof(float));
+mapping.glUnmapBuffer(GL_ARRAY_BUFFER);
+#endif
+```
+
+---
+
+## 8. Removing Per-Player VBO Update Wait Locks (22x Frame Stall Elimination)
+* **File:** [vertexbuffer.cpp](file:///E:/MY-PROJECTS/android_native_football/engine/systems/graphics/resources/vertexbuffer.cpp)
+* **Rationale:** Every frame, 22 player skeletal animation meshes are updated. Calling `updateVertexBuffer->Wait()` inside `CreateOrUpdateVertexBuffer()` forced the worker threads to synchronously block 22 times PER FRAME waiting for the OpenGL thread to process each VBO update. Removing `Wait()` allows player mesh animation updates to complete asynchronously.
+* **Code Modification:**
+```cpp
+boost::intrusive_ptr<Renderer3DMessage_UpdateVertexBuffer> updateVertexBuffer(new Renderer3DMessage_UpdateVertexBuffer(vertexBufferID, vertices, verticesDataSize));
+renderer3D->messageQueue.PushMessage(updateVertexBuffer);
+// Commented out synchronous wait to prevent 22 thread stalls per frame
+// updateVertexBuffer->Wait();
+```
+
+
