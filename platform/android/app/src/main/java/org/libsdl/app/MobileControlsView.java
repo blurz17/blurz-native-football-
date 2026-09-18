@@ -425,7 +425,8 @@ public class MobileControlsView extends View {
                     joyBaseY = defaultJoyBaseY;
                     joyHandleX = joyBaseX;
                     joyHandleY = joyBaseY;
-                    updateJoystickKeys(0, 0);
+                    SDLActivity.setVirtualJoystickAxis(0, 0f);
+                    SDLActivity.setVirtualJoystickAxis(1, 0f);
                 } else {
                     for (ActionButton btn : buttons) {
                         if (btn.pointerId == pointerId) {
@@ -477,34 +478,16 @@ public class MobileControlsView extends View {
         joyHandleX = joyBaseX + dx;
         joyHandleY = joyBaseY + dy;
 
-        // Deadzone 20%
-        if (dist < joyRadius * 0.2f) {
-            updateJoystickKeys(0, 0);
-        } else {
-            updateJoystickKeys(dx, dy);
-        }
-    }
-    
-    private void updateJoystickKeys(float dx, float dy) {
-        boolean up = false, down = false, left = false, right = false;
+        // Deadzone 15%
+        float normX = dx / joyRadius;
+        float normY = dy / joyRadius;
 
-        if (dx != 0 || dy != 0) {
-            float angle = (float) Math.toDegrees(Math.atan2(dy, dx));
-            // 8-way directional mapping
-            if (angle > -22.5 && angle <= 22.5) right = true;
-            else if (angle > 22.5 && angle <= 67.5) { right = true; down = true; }
-            else if (angle > 67.5 && angle <= 112.5) down = true;
-            else if (angle > 112.5 && angle <= 157.5) { down = true; left = true; }
-            else if (angle > 157.5 || angle <= -157.5) left = true;
-            else if (angle > -157.5 && angle <= -112.5) { up = true; left = true; }
-            else if (angle > -112.5 && angle <= -67.5) up = true;
-            else if (angle > -67.5 && angle <= -22.5) { up = true; right = true; }
+        if (dist < joyRadius * 0.15f) {
+            normX = 0f;
+            normY = 0f;
         }
 
-        // SDLK_UP = 1073741906, SDLK_DOWN = 1073741905, SDLK_RIGHT = 1073741903, SDLK_LEFT = 1073741904
-        if (up != joyUp) { joyUp = up; SDLActivity.setVirtualKey(1073741906, up); }
-        if (down != joyDown) { joyDown = down; SDLActivity.setVirtualKey(1073741905, down); }
-        if (left != joyLeft) { joyLeft = left; SDLActivity.setVirtualKey(1073741904, left); }
-        if (right != joyRight) { joyRight = right; SDLActivity.setVirtualKey(1073741903, right); }
+        SDLActivity.setVirtualJoystickAxis(0, normX);
+        SDLActivity.setVirtualJoystickAxis(1, normY);
     }
 }

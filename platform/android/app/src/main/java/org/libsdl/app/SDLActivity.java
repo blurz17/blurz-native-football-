@@ -452,6 +452,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         mLayout.addView(mSurface);
 
         mControls = new MobileControlsView(this);
+        mControls.setMatchMode(true);
         Intent intent = getIntent();
         boolean isQuickMatch = intent != null && intent.getBooleanExtra("startQuickMatch", false);
         mControls.setVisibility(isQuickMatch ? View.GONE : View.VISIBLE);

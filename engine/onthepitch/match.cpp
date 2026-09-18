@@ -695,6 +695,14 @@ void Match::UpdateControllerSetup() {
       //printf("team id %i, %i\n", teamID, sides.at(i).controllerID);
     }
   }
+
+#ifdef __ANDROID__
+  if (teams[0]->GetHumanGamerCount() == 0 && controllers.size() > 0) {
+    int controllerIdx = (controllers.size() > 1) ? 1 : 0;
+    teams[0]->AddHumanGamer(controllers.at(controllerIdx), e_PlayerColor_Blue);
+    Log(e_Notice, "Match", "UpdateControllerSetup", "Android fallback: Assigned Team 0 human controller to index " + int_to_str(controllerIdx));
+  }
+#endif
 }
 
 void Match::SpamMessage(const std::string &msg, int time_ms) {

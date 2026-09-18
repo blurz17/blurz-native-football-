@@ -46,12 +46,14 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoys
         if (value < -1.0f) value = -1.0f;
         Sint16 int_val = (Sint16)(value * 32767.0f);
         SDL_JoystickSetVirtualAxis(virtual_joystick, axis, int_val);
+        SDL_JoystickUpdate();
     }
 }
 
 extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoystickButton(JNIEnv* env, jclass cls, jint button, jboolean pressed) {
     if (virtual_joystick) {
         SDL_JoystickSetVirtualButton(virtual_joystick, button, pressed ? SDL_PRESSED : SDL_RELEASED);
+        SDL_JoystickUpdate();
     }
 }
 
