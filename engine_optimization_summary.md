@@ -71,3 +71,15 @@ if (swapBuffers != boost::intrusive_ptr<Renderer3DMessage_SwapBuffers>()) {
 }
 */
 ```
+
+---
+
+## 6. Target 60 FPS Graphics Frame Pacing (Preventing Thermal Throttling & Flooding)
+* **File:** [football.config](file:///E:/MY-PROJECTS/android_native_football/platform/android/app/src/main/assets/football.config)
+* **Rationale:** Setting `graphics3d_frametime_ms=0` forced the engine scheduler to dispatch graphics frames at 300+ FPS unbounded. On mobile devices, this flooded the graphics message queue and caused immediate thermal throttling (DVFS), which created erratic CPU slowdowns followed by physics catch-up bursts. Changing `graphics3d_frametime_ms=16` paces the rendering to a smooth 60 FPS target (16ms interval).
+* **Code Modification:**
+```ini
+# Optimized for smooth 60fps on Android
+graphics3d_frametime_ms=16
+```
+
