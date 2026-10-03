@@ -370,6 +370,8 @@ public class MobileControlsView extends View {
                 btnBorderPaint.setStrokeWidth(btn.isPressed ? 6f : 3.5f);
                 canvas.drawCircle(btn.cx, btn.cy, r, btnBorderPaint);
                 
+                // Action Labels are REMOVED entirely per user request for clean UI
+                /*
                 // Primary Action Label
                 String mainLabel = isAttacking ? btn.labelOffense : btn.labelDefense;
                 textPaint.setTextSize(r * 0.38f);
@@ -387,6 +389,7 @@ public class MobileControlsView extends View {
                     subPaint.setColor(Color.argb(160, 0, 229, 255));
                     canvas.drawText(subLabel.toUpperCase(), btn.cx, btn.cy + (r * 0.35f), subPaint);
                 }
+                */
             }
         }
     }

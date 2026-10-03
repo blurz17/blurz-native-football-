@@ -27,48 +27,52 @@ Gui2ScoreBoard::Gui2ScoreBoard(Gui2WindowManager *windowManager, Match *match) :
   windowManager->GetCoordinates(x_percent, y_percent, width_percent, height_percent, x, y, w, h);
 
   // percentages
+  // EPL Style Flat Block Percentages
   float xOffset[9];
-  xOffset[0] = 1; // league logo
-  xOffset[1] = 5; // time
-  xOffset[2] = 15; // t1 logo
-  xOffset[3] = 19; // t1 name
-  xOffset[4] = 25; // t1 score
-  xOffset[5] = 29; // t2 logo
-  xOffset[6] = 33; // t2 name
-  xOffset[7] = 39; // t2 score
-  xOffset[8] = 43; // end
+  xOffset[0] = 0; // league logo (purple block start)
+  xOffset[1] = 6; // t1 name (red block start)
+  xOffset[2] = 12; // t1 score (white block start)
+  xOffset[3] = 15; // dash or gap
+  xOffset[4] = 16; // t2 score (white block start)
+  xOffset[5] = 19; // t2 name (blue block start)
+  xOffset[6] = 25; // time (dark gray block start)
+  xOffset[7] = 33; // end
+
   float relToAbsMultiplier = w / (width_percent * 1.0f);
   content_yOffset = 0.2f;
   float content_xOffset = 0.2f;
 
-  float bgAlpha = 100.0f;
+  float bgAlpha = 255.0f; // flat opaque colors
 
-  Gui2Image *bg = new Gui2Image(windowManager, "image_scoreboard_bg", 0, 0, xOffset[8] + 1, height_percent);
-  bg->LoadImage("media/menu/scoreboard_bg_modern.png");
+  Gui2Image *bg = new Gui2Image(windowManager, "image_scoreboard_bg", 0, 0, xOffset[7], height_percent);
+  bg->LoadImage("media/menu/scoreboard_bg_epl.png");
   this->AddView(bg);
   bg->Show();
 
   leagueLogo = new Gui2Image(windowManager, "game_scoreboard_leaguelogo", xOffset[0], 0, height_percent / windowManager->GetAspectRatio(), height_percent);
   this->AddView(leagueLogo);
-  leagueLogo->LoadImage("media/menu/league.png"); // todo: actual league picca
+  leagueLogo->LoadImage("media/menu/league.png");
   leagueLogo->Show();
 
-  timeCaption = new Gui2Caption(windowManager, "game_scoreboard_timecaption", xOffset[1] + content_xOffset, 0, 5, height_percent * 0.9f, "0:00");
-  teamNameCaption[0] = new Gui2Caption(windowManager, "game_scoreboard_team1name", xOffset[3] + content_xOffset, 0, 5, height_percent * 0.9f, match->GetTeam(0)->GetTeamData()->GetShortName());
-  teamNameCaption[1] = new Gui2Caption(windowManager, "game_scoreboard_team2name", xOffset[6] + content_xOffset, 0, 5, height_percent * 0.9f, match->GetTeam(1)->GetTeamData()->GetShortName());
-  goalCountCaption[0] = new Gui2Caption(windowManager, "game_scoreboard_team1goals", xOffset[4] + content_xOffset, 0, 5, height_percent * 0.9f, "0");
-  goalCountCaption[1] = new Gui2Caption(windowManager, "game_scoreboard_team2goals", xOffset[7] + content_xOffset, 0, 5, height_percent * 0.9f, "0");
+  teamNameCaption[0] = new Gui2Caption(windowManager, "game_scoreboard_team1name", xOffset[1] + content_xOffset + 0.5f, 0, 5, height_percent * 0.9f, match->GetTeam(0)->GetTeamData()->GetShortName());
+  goalCountCaption[0] = new Gui2Caption(windowManager, "game_scoreboard_team1goals", xOffset[2] + content_xOffset + 0.5f, 0, 3, height_percent * 0.9f, "0");
+  
+  goalCountCaption[1] = new Gui2Caption(windowManager, "game_scoreboard_team2goals", xOffset[4] + content_xOffset + 0.5f, 0, 3, height_percent * 0.9f, "0");
+  teamNameCaption[1] = new Gui2Caption(windowManager, "game_scoreboard_team2name", xOffset[5] + content_xOffset + 0.5f, 0, 5, height_percent * 0.9f, match->GetTeam(1)->GetTeamData()->GetShortName());
+  
+  timeCaption = new Gui2Caption(windowManager, "game_scoreboard_timecaption", xOffset[6] + content_xOffset + 1.0f, 0, 6, height_percent * 0.9f, "0:00");
 
-  timeCaption->SetColor(textColor);
+  Vector3 scoreColor = Vector3(0, 0, 0); // Black for score on white block
+  timeCaption->SetColor(Vector3(255, 255, 255));
   timeCaption->SetOutlineColor(textOutlineColor);
-  teamNameCaption[0]->SetColor(textColor);
+  teamNameCaption[0]->SetColor(Vector3(255, 255, 255));
   teamNameCaption[0]->SetOutlineColor(textOutlineColor);
-  teamNameCaption[1]->SetColor(textColor);
+  teamNameCaption[1]->SetColor(Vector3(255, 255, 255));
   teamNameCaption[1]->SetOutlineColor(textOutlineColor);
-  goalCountCaption[0]->SetColor(textColor);
-  goalCountCaption[0]->SetOutlineColor(textOutlineColor);
-  goalCountCaption[1]->SetColor(textColor);
-  goalCountCaption[1]->SetOutlineColor(textOutlineColor);
+  goalCountCaption[0]->SetColor(scoreColor);
+  goalCountCaption[0]->SetOutlineColor(scoreColor);
+  goalCountCaption[1]->SetColor(scoreColor);
+  goalCountCaption[1]->SetOutlineColor(scoreColor);
 
   // tvLogo removed for cleaner layout
 
@@ -86,6 +90,8 @@ Gui2ScoreBoard::Gui2ScoreBoard(Gui2WindowManager *windowManager, Match *match) :
   SetGoalCount(0, 0);
   SetGoalCount(1, 0);
 
+  // EPL style doesn't use massive team logos on the scoreboard bug, just text
+  /*
   teamLogo[0] = new Gui2Image(windowManager, "game_scoreboard_team1logo", xOffset[2], 0, height_percent / windowManager->GetAspectRatio(), height_percent);
   this->AddView(teamLogo[0]);
   teamLogo[0]->LoadImage(match->GetTeam(0)->GetTeamData()->GetLogoUrl());
@@ -95,6 +101,7 @@ Gui2ScoreBoard::Gui2ScoreBoard(Gui2WindowManager *windowManager, Match *match) :
   this->AddView(teamLogo[1]);
   teamLogo[1]->LoadImage(match->GetTeam(1)->GetTeamData()->GetLogoUrl());
   teamLogo[1]->Show();
+  */
 
   this->Show();
 }
