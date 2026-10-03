@@ -113,5 +113,3 @@ renderer3D->messageQueue.PushMessage(updateVertexBuffer);
 // Commented out synchronous wait to prevent 22 thread stalls per frame
 // updateVertexBuffer->Wait();
 ```
-
-

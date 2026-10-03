@@ -34,6 +34,14 @@ public class MobileControlsView extends View {
     
     private int pressedMenuIndex = -1;
 
+    // Game Over State
+    private boolean isGameOver = false;
+    private int goT1Score, goT2Score;
+    private int goT1Poss, goT2Poss;
+    private int goT1Shots, goT2Shots;
+    private int gameOverButtonPointerId = -1;
+    private boolean gameOverButtonPressed = false;
+
     // Active keys from joystick
     private boolean joyUp, joyDown, joyLeft, joyRight;
 
@@ -120,8 +128,8 @@ public class MobileControlsView extends View {
         float spacingX = w * 0.13f;
         float spacingY = h * 0.22f;
 
-        int baseCol = Color.argb(120, 30, 80, 30); // Dark green
-        int borderCol = Color.argb(150, 150, 200, 150);
+        int baseCol = Color.argb(110, 20, 25, 35); // Dark navy/glassmorphic
+        int borderCol = Color.argb(150, 0, 229, 255); // Neon cyan border
         
         // PASS (Left of Dash)
         buttons.add(new ActionButton(dashX - spacingX, dashY + h * 0.02f, normalRad, "Pass", "Switch", 0, 4, baseCol, borderCol));
@@ -135,10 +143,22 @@ public class MobileControlsView extends View {
         // SHOOT (Above Dash)
         buttons.add(new ActionButton(dashX - w * 0.02f, dashY - spacingY - h * 0.02f, normalRad, "Shoot", "Clear", 2, 1, baseCol, borderCol));
         
-        // TOP RIGHT CORNER: PAUSE
-        buttons.add(new ActionButton(w * 0.95f, h * 0.06f, normalRad * 0.4f, "Pause", "Pause", 7, 7, Color.argb(80, 50, 50, 50), borderCol));
+        // TOP RIGHT CORNER: PAUSE (using sleek neon outline)
+        buttons.add(new ActionButton(w * 0.95f, h * 0.06f, normalRad * 0.45f, "||", "||", 7, 7, Color.argb(90, 20, 25, 35), borderCol));
 
         textPaint.setTextSize(normalRad * 0.45f);
+    }
+
+    public void showGameOver(int t1s, int t2s, int t1p, int t2p, int t1sh, int t2sh) {
+        isGameOver = true;
+        goT1Score = t1s;
+        goT2Score = t2s;
+        goT1Poss = t1p;
+        goT2Poss = t2p;
+        goT1Shots = t1sh;
+        goT2Shots = t2sh;
+        isMatchMode = false;
+        invalidate();
     }
 
     @Override
@@ -146,71 +166,169 @@ public class MobileControlsView extends View {
         super.onDraw(canvas);
 
         if (!isMatchMode) {
-            // FULL TOUCH PES 21 STYLE PAUSE MENU
+            if (isGameOver) {
+                // GAME OVER SCREEN
+                Paint overlay = new Paint(Paint.ANTI_ALIAS_FLAG);
+                overlay.setColor(Color.argb(230, 10, 14, 26)); // Deep dark navy tint
+                canvas.drawRect(0, 0, getWidth(), getHeight(), overlay);
+                
+                textPaint.setColor(Color.WHITE);
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                textPaint.setTextSize(getHeight() * 0.12f);
+                canvas.drawText("FULL TIME", getWidth() / 2f, getHeight() * 0.2f, textPaint);
+                
+                // Score
+                textPaint.setColor(Color.parseColor("#00E5FF"));
+                textPaint.setTextSize(getHeight() * 0.18f);
+                canvas.drawText(goT1Score + " - " + goT2Score, getWidth() / 2f, getHeight() * 0.45f, textPaint);
+                
+                // Stats
+                textPaint.setColor(Color.WHITE);
+                textPaint.setTextSize(getHeight() * 0.05f);
+                canvas.drawText("POSSESSION", getWidth() / 2f, getHeight() * 0.60f, textPaint);
+                textPaint.setColor(Color.LTGRAY);
+                canvas.drawText(goT1Poss + "% - " + goT2Poss + "%", getWidth() / 2f, getHeight() * 0.67f, textPaint);
+                
+                textPaint.setColor(Color.WHITE);
+                canvas.drawText("SHOTS", getWidth() / 2f, getHeight() * 0.77f, textPaint);
+                textPaint.setColor(Color.LTGRAY);
+                canvas.drawText(goT1Shots + " - " + goT2Shots, getWidth() / 2f, getHeight() * 0.84f, textPaint);
+
+                // OK Button
+                float bw = getWidth() * 0.2f;
+                float bh = getHeight() * 0.12f;
+                float bx = getWidth() * 0.85f - bw/2f;
+                float by = getHeight() * 0.85f - bh/2f;
+                Paint btnBg = new Paint(Paint.ANTI_ALIAS_FLAG);
+                btnBg.setColor(gameOverButtonPressed ? Color.argb(180, 0, 180, 216) : Color.argb(110, 20, 30, 48));
+                canvas.drawRoundRect(bx, by, bx+bw, by+bh, 16f, 16f, btnBg);
+                Paint btnBorder = new Paint(Paint.ANTI_ALIAS_FLAG);
+                btnBorder.setStyle(Paint.Style.STROKE);
+                btnBorder.setStrokeWidth(4f);
+                btnBorder.setColor(Color.parseColor("#00E5FF"));
+                canvas.drawRoundRect(bx, by, bx+bw, by+bh, 16f, 16f, btnBorder);
+                textPaint.setColor(Color.WHITE);
+                textPaint.setTextSize(bh * 0.4f);
+                canvas.drawText("CONTINUE", bx + bw/2f, by + bh*0.65f, textPaint);
+                
+                return;
+            }
+
+            // MODERN FC MOBILE / PES 21 STYLE GLASSMORPHIC PAUSE MENU
             Paint overlay = new Paint(Paint.ANTI_ALIAS_FLAG);
-            overlay.setColor(Color.argb(190, 10, 15, 20));
+            overlay.setColor(Color.argb(215, 10, 14, 26)); // Deep dark navy tint
             canvas.drawRect(0, 0, getWidth(), getHeight(), overlay);
             
+            // Header Title
             textPaint.setColor(Color.WHITE);
-            textPaint.setTextSize(getHeight() * 0.1f);
+            textPaint.setTextSize(getHeight() * 0.08f);
             textPaint.setTextAlign(Paint.Align.LEFT);
-            canvas.drawText("MATCH PAUSED", getWidth() * 0.12f, getHeight() * 0.2f, textPaint);
+            textPaint.setTypeface(Typeface.DEFAULT_BOLD);
+            canvas.drawText("MATCH PAUSED", getWidth() * 0.10f, getHeight() * 0.18f, textPaint);
             
-            float btnW = getWidth() * 0.4f;
-            float btnH = getHeight() * 0.11f;
-            float startX = getWidth() * 0.55f;
+            // Subheader
+            Paint subText = new Paint(Paint.ANTI_ALIAS_FLAG);
+            subText.setColor(Color.parseColor("#00E5FF"));
+            subText.setTextSize(getHeight() * 0.032f);
+            subText.setTypeface(Typeface.DEFAULT_BOLD);
+            canvas.drawText("SELECT AN OPTION TO CONTINUE", getWidth() * 0.10f, getHeight() * 0.24f, subText);
+            
+            float btnW = getWidth() * 0.42f;
+            float btnH = getHeight() * 0.10f;
+            float startX = getWidth() * 0.52f;
             float startY = getHeight() * 0.12f;
-            float spacing = getHeight() * 0.13f;
+            float spacing = getHeight() * 0.125f;
             
             String[] menuItems = {"RESUME MATCH", "SQUAD MANAGEMENT", "MATCH SETTINGS", "CAMERA SETTINGS", "COMMAND LIST", "FORFEIT MATCH"};
             
             for (int i = 0; i < menuItems.length; i++) {
                 float y = startY + (i * spacing);
+                boolean isPressed = (pressedMenuIndex == i);
                 
-                Paint btnBg = new Paint(Paint.ANTI_ALIAS_FLAG);
-                btnBg.setColor(Color.argb(pressedMenuIndex == i ? 180 : 80, 40, 80, 140));
-                canvas.drawRect(startX, y, startX + btnW, y + btnH, btnBg);
+                // Glass Card Background
+                Paint cardBg = new Paint(Paint.ANTI_ALIAS_FLAG);
+                cardBg.setColor(Color.argb(isPressed ? 180 : 100, 26, 35, 50));
+                canvas.drawRoundRect(startX, y, startX + btnW, y + btnH, 20f, 20f, cardBg);
                 
-                Paint btnBorder = new Paint(Paint.ANTI_ALIAS_FLAG);
-                btnBorder.setStyle(Paint.Style.STROKE);
-                btnBorder.setStrokeWidth(3f);
-                btnBorder.setColor(Color.argb(200, 100, 150, 255));
-                canvas.drawRect(startX, y, startX + btnW, y + btnH, btnBorder);
+                // Glass Border
+                Paint cardBorder = new Paint(Paint.ANTI_ALIAS_FLAG);
+                cardBorder.setStyle(Paint.Style.STROKE);
+                cardBorder.setStrokeWidth(isPressed ? 5f : 3f);
+                cardBorder.setColor(isPressed ? Color.parseColor("#00E5FF") : Color.argb(120, 42, 58, 78));
+                canvas.drawRoundRect(startX, y, startX + btnW, y + btnH, 20f, 20f, cardBorder);
                 
-                textPaint.setTextSize(btnH * 0.45f);
-                textPaint.setTextAlign(Paint.Align.CENTER);
-                canvas.drawText(menuItems[i], startX + btnW / 2, y + btnH * 0.65f, textPaint);
+                // Left Accent Indicator Bar
+                Paint accentBar = new Paint(Paint.ANTI_ALIAS_FLAG);
+                accentBar.setColor(i == 5 ? Color.parseColor("#FF1744") : (isPressed ? Color.parseColor("#00E5FF") : Color.parseColor("#00E676")));
+                canvas.drawRoundRect(startX, y + btnH * 0.2f, startX + 12f, y + btnH * 0.8f, 6f, 6f, accentBar);
+                
+                // Text
+                textPaint.setTextSize(btnH * 0.40f);
+                textPaint.setTextAlign(Paint.Align.LEFT);
+                textPaint.setColor(isPressed ? Color.parseColor("#00E5FF") : Color.WHITE);
+                canvas.drawText(menuItems[i], startX + 32f, y + btnH * 0.62f, textPaint);
             }
             return;
         }
 
-        // Draw Match Mode
-        // Draw Joystick Base (More visible!)
-        bgPaint.setShader(new RadialGradient(joyBaseX, joyBaseY, joyRadius, Color.argb(120, 60, 60, 60), Color.argb(40, 30, 30, 30), Shader.TileMode.CLAMP));
+        // ── Draw Match Mode HUD Controls ──
+        
+        // 1. Draw Virtual Joystick Outer Base (Frosted Radial Glass)
+        bgPaint.setShader(new RadialGradient(joyBaseX, joyBaseY, joyRadius,
+            Color.argb(90, 40, 50, 70), Color.argb(20, 10, 15, 25), Shader.TileMode.CLAMP));
         canvas.drawCircle(joyBaseX, joyBaseY, joyRadius, bgPaint);
         
-        // Draw Joystick Base Border
-        btnBorderPaint.setColor(Color.argb(100, 200, 200, 200));
-        btnBorderPaint.setAlpha(100);
+        // Outer Glass Border
+        btnBorderPaint.setColor(joyPointerId != -1 ? Color.parseColor("#00E5FF") : Color.argb(80, 200, 220, 255));
+        btnBorderPaint.setStrokeWidth(joyPointerId != -1 ? 6f : 3f);
         canvas.drawCircle(joyBaseX, joyBaseY, joyRadius, btnBorderPaint);
 
-        // Draw Joystick Handle (More visible!)
-        float hScale = joyPointerId != -1 ? 1.15f : 1.0f;
-        handlePaint.setShader(new RadialGradient(joyHandleX, joyHandleY, joyHandleRadius * hScale, Color.argb(255, 255, 255, 255), Color.argb(200, 200, 200, 200), Shader.TileMode.CLAMP));
+        // 8 Directional Compass Ticks
+        Paint tickPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        tickPaint.setColor(Color.argb(120, 255, 255, 255));
+        tickPaint.setStrokeWidth(4f);
+        for (int i = 0; i < 8; i++) {
+            double angle = i * Math.PI / 4.0;
+            float innerR = joyRadius * 0.82f;
+            float outerR = joyRadius * 0.96f;
+            float x1 = joyBaseX + (float)(Math.cos(angle) * innerR);
+            float y1 = joyBaseY + (float)(Math.sin(angle) * innerR);
+            float x2 = joyBaseX + (float)(Math.cos(angle) * outerR);
+            float y2 = joyBaseY + (float)(Math.sin(angle) * outerR);
+            canvas.drawLine(x1, y1, x2, y2, tickPaint);
+        }
+
+        // Active Vector Guide Line
+        if (joyPointerId != -1) {
+            Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            linePaint.setColor(Color.argb(160, 0, 229, 255));
+            linePaint.setStrokeWidth(6f);
+            canvas.drawLine(joyBaseX, joyBaseY, joyHandleX, joyHandleY, linePaint);
+        }
+
+        // 2. Draw Joystick Center Handle
+        float hScale = joyPointerId != -1 ? 1.12f : 1.0f;
+        handlePaint.setShader(new RadialGradient(joyHandleX, joyHandleY, joyHandleRadius * hScale,
+            joyPointerId != -1 ? Color.parseColor("#00E5FF") : Color.argb(240, 240, 245, 255),
+            Color.argb(180, 100, 140, 180), Shader.TileMode.CLAMP));
         canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius * hScale, handlePaint);
         
-        // Draw a slight border for the handle to make it pop
-        btnBorderPaint.setColor(Color.argb(200, 100, 100, 100));
-        btnBorderPaint.setAlpha(150);
+        // Handle Border & Center Gem
+        btnBorderPaint.setColor(joyPointerId != -1 ? Color.WHITE : Color.argb(200, 160, 200, 240));
+        btnBorderPaint.setStrokeWidth(4f);
         canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius * hScale, btnBorderPaint);
 
-        // Draw Buttons
+        Paint gemPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        gemPaint.setColor(Color.parseColor("#00E5FF"));
+        canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius * 0.25f, gemPaint);
+
+        // 3. Draw Action Buttons
         for (ActionButton btn : buttons) {
-            float scale = btn.isPressed ? 0.85f : 1.0f;
+            float scale = btn.isPressed ? 0.90f : 1.0f;
             float r = btn.radius * scale;
 
             if (btn.keycodeOffense == 7) {
-                // Custom drawing for the Pause button based on the reference image
+                // Modern Pause Button Card
                 float bw = r * 2.2f;
                 float bh = r * 1.5f;
                 float left = btn.cx - bw / 2f;
@@ -218,57 +336,57 @@ public class MobileControlsView extends View {
                 float right = btn.cx + bw / 2f;
                 float bottom = btn.cy + bh / 2f;
                 
-                // Outer rounded rectangle (semi-transparent white)
                 Paint pauseBg = new Paint(Paint.ANTI_ALIAS_FLAG);
-                pauseBg.setColor(Color.argb(160, 240, 255, 240)); // Slightly greenish white tint like image
-                pauseBg.setStyle(Paint.Style.FILL);
-                if (btn.isPressed) pauseBg.setColor(Color.argb(200, 200, 255, 200));
-                float cornerRadius = r * 0.3f;
-                canvas.drawRoundRect(left, top, right, bottom, cornerRadius, cornerRadius, pauseBg);
+                pauseBg.setColor(Color.argb(btn.isPressed ? 220 : 140, 20, 30, 45));
+                canvas.drawRoundRect(left, top, right, bottom, r * 0.35f, r * 0.35f, pauseBg);
                 
-                // Inner dark green circle
-                Paint pauseCircle = new Paint(Paint.ANTI_ALIAS_FLAG);
-                pauseCircle.setColor(Color.argb(150, 60, 90, 60)); // Dark green/grey tint
-                pauseCircle.setStyle(Paint.Style.FILL);
-                canvas.drawCircle(btn.cx, btn.cy, r * 0.7f, pauseCircle);
+                Paint pauseBorder = new Paint(Paint.ANTI_ALIAS_FLAG);
+                pauseBorder.setStyle(Paint.Style.STROKE);
+                pauseBorder.setStrokeWidth(3f);
+                pauseBorder.setColor(btn.isPressed ? Color.parseColor("#00E5FF") : Color.argb(120, 0, 229, 255));
+                canvas.drawRoundRect(left, top, right, bottom, r * 0.35f, r * 0.35f, pauseBorder);
                 
-                // Two vertical black bars (Pause Icon)
+                // Pause Icon Bars
                 Paint pauseBars = new Paint(Paint.ANTI_ALIAS_FLAG);
-                pauseBars.setColor(Color.argb(220, 20, 30, 20));
-                pauseBars.setStyle(Paint.Style.FILL);
-                
-                float barW = r * 0.15f;
-                float barH = r * 0.5f;
-                float barSpacing = r * 0.18f;
-                
+                pauseBars.setColor(btn.isPressed ? Color.parseColor("#00E5FF") : Color.WHITE);
+                float barW = r * 0.16f;
+                float barH = r * 0.50f;
+                float barSpacing = r * 0.16f;
                 float barTop = btn.cy - barH / 2f;
                 float barBottom = btn.cy + barH / 2f;
                 
-                // Left bar
-                canvas.drawRoundRect(btn.cx - barSpacing - barW, barTop, btn.cx - barSpacing, barBottom, barW/3, barW/3, pauseBars);
-                // Right bar
-                canvas.drawRoundRect(btn.cx + barSpacing, barTop, btn.cx + barSpacing + barW, barBottom, barW/3, barW/3, pauseBars);
-                
-                // Draw a very thin horizontal line passing across the button like in the image
-                Paint thinLine = new Paint(Paint.ANTI_ALIAS_FLAG);
-                thinLine.setColor(Color.argb(200, 255, 255, 255));
-                thinLine.setStrokeWidth(2f);
-                canvas.drawLine(left - r*0.5f, btn.cy, btn.cx - barSpacing - barW - 2f, btn.cy, thinLine);
-                canvas.drawLine(btn.cx + barSpacing + barW + 2f, btn.cy, right + r*0.5f, btn.cy, thinLine);
+                canvas.drawRoundRect(btn.cx - barSpacing - barW, barTop, btn.cx - barSpacing, barBottom, 4f, 4f, pauseBars);
+                canvas.drawRoundRect(btn.cx + barSpacing, barTop, btn.cx + barSpacing + barW, barBottom, 4f, 4f, pauseBars);
                 
             } else {
-                btnBgPaint.setShader(new RadialGradient(btn.cx, btn.cy, r, btn.colorBase, Color.argb(50, 20, 20, 20), Shader.TileMode.CLAMP));
+                // Glassmorphic Action Buttons
+                int baseCol = btn.isPressed ? Color.argb(180, 0, 180, 216) : Color.argb(110, 20, 30, 48);
+                int borderCol = btn.isPressed ? Color.parseColor("#00E5FF") : Color.argb(160, 80, 140, 200);
+
+                btnBgPaint.setShader(new RadialGradient(btn.cx, btn.cy, r, baseCol, Color.argb(60, 10, 15, 25), Shader.TileMode.CLAMP));
                 canvas.drawCircle(btn.cx, btn.cy, r, btnBgPaint);
                 
-                btnBorderPaint.setColor(btn.colorBorder);
-                btnBorderPaint.setAlpha(btn.isPressed ? 255 : 180);
+                btnBorderPaint.setColor(borderCol);
+                btnBorderPaint.setStrokeWidth(btn.isPressed ? 6f : 3.5f);
                 canvas.drawCircle(btn.cx, btn.cy, r, btnBorderPaint);
                 
-                // Draw Label
-                String label = isAttacking ? btn.labelOffense : btn.labelDefense;
-                textPaint.setTextSize(r * 0.35f);
-                textPaint.setColor(btn.isPressed ? Color.rgb(200, 200, 200) : Color.WHITE);
-                canvas.drawText(label, btn.cx, btn.cy + (r * 0.1f), textPaint);
+                // Primary Action Label
+                String mainLabel = isAttacking ? btn.labelOffense : btn.labelDefense;
+                textPaint.setTextSize(r * 0.38f);
+                textPaint.setTypeface(Typeface.DEFAULT_BOLD);
+                textPaint.setColor(btn.isPressed ? Color.parseColor("#00E5FF") : Color.WHITE);
+                canvas.drawText(mainLabel.toUpperCase(), btn.cx, btn.cy - (r * 0.05f), textPaint);
+
+                // Secondary Sub-label (Mode Indicator)
+                String subLabel = isAttacking ? btn.labelDefense : btn.labelOffense;
+                if (!subLabel.equalsIgnoreCase(mainLabel)) {
+                    Paint subPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    subPaint.setTextAlign(Paint.Align.CENTER);
+                    subPaint.setTextSize(r * 0.22f);
+                    subPaint.setTypeface(Typeface.DEFAULT);
+                    subPaint.setColor(Color.argb(160, 0, 229, 255));
+                    canvas.drawText(subLabel.toUpperCase(), btn.cx, btn.cy + (r * 0.35f), subPaint);
+                }
             }
         }
     }
@@ -298,6 +416,45 @@ public class MobileControlsView extends View {
         float y = event.getY(pointerIndex);
 
         if (!isMatchMode) {
+            if (isGameOver) {
+                float bw = getWidth() * 0.2f;
+                float bh = getHeight() * 0.12f;
+                float bx = getWidth() * 0.85f - bw/2f;
+                float by = getHeight() * 0.85f - bh/2f;
+                
+                switch (action) {
+                    case MotionEvent.ACTION_DOWN:
+                    case MotionEvent.ACTION_POINTER_DOWN:
+                        if (x >= bx && x <= bx + bw && y >= by && y <= by + bh) {
+                            gameOverButtonPointerId = pointerId;
+                            gameOverButtonPressed = true;
+                            invalidate();
+                            return true;
+                        }
+                        break;
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_POINTER_UP:
+                        if (pointerId == gameOverButtonPointerId) {
+                            gameOverButtonPointerId = -1;
+                            gameOverButtonPressed = false;
+                            isGameOver = false; // exit game over overlay
+                            invalidate();
+                            
+                            // Send Enter key (13) to trigger C++ Gui2Button OnClick
+                            SDLActivity.setVirtualKey(13, true);
+                            postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    SDLActivity.setVirtualKey(13, false);
+                                }
+                            }, 50);
+                            return true;
+                        }
+                        break;
+                }
+                return true;
+            }
+
             float btnW = getWidth() * 0.4f;
             float btnH = getHeight() * 0.11f;
             float startX = getWidth() * 0.55f;

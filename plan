@@ -1,0 +1,159 @@
+I want you to perform a **forensic technical analysis of this existing football game engine before making any modifications**.
+
+I am not a game developer and I do not know C++ deeply, although I have a programming background. The engine is approximately 15 years old, was originally designed for PC, and has already been modified enough to run on Android.
+
+My goal at this stage is **not to fix anything**.
+
+I want to understand what the codebase actually is, how it works, what its architectural problems are, and what constraints we will face when modernizing it.
+
+### Rules
+
+1. Do not modify, refactor, reorganize, or rewrite code.
+2. Do not assume that my description of the architecture is correct.
+3. Do not infer responsibilities from folder names alone.
+4. Trace actual code, dependencies, callers, callees, ownership, and data flow.
+5. Clearly distinguish:
+
+   * **Observed** — directly confirmed from source.
+   * **Inferred** — strongly supported by the source.
+   * **Unknown** — cannot currently be established.
+6. When something is unknown, do not guess. Identify what must be inspected to determine it.
+7. Do not propose a target architecture until the current architecture has been documented.
+
+### Phase 1 — Codebase Inventory
+
+Discover the actual major modules and classify them into areas such as:
+
+* Engine core
+* Football/gameplay
+* Rendering
+* Physics
+* Input
+* UI
+* Audio
+* Assets/resources
+* Loaders
+* Platform/Android
+* Build system
+* Third-party libraries
+* Tests
+
+For each major subsystem document:
+
+* Responsibility
+* Important classes/files
+* Dependencies
+* Consumers
+* Global state
+* External dependencies
+
+### Phase 2 — Runtime Flow
+
+Trace the complete execution path from:
+
+Android application startup → JNI → SDL → native code → engine initialization → game initialization → main loop → input → gameplay → physics → rendering → frame.
+
+Do not assume this flow is correct. Replace it with the actual flow discovered in the source.
+
+Produce a concrete runtime diagram containing the relevant classes/files.
+
+### Phase 3 — Dependency and Coupling Analysis
+
+Analyze relationships between:
+
+* Engine
+* Game
+* Player
+* Ball
+* Physics
+* Rendering
+* UI
+* Input
+* Assets
+* SDL/JNI/Android
+
+Identify:
+
+* Circular dependencies
+* Global state
+* Singletons
+* Mixed responsibilities
+* Platform leakage
+* Rendering/gameplay coupling
+* UI/gameplay coupling
+* Hard-coded resources
+* Difficult-to-test components
+* Other architecture problems supported by the code
+
+### Phase 4 — Responsibility Analysis
+
+For every major subsystem determine exactly what responsibility it currently owns.
+
+Pay particular attention to whether football-specific logic has leaked into generic engine systems and whether rendering, UI, input, and platform concerns are mixed with gameplay logic.
+
+### Phase 5 — Data Flow
+
+Trace these separately:
+
+1. Input → gameplay
+2. Asset → loader → resource system → scene/object → renderer
+3. Game state → UI
+4. Player data → player object → model/animation → renderer
+
+Document the actual data flow and important conversion boundaries.
+
+### Phase 6 — Testability
+
+Determine which major systems can currently be tested independently and what prevents isolated testing.
+
+Do not merely report "there are no tests." Identify the architectural reasons that make testing difficult.
+
+### Phase 7 — Android Integration
+
+Analyze:
+
+* Android lifecycle
+* JNI
+* SDL
+* Native entry points
+* Input
+* Rendering
+* Threads
+* Pause/resume
+* Assets
+* Platform-specific dependencies
+
+Determine where Android-specific concerns enter the engine and whether the current boundaries are maintainable.
+
+### Final Deliverable
+
+Produce a **Current Architecture Report** containing:
+
+1. Executive summary
+2. Actual module map
+3. Runtime/execution diagram
+4. Dependency/coupling map
+5. Major responsibilities
+6. Input flow
+7. Rendering/asset flow
+8. UI flow
+9. Android/JNI/SDL flow
+10. Testability analysis
+11. Architectural problems, backed by code evidence
+12. Unknowns that require further inspection
+13. Technical constraints that affect future modernization
+14. Areas that appear safe to improve
+15. Areas that are high-risk and should not yet be touched
+
+Do **not** redesign the engine yet.
+
+The purpose of this analysis is to establish a reliable technical baseline so that later we can separately investigate:
+
+* architecture modernization
+* Android/SDL/JNI
+* modern mobile player controls
+* player models and asset pipeline
+* graphics modernization
+* modern football UI
+
+Every major conclusion must be traceable to the actual codebase.

@@ -40,6 +40,21 @@
 
 using namespace blunted;
 
+GameContext* globalContext = nullptr;
+
+GameContext::GameContext() {
+  config = nullptr;
+  db = nullptr;
+  graphicsSystem = nullptr;
+  superDebug = false;
+  debugMode = e_DebugMode_Off;
+}
+
+GameContext::~GameContext() {
+}
+
+GameContext* GetContext() { return globalContext; }
+
 GraphicsSystem *graphicsSystem;
 AudioSystem *audioSystem;
 
@@ -270,43 +285,10 @@ class ThreadHudThread : public Thread {
 
 
 #ifdef __ANDROID__
-#include <SDL2/SDL_system.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include "asset_list.hpp"
-
-void ExtractAsset(const char* assetFile, const std::string& destFile) {
-  SDL_RWops* src = SDL_RWFromFile(assetFile, "rb");
-  if (src) {
-    SDL_RWops* dst = SDL_RWFromFile(destFile.c_str(), "wb");
-    if (dst) {
-      char buffer[4096];
-      size_t read_bytes;
-      while ((read_bytes = SDL_RWread(src, buffer, 1, sizeof(buffer))) > 0) {
-        SDL_RWwrite(dst, buffer, 1, read_bytes);
-      }
-      SDL_RWclose(dst);
-    }
-    SDL_RWclose(src);
-  }
-}
+#include "platform/android/android_assets.hpp"
 
 extern "C" __attribute__((visibility("default"))) int SDL_main(int argc, char** argv) {
-  std::string internalPath = SDL_AndroidGetInternalStoragePath();
-  
-  if (access((internalPath + "/football.config").c_str(), F_OK) == -1) {
-    for (int i = 0; asset_dirs[i] != nullptr; i++) {
-      mkdir((internalPath + "/" + asset_dirs[i]).c_str(), 0777);
-    }
-    for (int i = 0; asset_files[i] != nullptr; i++) {
-      ExtractAsset(asset_files[i], internalPath + "/" + asset_files[i]);
-    }
-  }
-
-  // Force delete extracted ambient.frag so it falls back to the updated APK asset
-  remove((internalPath + "/media/shaders/ambient.frag").c_str());
-  
-  chdir(internalPath.c_str());
+  InitAndroidAssets();
 #else
 int main(int argc, const char** argv) {
 #endif
@@ -443,7 +425,28 @@ int main(int argc, const char** argv) {
 
   boost::mutex graphicsGameMutex; // todo: this mutex seems necessary for visual fluency, doesn't this imply that i'm setting positional stuff during something else than gametask put? (or reading during something else than graphics get)
 
-  gameTask = boost::shared_ptr<GameTask>(new GameTask());
+  globalContext = new GameContext();
+  globalContext->config = config;
+  globalContext->db = db;
+  globalContext->graphicsSystem = graphicsSystem;
+  globalContext->scene2D = scene2D;
+  globalContext->scene3D = scene3D;
+  globalContext->controllers = controllers;
+  globalContext->superDebug = superDebug;
+  globalContext->debugMode = debugMode;
+  globalContext->activeSaveDirectory = activeSaveDirectory;
+  
+  globalContext->greenPilon = greenPilon;
+  globalContext->bluePilon = bluePilon;
+  globalContext->yellowPilon = yellowPilon;
+  globalContext->redPilon = redPilon;
+  globalContext->smallDebugCircle1 = smallDebugCircle1;
+  globalContext->smallDebugCircle2 = smallDebugCircle2;
+  globalContext->largeDebugCircle = largeDebugCircle;
+  globalContext->debugImage = debugImage;
+  globalContext->debugOverlay = debugOverlay;
+
+  gameTask = boost::shared_ptr<GameTask>(new GameTask(globalContext));
 
   // TTF_Font *defaultFont = TTF_OpenFont("media/fonts/archivonarrow/ArchivoNarrow-Regular.ttf", 28);
   // TTF_Font *defaultOutlineFont = TTF_OpenFont("media/fonts/archivonarrow/ArchivoNarrow-Regular.ttf", 28);
@@ -455,6 +458,8 @@ int main(int argc, const char** argv) {
   menuTask = boost::shared_ptr<MenuTask>(new MenuTask(5.0f / 4.0f, 0, defaultFont, defaultOutlineFont));
   if (controllers.size() > 1) menuTask->SetEventJoyButtons(static_cast<HIDGamepad*>(controllers.at(1))->GetControllerMapping(e_ControllerButton_A), static_cast<HIDGamepad*>(controllers.at(1))->GetControllerMapping(e_ControllerButton_B));
 
+  globalContext->gameTask = gameTask;
+  globalContext->menuTask = menuTask;
 
   gameSequence = boost::shared_ptr<TaskSequence>(new TaskSequence("game", timeStep_ms, false));
 

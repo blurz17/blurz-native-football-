@@ -1,0 +1,108 @@
+blurz-native-football/
+│
+├── README.md
+├── LICENSE
+├── THIRD_PARTY_NOTICES.md
+├── CHANGELOG.md                    ← Track versions (v0.1, v0.2, etc.)
+├── .gitignore
+├── .clang-format                   ← C++ code style rules
+├── .editorconfig                   ← Editor consistency rules
+├── CMakeLists.txt                  ← Unified root build script for ALL platforms
+│
+├── docs/                           ← All documentation
+│   ├── architecture.md             ← How the engine works
+│   ├── roadmap.md                  ← Feature roadmap
+│   ├── known-issues.md             ← Current bugs
+│   └── publishing-checklist.md     ← Google Play/App Store checklist
+│
+├── tools/                          ← Automation and utility scripts
+│   ├── build_android.ps1
+│   ├── convert_assets.py
+│   └── format_code.sh
+│
+├── engine/                         ← C++ engine (the core, platform-independent)
+│   ├── CMakeLists.txt
+│   ├── core/                       ← Base types, math, logging
+│   │   ├── math/
+│   │   ├── geometry/
+│   │   ├── logging/
+│   │   └── types/
+│   ├── framework/                  ← Game loop, scheduler, threading
+│   ├── graphics/                   ← OpenGL ES renderer, shaders
+│   ├── physics/                    ← ODE physics wrapper
+│   ├── audio/                      ← OpenAL audio
+│   ├── input/                      ← Input system (keyboard, touch, gamepad)
+│   │   ├── input_manager.hpp
+│   │   ├── input_manager.cpp
+│   │   ├── touch_controller.hpp
+│   │   └── touch_controller.cpp
+│   ├── ui/                         ← In-engine UI module
+│   │   ├── ui_manager.hpp
+│   │   ├── ui_manager.cpp
+│   │   ├── widgets/
+│   │   └── screens/
+│   ├── scene/                      ← Scene graph management
+│   └── hal/                        ← Hardware Abstraction Layer (Platform bridges)
+│       ├── filesystem.hpp
+│       └── system_time.hpp
+│
+├── game/                           ← Football-specific game logic
+│   ├── CMakeLists.txt
+│   ├── match/
+│   │   ├── match.cpp
+│   │   ├── match.hpp
+│   │   ├── ball.cpp
+│   │   ├── referee.cpp
+│   │   └── officials.cpp
+│   ├── team/
+│   │   ├── team.cpp
+│   │   ├── team_ai_controller.cpp
+│   │   └── formation.cpp
+│   ├── player/
+│   │   ├── player.cpp
+│   │   ├── humanoid/
+│   │   └── controller/
+│   ├── league/
+│   └── menu/
+│
+├── platform/                       ← Platform-specific implementations
+│   ├── android/
+│   │   ├── app/
+│   │   │   ├── build.gradle        ← Configured to use externalNativeBuild (CMake)
+│   │   │   ├── src/main/java/org/libsdl/app/
+│   │   │   │   ├── SDLActivity.java
+│   │   │   │   └── SDLSurface.java
+│   │   │   └── jni/
+│   │   │       └── src/            ← JNI bridge code and Android HAL implementations
+│   │   └── gradle/
+│   ├── windows/                    ← Windows HAL implementations
+│   └── ios/                        ← Future iOS port
+│
+├── raw_assets/                     ← Source art (PSD, Blend, WAV) - NOT shipped in APK
+│   ├── models_source/
+│   └── audio_source/
+│
+├── assets/                         ← Baked game data (optimized for mobile)
+│   ├── animations/
+│   ├── databases/
+│   ├── fonts/
+│   ├── models/
+│   ├── shaders/
+│   ├── sounds/
+│   ├── textures/
+│   └── config/
+│
+├── third_party/                    ← All external libraries (Git submodules where possible)
+│   ├── CMakeLists.txt
+│   ├── SDL2/
+│   ├── SDL2_image/
+│   ├── SDL2_ttf/
+│   ├── SDL2_gfx/
+│   ├── boost/
+│   ├── ode/
+│   └── openal/
+│
+└── tests/                          ← Unit & integration tests
+    ├── CMakeLists.txt
+    ├── engine/
+    └── game/

@@ -60,6 +60,9 @@ namespace blunted {
 
       virtual void InputSDLEvent(const SDL_Event &event);
 
+      void SetPossession(bool isAttacking);
+      void NotifyGameOver(int t1score, int t2score, int t1possession, int t2possession, int t1shots, int t2shots);
+
       bool GetKeyboardState(SDL_Keycode code) const;
       std::map<SDL_Keycode, TimedKeyPress> GetKeyboardState() const;
       void SetKeyboardState(SDL_Keycode key, bool newState);

@@ -37,6 +37,7 @@
 #include "base/properties.hpp"
 
 #include "loaders/aseloader.hpp"
+#include "loaders/gltfloader.hpp"
 #include "loaders/imageloader.hpp"
 #include "loaders/wavloader.hpp"
 
@@ -55,6 +56,7 @@ namespace boost {
 namespace blunted {
 
   ASELoader *aseLoader;
+  GLTFLoader *gltfLoader;
   ImageLoader *imageLoader;
   WAVLoader *wavLoader;
 
@@ -113,6 +115,9 @@ namespace blunted {
 
     aseLoader = new ASELoader();
     geometryDataResourceManager->RegisterLoader("ase", aseLoader);
+    gltfLoader = new GLTFLoader();
+    geometryDataResourceManager->RegisterLoader("gltf", gltfLoader);
+    geometryDataResourceManager->RegisterLoader("glb", gltfLoader);
     imageLoader = new ImageLoader();
     surfaceResourceManager->RegisterLoader("jpg", imageLoader);
     surfaceResourceManager->RegisterLoader("png", imageLoader);
@@ -164,9 +169,11 @@ namespace blunted {
     TaskManager::GetInstance().EmptyQueue();
 
     delete aseLoader;
+    delete gltfLoader;
     delete imageLoader;
     delete wavLoader;
     aseLoader = 0;
+    gltfLoader = 0;
     imageLoader = 0;
     wavLoader = 0;
 

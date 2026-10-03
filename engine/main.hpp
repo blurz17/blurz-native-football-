@@ -20,11 +20,6 @@
 #include "utils/database.hpp"
 #include "sqlite3.h"
 
-enum e_DebugMode {
-  e_DebugMode_Off,
-  e_DebugMode_Tactical,
-  e_DebugMode_AI
-};
 
 class Match;
 
@@ -54,7 +49,7 @@ std::string GetConfigFilename();
 #endif
 #ifndef GPFB_HEADLESS
 boost::shared_ptr<blunted::Scene2D> GetScene2D();
-GraphicsSystem *GetGraphicsSystem();
+blunted::GraphicsSystem *GetGraphicsSystem();
 boost::shared_ptr<GameTask> GetGameTask();
 boost::shared_ptr<MenuTask> GetMenuTask();
 #endif
@@ -80,6 +75,9 @@ int PredictFrameTimeToGo_ms(int frameCount);
 #ifndef GPFB_HEADLESS
 const std::vector<IHIDevice*> &GetControllers();
 #endif
+
+#include "base/gamecontext.hpp"
+GameContext* GetContext();
 
 int main(int argc, const char** argv);
 

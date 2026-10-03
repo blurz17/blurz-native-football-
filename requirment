@@ -1,0 +1,2035 @@
+# Blurz Football — Legacy Football Game Engine Modernization
+
+## 1. Project Context
+
+This project is an Android native football game based on a legacy football-game codebase whose original design dates back roughly 15+ years.
+
+The current project already contains a substantial native C++ engine, Android integration, OpenGL ES rendering infrastructure, game entities, assets, scenes, input/HID abstractions, schedulers, managers, UI systems, physics, audio, and football-specific gameplay code.
+
+The objective is **not** to throw away the existing project and create a completely new game from scratch.
+
+The objective is to **modernize, stabilize, reorganize, and progressively evolve the existing game into a maintainable modern mobile football game**, while preserving useful existing technology and assets whenever practical.
+
+The modernization should ultimately provide:
+
+* A reliable modern game loop
+* Functional player movement
+* Functional virtual controls
+* Modern input architecture
+* Modern rendering architecture
+* Modern football gameplay architecture
+* Modern UI
+* Better player models
+* Player characteristics and visual identity
+* Modern stadium/pitch presentation
+* Modern match HUD
+* Scalable team/player data
+* Clean separation between Android/Java UI and native C++ gameplay
+* Maintainable source code
+* Testable systems
+* Extensible architecture
+* Production-oriented project organization
+
+The goal is **not complexity for its own sake**.
+
+Prefer simple, understandable engineering over excessive abstractions or unnecessary frameworks.
+
+---
+
+# 2. Existing Project Structure
+
+The current repository approximately follows:
+
+```text
+android_native_football
+├── CMakeLists.txt
+├── LICENSE
+├── README.md
+├── THIRD_PARTY_NOTICES.md
+├── engine_optimization_summary.md
+├── assets_diff.txt
+├── test.py
+│
+├── assets/
+│   ├── databases/
+│   │   └── default/
+│   │       ├── database.sqlite
+│   │       ├── images_competitions/
+│   │       └── images_teams/
+│   │
+│   └── media/
+│       ├── animations/
+│       ├── blunted/
+│       ├── fonts/
+│       ├── menu/
+│       ├── objects/
+│       ├── shaders/
+│       ├── sounds/
+│       └── textures/
+│
+├── docs/
+│   └── ARCHITECTURE.md
+│
+├── engine/
+│   ├── CMakeLists.txt
+│   ├── main.cpp
+│   ├── main.hpp
+│   ├── gametask.cpp
+│   ├── gametask.hpp
+│   ├── blunted.cpp
+│   ├── blunted.hpp
+│   │
+│   ├── base/
+│   ├── data/
+│   ├── framework/
+│   ├── hid/
+│   ├── managers/
+│   ├── menu/
+│   ├── onthepitch/
+│   ├── scene/
+│   ├── systems/
+│   ├── types/
+│   └── utils/
+│
+├── platform/
+│   └── android/
+│       ├── build.gradle
+│       ├── settings.gradle
+│       ├── build_fast_release.bat
+│       │
+│       └── app/
+│           ├── build.gradle
+│           ├── CMakeLists.txt
+│           └── src/
+│               └── main/
+│                   ├── AndroidManifest.xml
+│                   ├── assets/
+│                   ├── java/
+│                   └── res/
+│
+├── test/
+│   └── engine/
+│
+└── third_party/
+    ├── SDL2
+    ├── OpenAL
+    └── other dependencies
+```
+
+This existing structure must be treated as the starting point.
+
+---
+
+# 3. Critical Rule: Inspect Before Modifying
+
+Before changing architecture or writing substantial code:
+
+1. Inspect the complete repository.
+2. Identify the current entry points.
+3. Identify how Android starts the native engine.
+4. Identify how Java communicates with C++.
+5. Identify the current game loop.
+6. Identify the current rendering pipeline.
+7. Identify how scenes are created.
+8. Identify how players are represented.
+9. Identify how teams are represented.
+10. Identify how the ball is represented.
+11. Identify how input is currently handled.
+12. Identify why player movement currently does not work.
+13. Identify why virtual joysticks/buttons do not work.
+14. Identify the current UI architecture.
+15. Identify existing physics functionality.
+16. Identify existing animation functionality.
+17. Identify existing database/data structures.
+18. Identify which systems are functional, partially functional, obsolete, or dead code.
+
+Do not assume that the existing architecture is correct simply because the code already exists.
+
+Do not rewrite functioning systems without understanding their purpose.
+
+Produce an initial **legacy-system audit** before major refactoring.
+
+---
+
+# 4. Modernization Strategy
+
+Modernize the game incrementally.
+
+The preferred strategy is:
+
+```text
+Existing Engine
+      ↓
+Audit
+      ↓
+Stabilize
+      ↓
+Fix Core Runtime
+      ↓
+Fix Input
+      ↓
+Fix Player Control
+      ↓
+Modernize Game Loop
+      ↓
+Modernize Rendering
+      ↓
+Modernize Match Systems
+      ↓
+Modernize UI
+      ↓
+Improve Players
+      ↓
+Improve Stadium
+      ↓
+Improve Data
+      ↓
+Polish
+```
+
+Do not attempt to implement every system simultaneously.
+
+Each modernization phase must leave the game in a buildable and testable state.
+
+---
+
+# 5. Target Architecture
+
+The final architecture should have clear separation between:
+
+```text
+Platform
+    ↓
+Application
+    ↓
+Game Runtime
+    ↓
+Gameplay
+    ↓
+Rendering / Audio / Physics
+    ↓
+Data / Assets
+```
+
+A conceptual architecture:
+
+```text
+┌──────────────────────────────────────────────┐
+│                Android Platform              │
+│                                              │
+│ Java/Kotlin UI      Lifecycle      Services  │
+└───────────────────────┬──────────────────────┘
+                        │
+                  Native Bridge
+                        │
+┌───────────────────────▼──────────────────────┐
+│                Game Application              │
+│                                              │
+│ Game State / Match State / Navigation        │
+└───────────────────────┬──────────────────────┘
+                        │
+┌───────────────────────▼──────────────────────┐
+│                  Game Runtime                │
+│                                              │
+│ Game Loop                                    │
+│ Input                                        │
+│ Time                                         │
+│ Scene                                        │
+│ Entity Management                            │
+└───────────────┬───────────────┬──────────────┘
+                │               │
+       ┌────────▼──────┐ ┌──────▼────────┐
+       │   Gameplay    │ │   Rendering   │
+       │               │ │               │
+       │ Player        │ │ OpenGL ES     │
+       │ Ball          │ │ Camera        │
+       │ Team          │ │ Materials     │
+       │ AI            │ │ Lighting      │
+       │ Match         │ │ Shaders       │
+       └───────────────┘ └───────────────┘
+                │
+       ┌────────▼─────────┐
+       │ Data / Resources │
+       │                  │
+       │ Players          │
+       │ Teams            │
+       │ Competitions     │
+       │ Assets           │
+       └──────────────────┘
+```
+
+---
+
+# 6. Do Not Force One Architecture Everywhere
+
+The project contains fundamentally different types of code.
+
+Do not force gameplay entities, rendering objects, Android UI, database access, and low-level OpenGL code into the same abstraction model.
+
+Use appropriate architecture for each subsystem.
+
+For example:
+
+```text
+Gameplay
+→ component/system-oriented where useful
+
+Rendering
+→ render pipeline / scene-oriented
+
+Android UI
+→ platform UI architecture
+
+Data
+→ repositories/data models
+
+Input
+→ action-based abstraction
+
+Platform
+→ adapters
+```
+
+The architecture should remain understandable to a developer who did not create the original engine.
+
+---
+
+# 7. First Major Problem: Game Loop
+
+Audit and modernize the game loop.
+
+The game should have a predictable update model.
+
+Prefer a structure conceptually similar to:
+
+```text
+while (running)
+{
+    processPlatformEvents();
+
+    collectInput();
+
+    updateGame(fixedDeltaTime);
+
+    updateAnimation();
+
+    updatePhysics();
+
+    updateCamera();
+
+    render();
+
+    present();
+}
+```
+
+Where appropriate, use a fixed timestep for gameplay/physics:
+
+```text
+Input
+   ↓
+Fixed Update
+   ↓
+Physics
+   ↓
+Gameplay
+   ↓
+Interpolation
+   ↓
+Rendering
+```
+
+Rendering FPS should not determine gameplay speed.
+
+The game should behave consistently across different Android devices and frame rates.
+
+---
+
+# 8. Input System Modernization
+
+This is one of the highest-priority tasks.
+
+The current controller is not functional.
+
+The system must determine exactly why:
+
+* Virtual joystick does not move players.
+* Buttons do not trigger actions.
+* Touch input may not reach the native engine.
+* Java/UI touch events may not reach C++.
+* Input state may not persist between frames.
+* Player control may not consume the input.
+* Coordinate conversion may be incorrect.
+
+Do not simply replace the controller UI.
+
+Trace the complete input pipeline:
+
+```text
+Android Touch
+      ↓
+SDL / Android Input
+      ↓
+Native Input Layer
+      ↓
+Input State
+      ↓
+Input Mapping
+      ↓
+Gameplay Commands
+      ↓
+Controlled Player
+      ↓
+Movement / Action
+```
+
+Every stage must be testable.
+
+---
+
+# 9. Action-Based Input
+
+Do not make gameplay depend directly on raw touch coordinates.
+
+Introduce an action abstraction.
+
+For example:
+
+```text
+Move
+Pass
+Shoot
+Sprint
+Tackle
+SwitchPlayer
+ThroughBall
+Pause
+```
+
+Raw input should be converted into actions:
+
+```text
+Touch Joystick
+      ↓
+Input Device
+      ↓
+Input Mapping
+      ↓
+MoveAction
+      ↓
+PlayerController
+      ↓
+Player Movement
+```
+
+This allows future support for:
+
+* Touch
+* Gamepad
+* Keyboard
+* Android controllers
+* External HID devices
+
+without rewriting gameplay.
+
+---
+
+# 10. Virtual Joystick
+
+Implement the joystick as a real input device abstraction rather than a decorative UI element.
+
+The joystick should provide:
+
+```text
+Vector2 direction
+float magnitude
+bool active
+```
+
+Example:
+
+```text
+(-1.0, 0.0)
+(0.0, 1.0)
+(0.72, 0.41)
+```
+
+The player controller should consume this normalized input.
+
+Support:
+
+* Dead zone
+* Maximum radius
+* Clamping
+* Touch tracking
+* Multi-touch
+* Touch release
+* Pointer ownership
+* Sensitivity
+* Optional smoothing
+
+Do not introduce excessive smoothing that causes noticeable input latency.
+
+---
+
+# 11. Gameplay Controller
+
+Create a clear player-control pipeline:
+
+```text
+Input
+ ↓
+PlayerController
+ ↓
+MovementIntent
+ ↓
+Movement System
+ ↓
+Player Transform
+ ↓
+Animation State
+```
+
+A player should have a meaningful state such as:
+
+```text
+Idle
+Running
+Sprinting
+Turning
+Passing
+Shooting
+Tackling
+Dribbling
+Celebrating
+```
+
+The exact implementation should be based on the existing animation system and should not be over-engineered.
+
+---
+
+# 12. Player Movement
+
+The first gameplay milestone should be extremely simple:
+
+> Put one player on the pitch and make the player move correctly using the virtual joystick.
+
+Before implementing complete football gameplay, prove that this pipeline works:
+
+```text
+Touch
+ ↓
+Joystick
+ ↓
+Input
+ ↓
+PlayerController
+ ↓
+Movement
+ ↓
+Animation
+ ↓
+Rendering
+```
+
+Acceptance criteria:
+
+* Joystick moves visually.
+* Joystick direction reaches C++.
+* Player moves in the intended direction.
+* Player speed is frame-rate independent.
+* Player rotates toward movement direction.
+* Player stops correctly when joystick is released.
+* Player animation changes appropriately.
+
+Only after this works should the full team controller be implemented.
+
+---
+
+# 13. Player System Modernization
+
+The current player representation should be audited.
+
+A modern player should not be only a mesh/texture.
+
+Separate:
+
+### Player Identity
+
+```text
+id
+name
+shirtNumber
+nationality
+position
+club
+```
+
+### Player Attributes
+
+```text
+speed
+acceleration
+stamina
+strength
+passing
+shooting
+dribbling
+defending
+physical
+```
+
+### Runtime State
+
+```text
+position
+velocity
+rotation
+currentAnimation
+stamina
+possession
+team
+```
+
+### Visual Representation
+
+```text
+body model
+head
+face
+hair
+skin/material
+kit
+boots
+animations
+```
+
+Do not mix persistent player database information with temporary match state.
+
+---
+
+# 14. Player Visual Modernization
+
+The current players lack meaningful visual characteristics.
+
+Modernize the visual player system progressively.
+
+A player should have distinguishable:
+
+* Body proportions
+* Height
+* Build
+* Head
+* Face
+* Hair
+* Skin/material
+* Kit
+* Shorts
+* Socks
+* Boots
+* Shirt number
+
+The first implementation does not need photorealistic faces.
+
+Start with a modular character system:
+
+```text
+Character
+├── Body
+├── Head
+├── Face
+├── Hair
+├── Kit
+├── Shorts
+├── Socks
+└── Boots
+```
+
+This allows player variation without requiring a completely unique 3D model for every player.
+
+---
+
+# 15. Player Database
+
+The existing SQLite database should be evaluated before introducing another data system.
+
+Determine whether it can support:
+
+```text
+Players
+Teams
+Competitions
+Stadiums
+Kits
+Player Visual Profiles
+```
+
+Do not hard-code players and teams directly into C++.
+
+The game should eventually be able to load:
+
+```text
+Player
+      ↓
+Team
+      ↓
+Competition
+```
+
+from data.
+
+---
+
+# 16. Real-World Football Data
+
+Do not immediately attempt to populate the entire real-world football ecosystem.
+
+First create the architecture required to represent:
+
+```text
+Competition
+Club
+Team
+Squad
+Player
+Position
+Kit
+Stadium
+```
+
+Then create a small initial dataset for testing.
+
+Later, investigate licensing, data sources, player likeness rights, club trademarks, logos, kits, and other intellectual-property considerations before distributing real-world content commercially.
+
+The engine architecture should not depend on a specific league or set of clubs.
+
+---
+
+# 17. Team System
+
+The team system should eventually support:
+
+```text
+Team
+├── Identity
+├── Formation
+├── Squad
+├── Tactics
+├── Kit
+├── Club Badge
+└── AI Configuration
+```
+
+Match runtime should create a separate runtime representation:
+
+```text
+TeamDefinition
+       ↓
+TeamRuntime
+       ↓
+PlayerRuntime[]
+```
+
+Persistent database data must not be modified directly by match simulation.
+
+---
+
+# 18. Match Simulation
+
+Separate match rules from rendering.
+
+Conceptually:
+
+```text
+Match
+├── MatchState
+├── Clock
+├── Score
+├── Teams
+├── Ball
+├── Referee
+├── Events
+└── Rules
+```
+
+The renderer should only visualize the state.
+
+For example:
+
+```text
+Gameplay:
+player.position = ...
+
+Renderer:
+drawPlayer(player.position)
+```
+
+Do not make gameplay logic dependent on OpenGL rendering objects.
+
+---
+
+# 19. Ball System
+
+Audit the current ball implementation.
+
+The ball should have:
+
+```text
+position
+velocity
+rotation
+owner
+state
+```
+
+Potential states:
+
+```text
+Free
+Controlled
+Passing
+Shooting
+Deflected
+OutOfBounds
+Goal
+```
+
+The ball should eventually interact with:
+
+* Players
+* Pitch
+* Goalposts
+* Nets
+* Boundaries
+
+Physics should be deterministic enough for gameplay.
+
+---
+
+# 20. Camera System
+
+Modernize the match camera.
+
+Support a football-game camera that:
+
+* Follows the active play
+* Keeps relevant players visible
+* Tracks the ball
+* Smoothly transitions
+* Respects pitch boundaries
+* Supports zoom
+* Supports different camera modes
+
+Possible future modes:
+
+```text
+Broadcast
+Classic
+Dynamic
+Player
+Replay
+```
+
+Start with one reliable match camera before implementing multiple modes.
+
+---
+
+# 21. Pitch Modernization
+
+The pitch should be treated as a real 3D environment rather than a flat textured rectangle.
+
+Improve progressively:
+
+```text
+Pitch Geometry
+      ↓
+Grass Material
+      ↓
+Pitch Markings
+      ↓
+Lighting
+      ↓
+Grass Variation
+      ↓
+Wear / Detail
+      ↓
+Shadows
+```
+
+The pitch should contain accurate:
+
+* Touchlines
+* Goal lines
+* Center circle
+* Penalty areas
+* Goal areas
+* Penalty spots
+* Corner arcs
+* Center mark
+* Goals
+
+Do not sacrifice performance for unnecessary micro-detail.
+
+---
+
+# 22. Stadium Modernization
+
+The stadium should become a modular environment.
+
+Conceptually:
+
+```text
+Stadium
+├── Pitch
+├── Goals
+├── Stands
+├── Seats
+├── Advertising Boards
+├── Lighting
+├── Tunnel
+├── Scoreboard
+├── Crowd
+└── Environmental Elements
+```
+
+The first target should be a convincing stadium silhouette and atmosphere.
+
+Detailed crowd simulation can be added later.
+
+---
+
+# 23. Advertising Boards
+
+Implement advertising boards as a reusable rendering component.
+
+They should support:
+
+```text
+Static texture
+Animated texture
+Multiple advertisements
+Per-stadium configuration
+```
+
+Future support may include:
+
+```text
+Animated LED boards
+Dynamic advertisements
+Competition-specific branding
+```
+
+Do not hard-code advertisements into the renderer.
+
+---
+
+# 24. Match UI / HUD
+
+The current in-match UI must be modernized.
+
+The HUD should contain reusable widgets such as:
+
+```text
+MatchHUD
+├── ScoreBoard
+├── MatchClock
+├── VirtualJoystick
+├── ActionButtons
+├── PauseButton
+├── PlayerIndicator
+├── StaminaIndicator
+└── Optional notifications
+```
+
+The UI should be independent from gameplay implementation.
+
+For example:
+
+```text
+PauseButton
+      ↓
+PauseCommand
+      ↓
+MatchState
+      ↓
+Paused
+```
+
+rather than the button directly manipulating engine internals.
+
+---
+
+# 25. Scoreboard
+
+Implement a reusable scoreboard.
+
+It should display:
+
+```text
+TEAM A   2 - 1   TEAM B
+
+45:32
+```
+
+Support:
+
+* Team names
+* Team logos
+* Score
+* Match clock
+* Extra time
+* Half-time
+* Optional competition information
+
+The scoreboard should consume match state rather than maintaining its own authoritative score.
+
+---
+
+# 26. Pause System
+
+Pause must be a real game state.
+
+Example:
+
+```text
+MatchRunning
+     ↓
+PauseCommand
+     ↓
+Paused
+```
+
+While paused:
+
+* Gameplay simulation stops.
+* Physics stops.
+* Player AI stops.
+* Match clock stops.
+* Rendering continues.
+* Pause menu remains interactive.
+
+The exact behavior should be validated against the existing engine lifecycle.
+
+---
+
+# 27. Java/Kotlin Initial Interface
+
+The Android-side interface should be treated as a platform shell rather than the football game itself.
+
+Java/Kotlin should primarily handle:
+
+* Application lifecycle
+* Initial screens
+* Permissions
+* Settings where appropriate
+* Android-specific services
+* Native engine startup
+* Native engine shutdown
+* Platform integration
+
+The native C++ engine should own:
+
+* Match
+* Gameplay
+* Rendering
+* Player movement
+* Ball
+* Physics
+* Match HUD where appropriate
+* Game states
+
+Avoid duplicating gameplay state between Java and C++.
+
+---
+
+# 28. Native UI
+
+The C++ side should own the real-time match interface when that interface needs to interact tightly with the native game loop.
+
+Examples:
+
+```text
+Joystick
+Pass
+Shoot
+Sprint
+Switch Player
+Pause
+Scoreboard
+Match notifications
+```
+
+The UI should communicate with gameplay through commands/events rather than directly accessing arbitrary engine objects.
+
+---
+
+# 29. Rendering Architecture
+
+Audit the existing OpenGL ES implementation.
+
+Determine:
+
+* OpenGL ES version
+* Context creation
+* Shader lifecycle
+* Texture management
+* Mesh management
+* VBO/VAO usage where supported
+* Framebuffer usage
+* Material handling
+* Camera handling
+* Draw-call organization
+* Resource lifetime
+* GPU state management
+
+Create clear rendering responsibilities.
+
+Conceptually:
+
+```text
+RenderSystem
+├── RenderContext
+├── ShaderManager
+├── TextureManager
+├── MeshManager
+├── MaterialSystem
+├── Camera
+├── Lighting
+├── RenderPasses
+└── DebugRenderer
+```
+
+Do not create a huge universal `Renderer` class containing everything.
+
+---
+
+# 30. Shader System
+
+The existing GLSL shaders should be audited.
+
+Establish a consistent shader pipeline.
+
+Potential shader categories:
+
+```text
+Unlit
+Lit
+Skinned
+UI
+Pitch
+Adboard
+Particle
+PostProcess
+```
+
+The shader system should provide predictable resource management.
+
+Avoid recompiling shaders unnecessarily during gameplay.
+
+---
+
+# 31. Character Animation
+
+The existing animation assets should be investigated before replacing them.
+
+Determine:
+
+* Existing skeleton format
+* Existing animation format
+* Animation loading
+* Blending
+* Playback
+* Root motion
+* Animation state transitions
+
+The initial target:
+
+```text
+Idle
+   ↓
+Run
+   ↓
+Sprint
+```
+
+Then:
+
+```text
+Pass
+Shoot
+Tackle
+Dribble
+Celebrate
+```
+
+Do not implement dozens of animations before proving the animation pipeline works.
+
+---
+
+# 32. AI Architecture
+
+AI should not be tightly coupled to rendering.
+
+Separate:
+
+```text
+PlayerDecision
+      ↓
+MovementIntent
+      ↓
+Gameplay Systems
+```
+
+Potential future systems:
+
+```text
+Positioning
+Marking
+Passing
+Defending
+Attacking
+Formation
+Decision Making
+Goalkeeper AI
+```
+
+For the initial modernization phase, implement only enough AI to make the opposing team and teammates behave meaningfully.
+
+---
+
+# 33. Physics
+
+Audit the existing `PhysicsSystem`.
+
+Determine whether it is:
+
+* Functional
+* Partially implemented
+* Custom
+* Third-party
+* Used by gameplay
+* Used only by legacy code
+
+Do not replace it automatically.
+
+If a replacement is necessary, justify it based on:
+
+* Android performance
+* Stability
+* Integration cost
+* Determinism
+* Maintenance
+* License
+
+---
+
+# 34. Audio
+
+Modernize audio separately from gameplay.
+
+Support:
+
+```text
+Crowd
+Kick
+Pass
+Shoot
+Whistle
+Goal
+Menu
+UI
+Commentary (future)
+```
+
+Audio should respond to gameplay events.
+
+Example:
+
+```text
+GoalScored
+    ↓
+AudioSystem
+    ↓
+PlayGoalSound()
+```
+
+Gameplay should not directly manipulate low-level audio resources.
+
+---
+
+# 35. Event System
+
+Introduce a lightweight event/message mechanism only where it provides clear value.
+
+Examples:
+
+```text
+GoalScored
+PlayerChanged
+MatchStarted
+MatchPaused
+MatchResumed
+BallOut
+HalfTime
+FullTime
+```
+
+Avoid turning the entire engine into an event-driven abstraction.
+
+Use direct function calls when they are simpler.
+
+---
+
+# 36. Asset Management
+
+The current assets contain:
+
+```text
+Animations
+Models
+Textures
+Shaders
+Sounds
+Fonts
+Menus
+Stadium Objects
+Kits
+Adboards
+```
+
+Create a clear resource lifecycle.
+
+Resources should be:
+
+```text
+Loaded
+Cached
+Referenced
+Released
+```
+
+Avoid repeatedly loading the same texture/model.
+
+Consider asynchronous loading for large resources where appropriate.
+
+---
+
+# 37. Performance
+
+This is an Android game.
+
+Performance must be considered throughout the modernization.
+
+Measure before optimizing.
+
+Track:
+
+```text
+FPS
+Frame time
+CPU time
+GPU time where measurable
+Memory
+Texture memory
+Draw calls
+Shader switches
+Loading time
+```
+
+Potential optimization areas:
+
+* Frustum culling
+* LOD
+* Texture compression
+* Batching
+* Instancing where useful
+* Resource caching
+* Animation optimization
+* Object allocation
+* Avoiding unnecessary per-frame allocations
+* Efficient update loops
+
+Do not optimize code simply because it looks old.
+
+Benchmark first.
+
+---
+
+# 38. Memory Management
+
+The engine should establish clear ownership rules.
+
+Avoid ambiguous raw-pointer ownership.
+
+Prefer:
+
+* RAII
+* `std::unique_ptr`
+* `std::shared_ptr` only where shared ownership is actually required
+* References
+* Value types where practical
+
+Do not blindly convert every pointer to `shared_ptr`.
+
+The goal is explicit ownership, not smart-pointer quantity.
+
+---
+
+# 39. Threading
+
+The current framework contains:
+
+```text
+Scheduler
+TaskSequence
+WorkerThread
+```
+
+Audit these systems before creating new threading infrastructure.
+
+Separate tasks carefully:
+
+```text
+Main/Game Thread
+Rendering
+Asset Loading
+Database Loading
+Background Work
+```
+
+Do not move OpenGL operations to background threads unless the OpenGL context/threading model explicitly supports it.
+
+Avoid multithreading gameplay unless there is a measurable reason.
+
+---
+
+# 40. Data-Driven Game Design
+
+The game should progressively become data-driven.
+
+Instead of:
+
+```cpp
+if (playerName == "...")
+```
+
+prefer:
+
+```text
+PlayerDefinition
+TeamDefinition
+CompetitionDefinition
+StadiumDefinition
+KitDefinition
+```
+
+This will make it possible to add content without changing gameplay code.
+
+---
+
+# 41. Target Project Structure
+
+Do not force the current directory structure to remain unchanged.
+
+A possible target structure is:
+
+```text
+engine/
+├── core/
+│   ├── application/
+│   ├── game_loop/
+│   ├── time/
+│   ├── events/
+│   └── logging/
+│
+├── platform/
+│   └── android/
+│
+├── input/
+│   ├── devices/
+│   ├── actions/
+│   └── controllers/
+│
+├── gameplay/
+│   ├── match/
+│   ├── player/
+│   ├── team/
+│   ├── ball/
+│   ├── ai/
+│   ├── physics/
+│   └── rules/
+│
+├── rendering/
+│   ├── renderer/
+│   ├── camera/
+│   ├── shaders/
+│   ├── materials/
+│   ├── meshes/
+│   ├── textures/
+│   └── animation/
+│
+├── ui/
+│   ├── core/
+│   ├── match/
+│   ├── widgets/
+│   └── screens/
+│
+├── audio/
+│
+├── data/
+│   ├── database/
+│   ├── repositories/
+│   └── definitions/
+│
+├── resources/
+│
+└── debug/
+```
+
+This is a target direction, not an instruction to blindly move every file immediately.
+
+Migration should be incremental.
+
+---
+
+# 42. Testing Strategy
+
+Testing should focus on systems that can be tested without rendering an entire game.
+
+Examples:
+
+### Input
+
+```text
+Joystick input
+→ normalized direction
+→ expected movement command
+```
+
+### Player
+
+```text
+movement intent
+→ expected velocity
+```
+
+### Match
+
+```text
+goal event
+→ score updated
+```
+
+### Clock
+
+```text
+45:00
+→ halftime
+```
+
+### Data
+
+```text
+database player
+→ PlayerDefinition
+```
+
+### UI
+
+```text
+MatchState
+→ expected scoreboard state
+```
+
+Use mocks/fakes for platform and external dependencies.
+
+---
+
+# 43. Debugging Tools
+
+Add a lightweight debug mode.
+
+Useful overlays:
+
+```text
+FPS
+Frame time
+Player position
+Ball position
+Current animation
+Input vector
+Current game state
+Draw calls
+Memory statistics where available
+```
+
+Especially for the input problem, provide an input debug overlay:
+
+```text
+Joystick:
+X: 0.72
+Y: -0.34
+Magnitude: 0.80
+
+Move Action: ACTIVE
+Controlled Player: #10
+Velocity: ...
+```
+
+This will make debugging much easier than guessing why the player is not moving.
+
+---
+
+# 44. Development Phases
+
+Implement the modernization in phases.
+
+## Phase 0 — Repository Audit
+
+Deliver:
+
+* Architecture map
+* Dependency map
+* Game loop analysis
+* Input pipeline analysis
+* Rendering pipeline analysis
+* Data model analysis
+* Broken systems
+* Dead/legacy systems
+* Recommended migration strategy
+
+Do not perform large refactoring yet.
+
+---
+
+## Phase 1 — Boot & Runtime Stabilization
+
+Ensure:
+
+* Android build works
+* Native engine initializes reliably
+* Game loop is stable
+* Scene loads
+* Rendering works
+* Application lifecycle works
+* Pause/resume does not corrupt state
+
+---
+
+## Phase 2 — Input Reconstruction
+
+Make these functional:
+
+```text
+Touch
+ ↓
+Joystick
+ ↓
+Input System
+ ↓
+Movement Action
+ ↓
+Player Controller
+ ↓
+Player
+```
+
+This is a critical milestone.
+
+---
+
+## Phase 3 — One Fully Controllable Player
+
+Create a test match containing:
+
+```text
+Pitch
+Ball
+One Player
+Camera
+Joystick
+```
+
+The player must:
+
+* Move
+* Rotate
+* Stop
+* Run
+* Animate
+* Interact with pitch boundaries
+
+Do not proceed until this is stable.
+
+---
+
+## Phase 4 — Basic Match
+
+Add:
+
+```text
+Two teams
+Multiple players
+Ball possession
+Passing
+Shooting
+Basic AI
+Score
+Match clock
+```
+
+---
+
+## Phase 5 — Match UI
+
+Add:
+
+```text
+Joystick
+Action buttons
+Pause
+Scoreboard
+Clock
+Player indicator
+```
+
+---
+
+## Phase 6 — Rendering Modernization
+
+Improve:
+
+```text
+Lighting
+Materials
+Shaders
+Pitch
+Players
+Stadium
+Camera
+Adboards
+```
+
+---
+
+## Phase 7 — Player Modernization
+
+Add:
+
+```text
+Body variation
+Heads
+Faces
+Hair
+Kits
+Boots
+Player numbers
+Animations
+Attributes
+```
+
+---
+
+## Phase 8 — Football Data
+
+Build:
+
+```text
+Players
+Teams
+Competitions
+Stadiums
+Kits
+```
+
+as data-driven systems.
+
+---
+
+## Phase 9 — Polish
+
+Add:
+
+```text
+Audio
+Crowd
+Effects
+Transitions
+Particles
+Better UI
+Performance optimization
+Loading screens
+Settings
+```
+
+---
+
+# 45. Definition of "Modernized"
+
+The project should not be considered modernized merely because the UI looks better.
+
+The modernization should exist at three levels.
+
+### Technical Modernization
+
+```text
+Reliable game loop
+Modern input system
+Clear ownership
+Stable lifecycle
+Resource management
+Testable systems
+```
+
+### Architectural Modernization
+
+```text
+Clear boundaries
+Data-driven design
+Modular systems
+Platform abstraction
+Rendering separation
+Gameplay separation
+```
+
+### Visual/Gameplay Modernization
+
+```text
+Functional controls
+Modern HUD
+Better players
+Better animations
+Better stadium
+Better pitch
+Better lighting
+Better match presentation
+```
+
+All three are required.
+
+---
+
+# 46. Important Engineering Constraint
+
+Do not turn the project into a giant enterprise architecture.
+
+This is a game engine.
+
+Avoid unnecessary:
+
+```text
+FactoryFactory
+ManagerManager
+AbstractAbstractPlayer
+10-layer dependency injection
+Excessive interfaces
+Unnecessary ECS implementation
+Microservices
+Unnecessary scripting systems
+```
+
+Use abstractions where they solve real problems.
+
+Prefer:
+
+```text
+Simple
+Explicit
+Fast
+Testable
+Readable
+Maintainable
+```
+
+over:
+
+```text
+Highly abstract
+Highly generic
+Difficult to debug
+Difficult to modify
+```
+
+---
+
+# 47. Migration Rules
+
+When replacing an old subsystem:
+
+1. Understand it.
+2. Document it.
+3. Identify its dependencies.
+4. Implement the new subsystem beside it where practical.
+5. Migrate callers incrementally.
+6. Test.
+7. Remove obsolete code only after verification.
+
+Do not perform massive "delete and rewrite" commits.
+
+Preserve working functionality wherever practical.
+
+---
+
+# 48. Source-Code Quality
+
+Use modern C++ appropriate for the project's Android toolchain.
+
+Prefer:
+
+* RAII
+* Strong types
+* `enum class`
+* `std::optional`
+* `std::vector`
+* `std::string`
+* `std::unique_ptr`
+* `std::span` where supported
+* `const` correctness
+* Small focused classes
+* Clear ownership
+
+Avoid:
+
+* Global mutable state
+* Giant classes
+* Giant switch statements containing all gameplay
+* Hidden dependencies
+* Magic numbers
+* Raw ownership
+* Copy-pasted gameplay logic
+* Platform-specific code inside gameplay
+
+---
+
+# 49. Documentation
+
+Maintain:
+
+```text
+docs/
+├── ARCHITECTURE.md
+├── GAME_LOOP.md
+├── INPUT_SYSTEM.md
+├── RENDERING.md
+├── GAMEPLAY.md
+├── UI.md
+├── DATA_MODEL.md
+└── MIGRATION.md
+```
+
+Documentation should describe the architecture that actually exists.
+
+Do not document imaginary future architecture as if it were implemented.
+
+---
+
+# 50. AI Coding Agent Behavior
+
+When working on this repository:
+
+### Before coding
+
+Explain:
+
+* What you discovered
+* What currently works
+* What is broken
+* What the relevant code path is
+* Why the existing implementation fails
+* What the smallest correct fix is
+
+### Before major refactoring
+
+Explain:
+
+* Current architecture
+* Target architecture
+* Migration path
+* Files that will change
+* Risks
+* How the change will be tested
+
+### During implementation
+
+Make small, logically isolated changes.
+
+Do not modify unrelated systems.
+
+### After implementation
+
+Provide:
+
+* Files changed
+* What changed
+* Why it changed
+* Build/test result
+* Remaining limitations
+* Next recommended step
+
+Never claim a feature is functional without verifying the actual execution path.
+
+---
+
+# 51. First Task
+
+Do NOT start by redesigning the entire engine.
+
+The first task is:
+
+## Perform a complete technical audit of the existing repository.
+
+Specifically investigate:
+
+1. How the Android application starts the engine.
+2. How Java communicates with C++.
+3. How the game loop works.
+4. How the scene is created.
+5. How OpenGL ES is initialized.
+6. How the current match is initialized.
+7. How players are created.
+8. How player transforms are updated.
+9. How the current input system works.
+10. How the virtual joystick is rendered.
+11. How touch events reach the joystick.
+12. How joystick values reach C++.
+13. How those values reach the player controller.
+14. Why the player currently cannot move.
+15. Why action buttons do not work.
+16. How the camera follows players/ball.
+17. How physics currently works.
+18. How animation currently works.
+19. How teams and players are loaded from SQLite.
+20. How the current UI is implemented.
+21. Which existing assets are usable.
+22. Which systems are incomplete.
+23. Which systems should be preserved.
+24. Which systems should eventually be replaced.
+25. Which dependencies are obsolete or unnecessary.
+
+Then produce:
+
+```text
+1. Current Architecture Diagram
+
+2. Current Runtime Flow
+
+3. Current Input Flow
+
+4. Current Rendering Flow
+
+5. Current Match Flow
+
+6. Broken/Incomplete Systems
+
+7. Technical Debt
+
+8. Proposed Target Architecture
+
+9. Migration Plan
+
+10. First Implementation Task
+```
+
+Do not implement the modernization until this audit is complete.
+
+The ultimate goal is to transform this legacy football codebase into a **modern, maintainable, scalable Android football game engine without destroying the useful work that already exists**.

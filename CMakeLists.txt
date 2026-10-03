@@ -6,13 +6,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Source directories
 set(ENGINE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/engine)
+set(GAME_DIR ${CMAKE_CURRENT_SOURCE_DIR}/game)
+set(PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/platform)
 
-# Engine sources
-file(GLOB_RECURSE ENGINE_SOURCES 
+# Game & Engine sources
+file(GLOB_RECURSE ALL_SOURCES 
     "${ENGINE_DIR}/*.cpp"
     "${ENGINE_DIR}/*.hpp"
     "${ENGINE_DIR}/*.c"
     "${ENGINE_DIR}/*.h"
+    "${GAME_DIR}/*.cpp"
+    "${GAME_DIR}/*.hpp"
+    "${GAME_DIR}/*.c"
+    "${GAME_DIR}/*.h"
+    "${PLATFORM_DIR}/android/android_assets.cpp"
+    "${PLATFORM_DIR}/android/android_assets.hpp"
 )
 
 # Third party libraries
@@ -21,7 +29,9 @@ add_subdirectory(third_party)
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${ENGINE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/engine/fake_boost
+    ${GAME_DIR}
+    ${PLATFORM_DIR}
+    ${ENGINE_DIR}/fake_boost
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/SDL_android/include
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/gl4es/include
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/ode/include
@@ -43,7 +53,7 @@ if(ANDROID)
     # Normally we would build SDL2 via CMake too, but for now we assume 
     # Gradle/Android.mk handles SDL2 shared library building, or we link against the prebuilt.
     # We will build the main game as a shared library for Android
-    add_library(main SHARED ${ENGINE_SOURCES})
+    add_library(main SHARED ${ALL_SOURCES})
     
     target_compile_definitions(main PRIVATE GPFB_ANDROID)
     target_link_libraries(main
@@ -64,7 +74,7 @@ if(ANDROID)
     )
 else()
     # PC/Windows/Mac Build
-    add_executable(gameplayfootball ${ENGINE_SOURCES})
+    add_executable(gameplayfootball ${ALL_SOURCES})
 endif()
 
 # Tests disabled - test files reference the old engine directory layout

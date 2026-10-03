@@ -144,7 +144,7 @@ Vector3 HIDGamepad::GetDirection() {
   inputDirection.coords[1] -= GetButtonValue(e_ButtonFunction_Down);
   if (inputDirection.GetLength() < analogStickDeadzone) {
     inputDirection = Vector3(0);
-  } else {
+  } else if (inputDirection.GetLength() > 1.0f) {
     inputDirection.Normalize(0);
   }
   return inputDirection;

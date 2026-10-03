@@ -19,7 +19,12 @@ namespace blunted {
   // load file into resource
   void ImageLoader::Load(std::string filename, boost::intrusive_ptr < Resource <Surface> > resource) {
     SDL_Surface *surface = IMG_Load(filename.c_str());
-    if (!surface) Log(e_FatalError, "ImageLoader", "Load", "Could not load " + filename + ": " + IMG_GetError());
+    if (!surface) {
+      Log(e_Error, "ImageLoader", "Load", "Could not load " + filename + ": " + (IMG_GetError() ? IMG_GetError() : "Unknown error"));
+      // fallback to a 2x2 magenta texture so the game doesn't crash
+      surface = SDL_CreateRGBSurface(0, 2, 2, 32, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+      SDL_FillRect(surface, NULL, SDL_MapRGBA(surface->format, 255, 0, 255, 255));
+    }
     
     SDL_Surface *converted = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
     SDL_FreeSurface(surface);

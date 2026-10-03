@@ -1496,6 +1496,17 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         }
     }
 
+    public static void notifyGameOver(final int t1score, final int t2score, final int t1possession, final int t2possession, final int t1shots, final int t2shots) {
+        if (mSingleton != null && mControls != null) {
+            mSingleton.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mControls.showGameOver(t1score, t2score, t1possession, t2possession, t1shots, t2shots);
+                }
+            });
+        }
+    }
+
     // Input
 
     /**

@@ -22,9 +22,10 @@
 #ifdef __ANDROID__
 #include <jni.h>
 #include <SDL.h>
+#include <SDL_system.h>
 
 #include "main.hpp"
-#include "../onthepitch/match.hpp"
+#include "onthepitch/match.hpp"
 
 SDL_Joystick* virtual_joystick = nullptr;
 
@@ -323,6 +324,46 @@ namespace blunted {
   float UserEventManager::GetJoystickAxisCalibrationRest(int joyID, int axisID) {
     boost::mutex::scoped_lock lock(joyButtonPressedMutex);
     return joyAxisCalibration[joyID][axisID][2];
+  }
+
+  void UserEventManager::SetPossession(bool isAttacking) {
+#ifdef __ANDROID__
+    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+    if (env != nullptr) {
+      jobject activity = (jobject)SDL_AndroidGetActivity();
+      if (activity != nullptr) {
+        jclass activityClass = env->GetObjectClass(activity);
+        if (activityClass != nullptr) {
+          jmethodID setPossessionMethod = env->GetStaticMethodID(activityClass, "setPossession", "(Z)V");
+          if (setPossessionMethod != nullptr) {
+            env->CallStaticVoidMethod(activityClass, setPossessionMethod, isAttacking ? JNI_TRUE : JNI_FALSE);
+          }
+          env->DeleteLocalRef(activityClass);
+        }
+        env->DeleteLocalRef(activity);
+      }
+    }
+#endif
+  }
+
+  void UserEventManager::NotifyGameOver(int t1score, int t2score, int t1possession, int t2possession, int t1shots, int t2shots) {
+#ifdef __ANDROID__
+    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+    if (env != nullptr) {
+      jobject activity = (jobject)SDL_AndroidGetActivity();
+      if (activity != nullptr) {
+        jclass activityClass = env->GetObjectClass(activity);
+        if (activityClass != nullptr) {
+          jmethodID notifyGameOverMethod = env->GetStaticMethodID(activityClass, "notifyGameOver", "(IIIIII)V");
+          if (notifyGameOverMethod != nullptr) {
+            env->CallStaticVoidMethod(activityClass, notifyGameOverMethod, t1score, t2score, t1possession, t2possession, t1shots, t2shots);
+          }
+          env->DeleteLocalRef(activityClass);
+        }
+        env->DeleteLocalRef(activity);
+      }
+    }
+#endif
   }
 
   void UserEventManager::SetJoystickAxisCalibration(int joyID, int axisID, float min, float max, float rest) {
