@@ -143,7 +143,7 @@ void HumanController::RequestCommand(PlayerCommandQueue &commandQueue) {
         command.useDesiredMovement = false;
         command.useDesiredLookAt = false;
 
-        float inputPower = clamp(pow(gaugeFactor, 0.7f), 0.01f, 1.0f);
+        float inputPower = clamp(0.25f + 0.75f * pow(gaugeFactor, 0.7f), 0.25f, 1.0f);
         command.touchInfo.inputDirection = inputDirection;
         command.touchInfo.inputPower = inputPower;
         command.touchInfo.autoDirectionBias = GetContext()->config->GetReal("gameplay_shortpass_autodirection", _default_ShortPass_AutoDirection);
@@ -160,7 +160,7 @@ void HumanController::RequestCommand(PlayerCommandQueue &commandQueue) {
         command.useDesiredMovement = false;
         command.useDesiredLookAt = false;
 
-        float inputPower = clamp(pow(gaugeFactor, 0.65f), 0.01f, 1.0f);
+        float inputPower = clamp(0.30f + 0.70f * pow(gaugeFactor, 0.65f), 0.30f, 1.0f);
         command.touchInfo.inputDirection = inputDirection;
         command.touchInfo.inputPower = inputPower;
         command.touchInfo.autoDirectionBias = GetContext()->config->GetReal("gameplay_throughpass_autodirection", _default_ThroughPass_AutoDirection);
@@ -177,7 +177,7 @@ void HumanController::RequestCommand(PlayerCommandQueue &commandQueue) {
         command.useDesiredMovement = false;
         command.useDesiredLookAt = false;
 
-        float inputPower = clamp(pow(gaugeFactor, 0.55f), 0.01f, 1.0f);
+        float inputPower = clamp(0.35f + 0.65f * pow(gaugeFactor, 0.55f), 0.35f, 1.0f);
         command.touchInfo.inputDirection = inputDirection;
         command.touchInfo.inputPower = inputPower;
         command.touchInfo.autoDirectionBias = GetContext()->config->GetReal("gameplay_highpass_autodirection", _default_HighPass_AutoDirection);
@@ -198,7 +198,7 @@ void HumanController::RequestCommand(PlayerCommandQueue &commandQueue) {
         command.touchInfo.autoDirectionBias = GetContext()->config->GetReal("gameplay_shot_autodirection", _default_Shot_AutoDirection);
         if (GetHIDevice()->GetDeviceType() == e_HIDeviceType_Keyboard) command.touchInfo.autoDirectionBias = 1.0f;
         command.touchInfo.desiredDirection = AI_GetShotDirection(CastPlayer(), command.touchInfo.inputDirection, command.touchInfo.autoDirectionBias);
-        command.touchInfo.desiredPower = clamp(pow(gaugeFactor, 0.6f), 0.01f, 1.0f);
+        command.touchInfo.desiredPower = clamp(0.30f + 0.70f * pow(gaugeFactor, 0.6f), 0.30f, 1.0f);
 
         commandQueue.push_back(command);
 
@@ -371,24 +371,23 @@ void HumanController::Process() {
 
   if (actionMode == 0 && (!match->IsInSetPiece() || team->GetController()->GetPieceTaker() == player)) {
 
-    // todo: clean this up
-
-    // what is the context: do we want defend buttons or pass/shot buttons?
-    float possessionContext = possessionAmount - 1.0f;
-    if (match->GetDesignatedPossessionPlayer() == player) {
-      possessionContext = 1.0f; // new (keeper was allowed doing slidings before free kick sometimes lol, sign something was wrong)
+    // Determine context: Attack (pass, shot, through ball) vs Defense (pressure, tackle, slide)
+    bool isTeamAttacking = (match->GetBestPossessionTeamID() == team->GetID());
+    if (match->GetBallRetainer() != 0) {
+      isTeamAttacking = (match->GetBallRetainer()->GetTeamID() == team->GetID());
+    } else if (team->HasPossession()) {
+      isTeamAttacking = true;
+    } else if (match->GetTeam(abs(team->GetID() - 1))->HasPossession()) {
+      isTeamAttacking = false;
     } else {
-      // in situations where we aren't the designated player, we sometimes still want to do ball stuff, because we could try to extend our leg to pass, for example
-      if (hid->GetButton(e_ButtonFunction_ShortPass)) possessionContext += 0.15f; // todo: bug: the logic of these weighings are based on the default 'pes' button settings.. need to take into account the defensive function of the buttons as well
-      if (hid->GetButton(e_ButtonFunction_LongPass)) possessionContext += 0.15f;
-      if (hid->GetButton(e_ButtonFunction_Shot)) possessionContext += 0.15f;
-
-      if (hid->GetButton(e_ButtonFunction_Pressure)) possessionContext -= 0.15f;
-      if (hid->GetButton(e_ButtonFunction_Sliding)) possessionContext -= 0.15f;
-      if (hid->GetButton(e_ButtonFunction_TeamPressure)) possessionContext -= 0.15f;
-
-      if (match->GetBall()->Predict(0).coords[2] > 1.5f) possessionContext += 0.2f;
+      isTeamAttacking = (team->GetTeamPossessionAmount() >= 1.0f);
     }
+
+    if (match->GetDesignatedPossessionPlayer() == player) {
+      isTeamAttacking = true;
+    }
+
+    float possessionContext = isTeamAttacking ? 1.0f : -1.0f;
 
     if (possessionContext < 0.0f) {
       bool allowPressure = true;

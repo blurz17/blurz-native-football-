@@ -1507,6 +1507,17 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         }
     }
 
+    public static void updateMatchTelemetry(final String t1Name, final String t2Name, final int t1Score, final int t2Score, final String timeStr) {
+        if (mSingleton != null && mControls != null) {
+            mSingleton.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mControls.updateTelemetry(t1Name, t2Name, t1Score, t2Score, timeStr);
+                }
+            });
+        }
+    }
+
     // Input
 
     /**

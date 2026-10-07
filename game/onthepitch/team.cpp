@@ -383,7 +383,16 @@ void Team::Process() {
     }
 
     if (humanGamers.size() > 0) {
-      bool isAttacking = (fadingTeamPossessionAmount >= 1.0f);
+      bool isAttacking = (match->GetBestPossessionTeamID() == GetID());
+      if (match->GetBallRetainer() != 0) {
+        isAttacking = (match->GetBallRetainer()->GetTeamID() == GetID());
+      } else if (hasPossession) {
+        isAttacking = true;
+      } else if (match->GetTeam(abs(GetID() - 1))->HasPossession()) {
+        isAttacking = false;
+      } else {
+        isAttacking = (fadingTeamPossessionAmount >= 1.0f);
+      }
       blunted::UserEventManager::GetInstance().SetPossession(isAttacking);
     }
 
@@ -572,16 +581,20 @@ void Team::UpdateSwitch() {
   }
 
 
-  // autoswitch on proximity
-
-/* recently disabled
+  // autoswitch on proximity / defense
   if (match->IsInPlay() && humanGamers.size() > 0) {
-    if (!IsHumanControlled(designatedTeamPossessionPlayer->GetID()) &&
-        designatedTeamPossessionPlayer->GetTimeNeededToGetToBall_ms() < 2000 && // proximity
-        designatedTeamPossessionPlayer->GetTimeNeededToGetToBall_ms() <= this->GetTimeNeededToGetToBall_ms() && // sometimes, the designated team possession player is not the player quickest to ball. don't autoswitch then
-        GetTeamPossessionAmount() > 1.3f) SelectPlayer(designatedTeamPossessionPlayer);
+    if (!IsHumanControlled(designatedTeamPossessionPlayer->GetID()) && designatedTeamPossessionPlayer != GetGoalie()) {
+      int timeNeeded = designatedTeamPossessionPlayer->GetTimeNeededToGetToBall_ms();
+      // In attack: when designated receiver is close to receiving ball
+      if (GetTeamPossessionAmount() >= 1.0f && timeNeeded < 1000) {
+        SelectPlayer(designatedTeamPossessionPlayer);
+      }
+      // In defense: when designated team player is contesting ball close by
+      else if (GetTeamPossessionAmount() < 1.0f && timeNeeded < 700 && timeNeeded <= this->GetTimeNeededToGetToBall_ms()) {
+        SelectPlayer(designatedTeamPossessionPlayer);
+      }
+    }
   }
-*/
 
   //if (GetID() == 0) printf("teamposs %f\n", GetTeamPossessionAmount());
 

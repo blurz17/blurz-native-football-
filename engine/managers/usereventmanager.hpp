@@ -62,6 +62,7 @@ namespace blunted {
 
       void SetPossession(bool isAttacking);
       void NotifyGameOver(int t1score, int t2score, int t1possession, int t2possession, int t1shots, int t2shots);
+      void UpdateMatchTelemetry(const std::string &t1Name, const std::string &t2Name, int t1score, int t2score, const std::string &timeStr);
 
       bool GetKeyboardState(SDL_Keycode code) const;
       std::map<SDL_Keycode, TimedKeyPress> GetKeyboardState() const;

@@ -366,6 +366,32 @@ namespace blunted {
 #endif
   }
 
+  void UserEventManager::UpdateMatchTelemetry(const std::string &t1Name, const std::string &t2Name, int t1score, int t2score, const std::string &timeStr) {
+#ifdef __ANDROID__
+    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+    if (env != nullptr) {
+      jobject activity = (jobject)SDL_AndroidGetActivity();
+      if (activity != nullptr) {
+        jclass activityClass = env->GetObjectClass(activity);
+        if (activityClass != nullptr) {
+          jmethodID updateTelemetryMethod = env->GetStaticMethodID(activityClass, "updateMatchTelemetry", "(Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;)V");
+          if (updateTelemetryMethod != nullptr) {
+            jstring jT1 = env->NewStringUTF(t1Name.c_str());
+            jstring jT2 = env->NewStringUTF(t2Name.c_str());
+            jstring jTime = env->NewStringUTF(timeStr.c_str());
+            env->CallStaticVoidMethod(activityClass, updateTelemetryMethod, jT1, jT2, t1score, t2score, jTime);
+            env->DeleteLocalRef(jT1);
+            env->DeleteLocalRef(jT2);
+            env->DeleteLocalRef(jTime);
+          }
+          env->DeleteLocalRef(activityClass);
+        }
+        env->DeleteLocalRef(activity);
+      }
+    }
+#endif
+  }
+
   void UserEventManager::SetJoystickAxisCalibration(int joyID, int axisID, float min, float max, float rest) {
     boost::mutex::scoped_lock lock(joyButtonPressedMutex);
     joyAxisCalibration[joyID][axisID][0] = min;

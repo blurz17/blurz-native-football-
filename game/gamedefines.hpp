@@ -29,10 +29,11 @@ const float animSprintVelocity = 7.0f;
 const float idleDribbleSwitch = 1.8f;
 const float dribbleWalkSwitch = 4.2f;
 const float walkSprintSwitch = 6.0f;
-// PES6 digital control mode, quantizes some input to x degree angles
-const bool quantizeDirection = true;
+// Continuous analog control mode (disabled 8-way quantization for fluid 360-degree control)
+const bool quantizeDirection = false;
 
-const float analogStickDeadzone = 0.75f;
+// Mobile/analog standard 15% deadzone (was 0.75f which blocked gentle analog movement)
+const float analogStickDeadzone = 0.15f;
 
 const float _default_CameraZoom = 0.5f;
 const float _default_CameraHeight = 0.3f;

@@ -39,6 +39,7 @@
 #ifdef __ANDROID__
 #include <jni.h>
 #include <SDL.h>
+#include "managers/usereventmanager.hpp"
 #endif
 
 const unsigned int replaySize_ms = 10000;
@@ -345,7 +346,11 @@ Match::Match(MatchData *matchData, GameContext *context) : matchData(matchData),
 #ifndef GPFB_HEADLESS
   Gui2Root *root = menuTask->GetWindowManager()->GetRoot();
 
+#ifdef __ANDROID__
+  radar = new Gui2Radar(menuTask->GetWindowManager(), "game_radar", 41, 84, 18, 14, this, matchData->GetTeamData(0)->GetColor1(), matchData->GetTeamData(0)->GetColor2(), matchData->GetTeamData(1)->GetColor1(), matchData->GetTeamData(1)->GetColor2());
+#else
   radar = new Gui2Radar(menuTask->GetWindowManager(), "game_radar", 38, 78, 24, 18, this, matchData->GetTeamData(0)->GetColor1(), matchData->GetTeamData(0)->GetColor2(), matchData->GetTeamData(1)->GetColor1(), matchData->GetTeamData(1)->GetColor2());
+#endif
   root->AddView(radar);
   radar->Show();
 
@@ -376,7 +381,11 @@ Match::Match(MatchData *matchData, GameContext *context) : matchData(matchData),
 
   scoreboard = new Gui2ScoreBoard(menuTask->GetWindowManager(), this);
   root->AddView(scoreboard);
+#ifndef __ANDROID__
   scoreboard->Show();
+#else
+  scoreboard->Hide();
+#endif
 
   messageCaption = new Gui2Caption(menuTask->GetWindowManager(), "game_messages", 0, 0, 80, 8, "");
   messageCaption->SetTransparency(0.3f);
@@ -1430,6 +1439,17 @@ void Match::Put() {
       timeStr += int_to_str(seconds);
 #ifndef GPFB_HEADLESS
       scoreboard->SetTimeStr(timeStr);
+#ifdef __ANDROID__
+      static std::string lastAndroidTelemetryTime = "";
+      if (timeStr != lastAndroidTelemetryTime) {
+        lastAndroidTelemetryTime = timeStr;
+        std::string t1Name = matchData->GetTeamData(0)->GetShortName();
+        std::string t2Name = matchData->GetTeamData(1)->GetShortName();
+        int t1Score = matchData->GetGoalCount(0);
+        int t2Score = matchData->GetGoalCount(1);
+        blunted::UserEventManager::GetInstance().UpdateMatchTelemetry(t1Name, t2Name, t1Score, t2Score, timeStr);
+      }
+#endif
     //}
 
     if (messageCaptionRemoveTime_ms <= fetchedbuf_actualTime_ms) messageCaption->Hide();

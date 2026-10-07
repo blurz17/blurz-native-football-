@@ -29,6 +29,7 @@ IngamePage::IngamePage(Gui2WindowManager *windowManager, const Gui2PageData &pag
 
   GetContext()->gameTask->GetMatch()->Pause(true);
 
+#ifndef __ANDROID__
   Gui2Root *root = windowManager->GetRoot();
 
   Gui2Button *buttonGamePlan = new Gui2Button(windowManager, "button_gameplan", 0, 0, 30, 3, "game plan");
@@ -64,6 +65,7 @@ IngamePage::IngamePage(Gui2WindowManager *windowManager, const Gui2PageData &pag
   grid->Show();
 
   buttonGamePlan->SetFocus();
+#endif
 
   this->Show();
 }

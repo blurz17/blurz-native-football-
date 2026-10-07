@@ -40,10 +40,10 @@ void HIDGamepad::LoadConfig() {
 
     // xbox controller defaults
     int defaultButton = 0;
-    if      (i == 0) defaultButton = -3;
-    else if (i == 1) defaultButton = -4;
-    else if (i == 2) defaultButton = -1;
-    else if (i == 3) defaultButton = -2;
+    if      (i == 0) defaultButton = -3; // Up (Axis 1 -)
+    else if (i == 1) defaultButton = -2; // Right (Axis 0 +)
+    else if (i == 2) defaultButton = -4; // Down (Axis 1 +)
+    else if (i == 3) defaultButton = -1; // Left (Axis 0 -)
     else if (i == 4) defaultButton = 3;
     else if (i == 5) defaultButton = 1;
     else if (i == 6) defaultButton = 0;
