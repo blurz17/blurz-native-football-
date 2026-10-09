@@ -958,18 +958,28 @@ bool AI_HasPossession(Ball *ball, Player *player) {
   // premature optimization ;)
   if ((player->GetPosition() - ball->Predict(0)).GetLength() > 5.0) return false;
 
-  Vector3 ballMovement = ball->GetMovement();
-  if (fabs(ball->Predict(0).coords[2]) > 0.5) return false;
+  bool hasRecentTouch = (player->GetLastTouchBias(700) > 0.01f && player->GetLastTouchType() != e_TouchType_Accidental);
 
+  float maxBallHeight = hasRecentTouch ? 1.2f : 0.85f;
+  if (fabs(ball->Predict(0).coords[2]) > maxBallHeight) return false;
 
   bool distanceOK = true;
-  float radius = 1.0f;
-  Vector3 center = player->GetPosition() + player->GetMovement() * 0.05f + player->GetDirectionVec() * 0.1f;//was: 0.05f
+  float radius = 1.2f;
+  float speed = playerMovement.GetLength();
+  if (speed > walkVelocity) {
+    radius += (speed - walkVelocity) * 0.25f; // expands up to ~1.8m at sprint
+  }
+  if (hasRecentTouch) {
+    radius = std::max(radius, 1.8f);
+  }
+
+  Vector3 center = player->GetPosition() + player->GetMovement() * 0.05f + player->GetDirectionVec() * 0.1f;
   if ((ball->Predict(0).Get2D() - center).GetLength() > radius) distanceOK = false;
 
   bool movementOK = true;
   Vector3 ballMovement3D = (ball->Predict(10) - ball->Predict(0)) * 100.0f;
-  if ((ballMovement3D - playerMovement).GetLength() > 6.0f) movementOK = false;
+  float maxVeloDiff = hasRecentTouch ? 8.5f : 6.0f;
+  if ((ballMovement3D - playerMovement).GetLength() > maxVeloDiff) movementOK = false;
 
   if (distanceOK && movementOK) return true; else return false;
 }

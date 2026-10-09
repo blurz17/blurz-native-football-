@@ -403,6 +403,9 @@ void Humanoid::Process() {
     float desiredBallHeight = desiredBallPosition.coords[2];
 
     float touchableDistance = 0.4f;
+    if (currentAnim->functionType == e_FunctionType_BallControl || currentAnim->functionType == e_FunctionType_Trap) {
+      touchableDistance = 0.65f;
+    }
 
     float fullBallDistance = (match->GetBall()->Predict(0) - (currentAnim->touchPos + currentAnim->positionOffset)).GetLength();
 

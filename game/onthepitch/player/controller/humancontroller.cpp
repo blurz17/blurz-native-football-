@@ -412,6 +412,8 @@ void HumanController::Process() {
       isTeamAttacking = (match->GetBallRetainer()->GetTeamID() == team->GetID());
     } else if (team->HasPossession()) {
       isTeamAttacking = true;
+    } else if (match->GetLastTouchTeamID() == team->GetID() && (match->GetActualTime_ms() - team->GetLastTouchTime_ms() < 800)) {
+      isTeamAttacking = true;
     } else if (match->GetTeam(abs(team->GetID() - 1))->HasPossession()) {
       isTeamAttacking = false;
     } else {

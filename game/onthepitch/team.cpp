@@ -592,7 +592,8 @@ void Team::UpdateSwitch() {
     Player *currentSelected = GetPlayer(humanGamers.at(0)->GetSelectedPlayerID());
     bool currentHasBall = currentSelected && (currentSelected->HasPossession() || 
                                               currentSelected == designatedTeamPossessionPlayer ||
-                                              match->GetBallRetainer() == currentSelected);
+                                              match->GetBallRetainer() == currentSelected ||
+                                              (match->GetLastTouchPlayer() == currentSelected && match->GetActualTime_ms() - currentSelected->GetLastTouchTime_ms() < 800));
 
     // If current selected player has the ball, DO NOT autoswitch away mid-dribble!
     if (!currentHasBall) {

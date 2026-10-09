@@ -309,9 +309,11 @@ Vector3 GetBallControlVector(Ball *ball, Player *player, const Vector3 &nextStar
   // SetYellowDebugPilon(nextStartPos);
   // SetGreenDebugPilon(nextStartPos + FFO);
 
-  //if (player->GetDebug()) printf("power: %f\n", power);
-  float height = clamp(0.1f + 1.5f * std::pow(power / 10.0f, 1.6f), 0.0f,
-                       1.5f);  // power ~= 0 to 10
+  // Keep ground dribble flat on turf so the ball doesn't bounce in the air during running
+  float height = 0.0f;
+  if (currentAnim->originatingCommand.modifier & e_PlayerCommandModifier_KnockOn) {
+    height = clamp(0.05f + 0.4f * std::pow(power / 10.0f, 1.6f), 0.0f, 0.35f);
+  }
 
   //if (player->GetDebug()) printf("tech ballctrl: %f\n", player->GetStat("technical_ballcontrol"));
   float powerMultiplier = 1.2f - (player->GetStat("technical_ballcontrol") * 0.03f); // 1.24 .. * 0.1

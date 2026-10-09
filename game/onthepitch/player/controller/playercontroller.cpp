@@ -297,6 +297,7 @@ void PlayerController::_BallControlCommand(PlayerCommandQueue &commandQueue, boo
   }
 
   if (match->GetDesignatedPossessionPlayer() == player ||
+      (match->GetLastTouchPlayer() == player && match->GetActualTime_ms() - CastPlayer()->GetLastTouchTime_ms() < 800) ||
       (team->GetDesignatedTeamPossessionPlayer() == player && CouldWinABallDuelLikeliness() >= 0.25f)) {
 
     PlayerCommand command;
@@ -514,7 +515,18 @@ void PlayerController::_MovementCommand(PlayerCommandQueue &commandQueue, bool f
       autoLookDirection = (autoLookAt - player->GetPosition()).GetNormalized(0);
       autoBias = 1.0f;
 
-      if (match->GetDesignatedPossessionPlayer() != player) {
+      if (team->IsHumanControlled(player->GetID())) {
+        if (forceMagnet) {
+          autoBias = 1.0f;
+        } else if (manualVelocityFloat > idleVelocity) {
+          // Player is actively steering with the thumbstick: preserve 75% human stick authority
+          // and use only 25% subtle magnet to ball, preventing sudden stopping or direction flips
+          autoBias = 0.25f;
+        } else {
+          // Stick is in deadzone / idle: allow auto-movement to gather the ball
+          autoBias = 0.80f;
+        }
+      } else if (match->GetDesignatedPossessionPlayer() != player) {
         float sameDirFactor = 1.0f - clamp(fabs(autoDirection.GetAngle2D(manualDirection)) / pi, 0.0f, 1.0f);
         sameDirFactor = sameDirFactor * 0.5f + 0.5f; // todo: can't fully trust this; it just isn't a 100% indication of the player's intentions. just use this hax for now
         autoBias = 0.0f;
