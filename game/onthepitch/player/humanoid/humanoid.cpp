@@ -1472,21 +1472,35 @@ bool Humanoid::SelectAnim(const PlayerCommand &command, e_InterruptAnim localInt
 
     else if (command.desiredFunctionType == e_FunctionType_BallControl) {
       radian turnAngle = fabs(command.desiredDirection.GetAngle2D(spatialState.directionVec));
-      bool isHuman = (CastPlayer()->GetExternalController() != 0);
-      bool isTurning = (turnAngle > 0.10f * pi);
-      bool hasBall = CastPlayer()->HasPossession() || (match->GetBallRetainer() == player) ||
-                     (match->GetLastTouchPlayer() == player && match->GetActualTime_ms() - CastPlayer()->GetLastTouchTime_ms() < 1200);
+      bool isTurning = (turnAngle > 0.12f * pi);
+      bool isBraking = (command.desiredVelocityFloat < spatialState.floatVelocity - 1.2f);
+      bool isLastDitch = CastPlayer()->AllowLastDitch();
 
       bool strict = true;
       float allowedBaseAngle = 0.0f * pi;
       int allowedVelocitySteps = 0; // last ditch anims are always allowed > 0 velocity steps, as long as strict is false
 
-      if (CastPlayer()->AllowLastDitch() || isHuman || isTurning || hasBall) {
+      if (isLastDitch) {
         strict = false;
-        // When turning with the ball or under human control, allow a wide angle to keep turning animations (45, 90, 135, 180)
-        allowedBaseAngle = isTurning ? 0.65f * pi : 0.45f * pi;
-        // Allow up to 2-3 velocity steps so decelerating turn animations (e.g. 090_decel_decel) are NOT purged
-        allowedVelocitySteps = (command.desiredVelocityFloat > dribbleWalkSwitch) ? 3 : 2;
+        allowedBaseAngle = 0.45f * pi;
+        allowedVelocitySteps = 2;
+      } else if (isTurning) {
+        // Player is actively steering/turning with the ball: allow turning animations (45, 90, 135, 180)
+        // and allow decelerating turn anims so player can make the angle
+        strict = false;
+        allowedBaseAngle = (turnAngle > 0.40f * pi) ? 0.65f * pi : 0.45f * pi;
+        allowedVelocitySteps = (turnAngle > 0.40f * pi) ? 3 : 2;
+      } else if (isBraking) {
+        // Player is intentionally letting go of sprint / slowing down: allow decel anims
+        strict = false;
+        allowedBaseAngle = 0.15f * pi;
+        allowedVelocitySteps = 2;
+      } else {
+        // Running straight (especially in sprint/dash): STRICTLY maintain speed and quadrant!
+        // DO NOT allow decel anims (like 000_decel) to be selected when player wants to sprint straight!
+        strict = true;
+        allowedBaseAngle = 0.0f * pi;
+        allowedVelocitySteps = 0;
       }
 
       if (command.useDesiredLookAt) _KeepBestBodyDirectionAnims(dataSet, command, strict, allowedBaseAngle); // needed for idle outgoing velo, probably
@@ -1771,6 +1785,17 @@ bool Humanoid::SelectAnim(const PlayerCommand &command, e_InterruptAnim localInt
 
       selectedAnimID = -1;
       if (player->GetDebug() && !IsReleaseVersion()) printf("rejecting requeue anim for leading into the same quadrant (type: %i)\n", command.desiredFunctionType);
+    }
+
+    // Protect straight running / sprinting from mid-stride ReQueue interruption:
+    // If user is commanding forward velocity and not turning, do not allow ReQueue to downgrade velocity
+    if (command.desiredFunctionType == e_FunctionType_BallControl && selectedAnimID != -1) {
+      radian turnAngle = fabs(command.desiredDirection.GetAngle2D(spatialState.directionVec));
+      if (turnAngle < 0.15f * pi && command.desiredVelocityFloat > dribbleWalkSwitch) {
+        if (FloatToEnumVelocity(anims->GetAnim(selectedAnimID)->GetOutgoingVelocity()) < FloatToEnumVelocity(currentAnim->anim->GetOutgoingVelocity())) {
+          selectedAnimID = -1;
+        }
+      }
     }
   }
 

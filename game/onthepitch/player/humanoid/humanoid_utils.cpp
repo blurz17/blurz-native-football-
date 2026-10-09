@@ -272,14 +272,14 @@ Vector3 GetBallControlVector(Ball *ball, Player *player, const Vector3 &nextStar
   // Previously desiredDelayTime scaled up to 0.85s, launching the ball 6-8 meters ahead and causing
   // the player to lose the ball or trigger an unwanted autoswitch!
   bool isKnockOn = (currentAnim->originatingCommand.modifier & e_PlayerCommandModifier_KnockOn) != 0;
-  float maxDelayTime = isKnockOn ? 0.65f : 0.28f;
+  float maxDelayTime = isKnockOn ? 0.70f : 0.32f;
   float desiredDelayTime =
-      std::min(std::pow(NormalizedClamp(desiredVelocity, 0.0f, sprintVelocity), 2.0f) *
-                   0.35f +
+      std::min(std::pow(NormalizedClamp(desiredVelocity, 0.0f, sprintVelocity), 1.5f) *
+                   0.25f +
                0.20f, maxDelayTime);
   float physicsDelayTime =
-      std::min(std::pow(NormalizedClamp(physicsVelocity, 0.0f, sprintVelocity), 2.0f) *
-                   0.35f +
+      std::min(std::pow(NormalizedClamp(physicsVelocity, 0.0f, sprintVelocity), 1.5f) *
+                   0.25f +
                0.20f, maxDelayTime);
   // printf("PHYSICS VELO: %f (desiredDelayTime: %f, physicsDelayTime: %f)\n",
   // physicsVelocity, desiredDelayTime, physicsDelayTime);
