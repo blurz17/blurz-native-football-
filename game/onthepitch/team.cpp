@@ -478,25 +478,35 @@ void Team::Process() {
     Player *bestPlayer = GetBestPossessionPlayer();
     int oppTime_ms = match->GetTeam(abs(GetID() - 1))->GetTimeNeededToGetToBall_ms();
     if (designatedTeamPossessionPlayer != bestPlayer) {
-      // switch only if other player is somewhat better, to overcome possession-chaos
-      int bestPlayerTime_ms = bestPlayer->GetTimeNeededToGetToBall_ms();
-      float timeRating = (float)(bestPlayerTime_ms + 500) / (float)(designatedPlayerTime_ms + 500);
+      // Check if designated player is human and actively dribbling / possessing the ball
+      bool designatedIsHumanDribbler = IsHumanControlled(designatedTeamPossessionPlayer->GetID()) &&
+                                       (designatedTeamPossessionPlayer->HasPossession() ||
+                                        (match->GetLastTouchPlayer() == designatedTeamPossessionPlayer &&
+                                         match->GetActualTime_ms() - designatedTeamPossessionPlayer->GetLastTouchTime_ms() < 1500 &&
+                                         match->GetLastTouchTeamID() == GetID()));
 
-      if (bestPlayer->HasPossession()) timeRating *= 0.5f;
-      if (designatedTeamPossessionPlayer->HasPossession()) timeRating /= 0.5f;
+      // Never strip designated possession away from human dribbler while they are actively running with the ball!
+      if (!designatedIsHumanDribbler) {
+        // switch only if other player is somewhat better, to overcome possession-chaos
+        int bestPlayerTime_ms = bestPlayer->GetTimeNeededToGetToBall_ms();
+        float timeRating = (float)(bestPlayerTime_ms + 500) / (float)(designatedPlayerTime_ms + 500);
 
-      if (IsHumanControlled(bestPlayer->GetID())) timeRating *= 0.8f;
-      if (IsHumanControlled(designatedTeamPossessionPlayer->GetID())) timeRating /= 0.8f;
+        if (bestPlayer->HasPossession()) timeRating *= 0.5f;
+        if (designatedTeamPossessionPlayer->HasPossession()) timeRating /= 0.5f;
 
-      // current player can get to the ball before the closest opponent: less need to switch
-      //if (GetID() == 0) printf("opptime: %i, designated time: %i\n", oppTime_ms, designatedPlayerTime_ms);
-      if (IsHumanControlled(bestPlayer->GetID()) == false && designatedPlayerTime_ms < oppTime_ms - 100) {
-        timeRating += 0.2f;
-        timeRating *= 1.2f;
-      }
+        if (IsHumanControlled(bestPlayer->GetID())) timeRating *= 0.8f;
+        if (IsHumanControlled(designatedTeamPossessionPlayer->GetID())) timeRating /= 0.8f;
 
-      if (timeRating < 0.8f) {
-        designatedTeamPossessionPlayer = bestPlayer;
+        // current player can get to the ball before the closest opponent: less need to switch
+        //if (GetID() == 0) printf("opptime: %i, designated time: %i\n", oppTime_ms, designatedPlayerTime_ms);
+        if (IsHumanControlled(bestPlayer->GetID()) == false && designatedPlayerTime_ms < oppTime_ms - 100) {
+          timeRating += 0.2f;
+          timeRating *= 1.2f;
+        }
+
+        if (timeRating < 0.8f) {
+          designatedTeamPossessionPlayer = bestPlayer;
+        }
       }
     }
 
@@ -593,7 +603,9 @@ void Team::UpdateSwitch() {
     bool currentHasBall = currentSelected && (currentSelected->HasPossession() || 
                                               currentSelected == designatedTeamPossessionPlayer ||
                                               match->GetBallRetainer() == currentSelected ||
-                                              (match->GetLastTouchPlayer() == currentSelected && match->GetActualTime_ms() - currentSelected->GetLastTouchTime_ms() < 800));
+                                              (match->GetLastTouchPlayer() == currentSelected && 
+                                               match->GetActualTime_ms() - currentSelected->GetLastTouchTime_ms() < 1500 &&
+                                               match->GetLastTouchTeamID() == GetID()));
 
     // If current selected player has the ball, DO NOT autoswitch away mid-dribble!
     if (!currentHasBall) {

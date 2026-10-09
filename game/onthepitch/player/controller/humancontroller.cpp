@@ -336,17 +336,32 @@ void HumanController::RequestCommand(PlayerCommandQueue &commandQueue) {
     _InterfereCommand(commandQueue, byAnyMeans);
   }
 
+  // Determine if team is attacking vs defending so pressure button doesn't hijack attack/pass
+  bool isTeamAttacking = (match->GetBestPossessionTeamID() == team->GetID());
+  if (match->GetBallRetainer() != 0) {
+    isTeamAttacking = (match->GetBallRetainer()->GetTeamID() == team->GetID());
+  } else if (team->HasPossession()) {
+    isTeamAttacking = true;
+  } else if (match->GetLastTouchTeamID() == team->GetID() && (match->GetActualTime_ms() - team->GetLastTouchTime_ms() < 800)) {
+    isTeamAttacking = true;
+  } else if (match->GetTeam(abs(team->GetID() - 1))->HasPossession()) {
+    isTeamAttacking = false;
+  } else {
+    isTeamAttacking = (team->GetTeamPossessionAmount() >= 1.0f);
+  }
+  if (match->GetDesignatedPossessionPlayer() == player) {
+    isTeamAttacking = true;
+  }
+
   // movement
   bool forceMagnet = false;
   bool extraHaste = false;
-  if (actionMode != 2 && hid->GetButton(e_ButtonFunction_Pressure)) {
+  // Pressure shares button mapping with ShortPass; ONLY activate defensive pressure magnet when genuinely defending!
+  if (!isTeamAttacking && actionMode != 2 && hid->GetButton(e_ButtonFunction_Pressure)) {
     forceMagnet = true;
     extraHaste = true;
   }
-  if (actionMode == 2) {
-    forceMagnet = true;
-    extraHaste = true;
-  }
+  // Never force magnet during actionMode == 2 (charging pass/shot) so player maintains stick aim and running momentum!
   _MovementCommand(commandQueue, forceMagnet, extraHaste);
 
   if (commandQueue.size() > 0) {

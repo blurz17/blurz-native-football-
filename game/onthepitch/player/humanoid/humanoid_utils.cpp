@@ -268,17 +268,19 @@ Vector3 GetBallControlVector(Ball *ball, Player *player, const Vector3 &nextStar
   Vector3 desiredPlannedBallPos = nextStartPos;
   Vector3 physicsPlannedBallPos = nextStartPos;
 
-  // we actually want the ball to be further away than our next position - after all, we want to hit it again a few steps later
+  // We want the ball to stay close to the player's feet unless a deliberate knock-on was commanded.
+  // Previously desiredDelayTime scaled up to 0.85s, launching the ball 6-8 meters ahead and causing
+  // the player to lose the ball or trigger an unwanted autoswitch!
+  bool isKnockOn = (currentAnim->originatingCommand.modifier & e_PlayerCommandModifier_KnockOn) != 0;
+  float maxDelayTime = isKnockOn ? 0.65f : 0.28f;
   float desiredDelayTime =
-      std::pow(NormalizedClamp(desiredVelocity, 0.0f, sprintVelocity), 2.0f) *
-          0.60f +
-      0.25f;  // how many seconds later do we want to be able to hit it again?
-              // (remember: this is minus ffo time and current anim time)
+      std::min(std::pow(NormalizedClamp(desiredVelocity, 0.0f, sprintVelocity), 2.0f) *
+                   0.35f +
+               0.20f, maxDelayTime);
   float physicsDelayTime =
-      std::pow(NormalizedClamp(physicsVelocity, 0.0f, sprintVelocity), 2.0f) *
-          0.60f +
-      0.25f;  // how many seconds later do we want to be able to hit it again?
-              // (remember: this is minus ffo time and current anim time)
+      std::min(std::pow(NormalizedClamp(physicsVelocity, 0.0f, sprintVelocity), 2.0f) *
+                   0.35f +
+               0.20f, maxDelayTime);
   // printf("PHYSICS VELO: %f (desiredDelayTime: %f, physicsDelayTime: %f)\n",
   // physicsVelocity, desiredDelayTime, physicsDelayTime);
   desiredPlannedBallPos += desiredMovement * desiredDelayTime + FFO;
@@ -319,6 +321,10 @@ Vector3 GetBallControlVector(Ball *ball, Player *player, const Vector3 &nextStar
   float powerMultiplier = 1.2f - (player->GetStat("technical_ballcontrol") * 0.03f); // 1.24 .. * 0.1
   float veloBias = NormalizedClamp(velocity, walkVelocity, sprintVelocity - 0.8f); // this multiplier only applies to high velocities
   powerMultiplier = 1.0f * (1.0f - veloBias) + powerMultiplier * veloBias;
+  if (!isKnockOn) {
+    // For standard sprint dribbling, keep ball speed tightly matched to running speed so ball doesn't pull away from legs
+    powerMultiplier = std::min(powerMultiplier, 1.02f);
+  }
 
   Vector3 touchVec = direction * power * powerMultiplier + Vector3(0, 0, height);
 /*

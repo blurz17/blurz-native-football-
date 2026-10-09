@@ -1471,12 +1471,24 @@ bool Humanoid::SelectAnim(const PlayerCommand &command, e_InterruptAnim localInt
     }
 
     else if (command.desiredFunctionType == e_FunctionType_BallControl) {
+      radian turnAngle = fabs(command.desiredDirection.GetAngle2D(spatialState.directionVec));
+      bool isHuman = (CastPlayer()->GetExternalController() != 0);
+      bool isTurning = (turnAngle > 0.10f * pi);
+      bool hasBall = CastPlayer()->HasPossession() || (match->GetBallRetainer() == player) ||
+                     (match->GetLastTouchPlayer() == player && match->GetActualTime_ms() - CastPlayer()->GetLastTouchTime_ms() < 1200);
+
       bool strict = true;
-      if (CastPlayer()->AllowLastDitch()) {
-        strict = false;
-      }
       float allowedBaseAngle = 0.0f * pi;
       int allowedVelocitySteps = 0; // last ditch anims are always allowed > 0 velocity steps, as long as strict is false
+
+      if (CastPlayer()->AllowLastDitch() || isHuman || isTurning || hasBall) {
+        strict = false;
+        // When turning with the ball or under human control, allow a wide angle to keep turning animations (45, 90, 135, 180)
+        allowedBaseAngle = isTurning ? 0.65f * pi : 0.45f * pi;
+        // Allow up to 2-3 velocity steps so decelerating turn animations (e.g. 090_decel_decel) are NOT purged
+        allowedVelocitySteps = (command.desiredVelocityFloat > dribbleWalkSwitch) ? 3 : 2;
+      }
+
       if (command.useDesiredLookAt) _KeepBestBodyDirectionAnims(dataSet, command, strict, allowedBaseAngle); // needed for idle outgoing velo, probably
       _KeepBestDirectionAnims(dataSet, command, strict, allowedBaseAngle, allowedVelocitySteps);
 
@@ -1698,6 +1710,11 @@ bool Humanoid::SelectAnim(const PlayerCommand &command, e_InterruptAnim localInt
     if (NeedTouch(*dataSet.begin(), command)) {
       float hasteFactor = GetHasteFactor(false);
       selectedAnimID = GetBestCheatableAnimID(dataSet, command.useDesiredMovement, command.desiredDirection, command.desiredVelocityFloat, command.useDesiredLookAt, desiredBodyDirectionRel, positions_tmp, touchFrame_tmp, radiusOffset_tmp, touchPos_tmp, fullActionSmuggle_tmp, actionSmuggle_tmp, rotationSmuggle_tmp, hasteFactor, localInterruptAnim, preferPassAndShot);
+
+      // If initial cheatable anim was not found but player is in possession / human-controlled, retry with full haste/reach so turning player keeps ball!
+      if (selectedAnimID == -1 && (CastPlayer()->HasPossession() || CastPlayer()->GetExternalController() != 0 || match->GetDesignatedPossessionPlayer() == player)) {
+        selectedAnimID = GetBestCheatableAnimID(dataSet, command.useDesiredMovement, command.desiredDirection, command.desiredVelocityFloat, command.useDesiredLookAt, desiredBodyDirectionRel, positions_tmp, touchFrame_tmp, radiusOffset_tmp, touchPos_tmp, fullActionSmuggle_tmp, actionSmuggle_tmp, rotationSmuggle_tmp, 1.0f, localInterruptAnim, false);
+      }
     }
   }
   else if (command.desiredFunctionType == e_FunctionType_Trap ||
@@ -2197,6 +2214,12 @@ signed int Humanoid::GetBestCheatableAnimID(const DataSet &sortedDataSet, bool u
         if (functionType == e_FunctionType_HighPass) { radiusFactor *= 1.3f; radiusCheatOffset += 0.15f; }
         if (functionType == e_FunctionType_Shot) { radiusFactor *= 1.3f; radiusCheatOffset += 0.15f; }
 
+        if (functionType == e_FunctionType_BallControl) {
+          // Generous radius for ball control / dribbling so players reliably keep ball on turns and stride touches
+          radiusFactor *= 1.6f;
+          radiusCheatOffset += 0.35f;
+        }
+
         if ((functionType == e_FunctionType_Trap || functionType == e_FunctionType_BallControl) && preferPassAndShot == true) {
           radiusFactor *= 0.3f;
         }
@@ -2216,12 +2239,15 @@ signed int Humanoid::GetBestCheatableAnimID(const DataSet &sortedDataSet, bool u
         //   SetYellowDebugPilon(spatialState.position + FFO.GetRotated2D(spatialState.angle) * 10.0f);
         // }
 
-        // just touched ball
-        float lastTouchBias = curve(player->GetLastTouchBias(600, match->GetActualTime_ms() + animTouchFrame * 10), 1.0f);
-        if (lastTouchBias > 0.0f) {
-          float factor = 1.0f - lastTouchBias * 0.97f * (1.0f - player->GetStat("technical_ballcontrol") * 0.1f);
-          radiusFactor *= factor;
-          radiusCheatOffset *= factor;
+        // just touched ball: for non-ballcontrol actions (e.g. traps/passes), prevent immediate double touch.
+        // For ball control (dribbling/turning), player MUST be able to take consecutive touches every stride without penalty!
+        if (functionType != e_FunctionType_BallControl) {
+          float lastTouchBias = curve(player->GetLastTouchBias(600, match->GetActualTime_ms() + animTouchFrame * 10), 1.0f);
+          if (lastTouchBias > 0.0f) {
+            float factor = 1.0f - lastTouchBias * 0.97f * (1.0f - player->GetStat("technical_ballcontrol") * 0.1f);
+            radiusFactor *= factor;
+            radiusCheatOffset *= factor;
+          }
         }
 
 

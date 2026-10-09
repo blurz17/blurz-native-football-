@@ -297,7 +297,8 @@ void PlayerController::_BallControlCommand(PlayerCommandQueue &commandQueue, boo
   }
 
   if (match->GetDesignatedPossessionPlayer() == player ||
-      (match->GetLastTouchPlayer() == player && match->GetActualTime_ms() - CastPlayer()->GetLastTouchTime_ms() < 800) ||
+      (match->GetLastTouchPlayer() == player && match->GetActualTime_ms() - CastPlayer()->GetLastTouchTime_ms() < 1500) ||
+      (team->IsHumanControlled(player->GetID()) && (CastPlayer()->HasPossession() || CastPlayer()->GetTimeNeededToGetToBall_ms() < 1000 || (player->GetPosition() - match->GetBall()->Predict(0)).GetLength() < 2.0f)) ||
       (team->GetDesignatedTeamPossessionPlayer() == player && CouldWinABallDuelLikeliness() >= 0.25f)) {
 
     PlayerCommand command;
