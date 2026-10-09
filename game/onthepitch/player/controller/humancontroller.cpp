@@ -245,7 +245,7 @@ void HumanController::RequestCommand(PlayerCommandQueue &commandQueue) {
   }
 
   // set piece?
-  if ((match->IsInSetPiece() && team->GetController()->GetPieceTaker() == player && (actionMode != 2 || (actionMode == 2 && hid->GetButton(actionButton)))) ||
+  if ((match->IsInSetPiece() && team->GetController()->GetPieceTaker() == player && (actionMode != 2 || (actionMode == 2 && hid->GetButton(actionButton)) || match->GetBallRetainer() == player)) ||
       (match->IsInSetPiece() && team->GetController()->GetPieceTaker() != player && match->GetBallRetainer() == 0)) {
     _SetPieceCommand(commandQueue);
     //if (team->GetController()->GetPieceTaker() == player) printf("waiting to take set piece!\n");
@@ -253,7 +253,12 @@ void HumanController::RequestCommand(PlayerCommandQueue &commandQueue) {
     return;
   }
 
+  // delay direction input until we have chosen a steady direction.
+  // this is because humans can only move an analog stick so fast, and we don't want requeues to happen mid-analogstick-movement.
   Vector3 inputDirectionSaveNonsteady = inputDirection;
+  //SetGreenDebugPilon(player->GetPosition() + inputDirection * (inputVelocityFloat * 0.5f + 0.5f));
+  inputDirection = steadyDirection;
+  //SetBlueDebugPilon(player->GetPosition() + inputDirection * (inputVelocityFloat * 0.5f + 0.6f));
 
   if (match->IsInPlay() && !match->IsInSetPiece()) {
 
@@ -469,11 +474,8 @@ void HumanController::Process() {
 }
 
 Vector3 HumanController::GetDirection() {
-  Vector3 hidDir = hid->GetDirection();
-  if (hidDir.GetLength() >= analogStickDeadzone) {
-    return hidDir.GetNormalized();
-  }
-  return Vector3(0, 0, 0);
+  Vector3 direction = CastPlayer()->GetDirectionVec();
+  return hid->GetDirection().GetNormalized(direction);
 }
 
 float HumanController::GetFloatVelocity() {
@@ -523,7 +525,7 @@ void HumanController::_GetHidInput(Vector3 &rawInputDirection, float &rawInputVe
     rawInputDirection.Normalize(); // Direction remains unit vector, speed is handled by velocityFloat
   }
 
-  if (GetLastSwitchBias() > 0.0f && analogMagnitude < analogStickDeadzone) {
+  if (GetLastSwitchBias() > 0.0f) {
     float switchInfluence = 0.5f;
     float switchBias = pow(GetLastSwitchBias(), 0.7f);
     Vector3 currentMovement = player->GetDirectionVec() * player->GetFloatVelocity();

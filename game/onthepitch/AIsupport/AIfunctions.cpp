@@ -921,13 +921,8 @@ unsigned int AI_GetBallControlMovement(const MentalImage *mentalImage, Player *p
   Vector3 autoDirection = toBallMovement.GetNormalized(player->GetDirectionVec());
   Vector3 manualDirection = (desiredDirection.GetLength() > 0.01f) ? desiredDirection : player->GetDirectionVec();
 
-  if (desiredDirection.GetLength() > 0.01f && desiredVelocityFloat > idleVelocity) {
-    // Active steering input: 100% deterministic heading in desiredDirection!
-    bestDirection = manualDirection;
-  } else {
-    bestDirection = autoDirection * autoDirectionBias + manualDirection * (1.0f - autoDirectionBias);
-    bestDirection.Normalize(player->GetDirectionVec());
-  }
+  bestDirection = autoDirection * autoDirectionBias + manualDirection * (1.0f - autoDirectionBias);
+  bestDirection.Normalize(manualDirection);
   //SetRedDebugPilon(player->GetPosition() + bestDirection * 2.0f);
 
 

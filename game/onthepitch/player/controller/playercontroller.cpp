@@ -596,23 +596,16 @@ void PlayerController::_MovementCommand(PlayerCommandQueue &commandQueue, bool f
 
 
   {
-    if (team->IsHumanControlled(player->GetID()) && manualVelocityFloat > idleVelocity) {
-      // 100% deterministic human analog stick steering and velocity!
-      command.desiredDirection = manualDirection;
-      command.desiredVelocityFloat = manualVelocityFloat;
-      command.desiredLookAt = player->GetPosition() + manualDirection * 10.0f;
-    } else {
-      Vector3 autoMovement = autoDirection * autoVelocityFloat;
-      Vector3 manualMovement = manualDirection * manualVelocityFloat;
-      Vector3 resultingMovement = manualMovement * (1.0 - autoBias) + autoMovement * autoBias;
-      command.desiredDirection = resultingMovement.GetNormalized(quantizedInputDirection);
-      command.desiredVelocityFloat = clamp(resultingMovement.GetLength(), idleVelocity, sprintVelocity);
+    Vector3 autoMovement = autoDirection * autoVelocityFloat;
+    Vector3 manualMovement = manualDirection * manualVelocityFloat;
+    Vector3 resultingMovement = manualMovement * (1.0 - autoBias) + autoMovement * autoBias;
+    command.desiredDirection = resultingMovement.GetNormalized(quantizedInputDirection);
+    command.desiredVelocityFloat = clamp(resultingMovement.GetLength(), idleVelocity, sprintVelocity);
 
-      if (command.desiredVelocityFloat < idleDribbleSwitch && manualVelocityFloat < idleDribbleSwitch) command.desiredDirection = autoLookDirection;
+    if (command.desiredVelocityFloat < idleDribbleSwitch && manualVelocityFloat < idleDribbleSwitch) command.desiredDirection = autoLookDirection;
 
-      Vector3 resultLookDirection = autoLookDirection;
-      command.desiredLookAt = player->GetPosition() + resultLookDirection * 10.0f;
-    }
+    Vector3 resultLookDirection = autoLookDirection;
+    command.desiredLookAt = player->GetPosition() + resultLookDirection * 10.0f;
   }
 
   commandQueue.push_back(command);

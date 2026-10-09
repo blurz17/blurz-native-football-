@@ -477,12 +477,7 @@ void Humanoid::Process() {
         float ballPower = currentAnim->originatingCommand.touchInfo.desiredPower;
         Player *targetPlayer = currentAnim->originatingCommand.touchInfo.targetPlayer;
         Vector3 inputDirection = currentAnim->originatingCommand.touchInfo.inputDirection;
-        if (CastPlayer()->GetExternalController()) {
-          Vector3 activeDir = CastPlayer()->GetExternalController()->GetDirection();
-          if (activeDir.GetLength() > 0.05f) {
-            inputDirection = activeDir;
-          }
-        }
+        if (CastPlayer()->GetExternalController()) inputDirection = CastPlayer()->GetExternalController()->GetDirection();
 
 
         // refine/change target, if new target is close enough to old target
