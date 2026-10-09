@@ -919,11 +919,10 @@ unsigned int AI_GetBallControlMovement(const MentalImage *mentalImage, Player *p
   }
 
   Vector3 autoDirection = toBallMovement.GetNormalized(player->GetDirectionVec());
-  Vector3 manualDirection = player->GetDirectionVec();//desiredDirection;
-  // test this: if (player->GetDirectionVec().GetDotProduct(desiredDirection) < 0) manualDirection = desiredDirection;
+  Vector3 manualDirection = (desiredDirection.GetLength() > 0.01f) ? desiredDirection : player->GetDirectionVec();
 
   bestDirection = autoDirection * autoDirectionBias + manualDirection * (1.0f - autoDirectionBias);
-  bestDirection.Normalize(player->GetDirectionVec());
+  bestDirection.Normalize(manualDirection);
   //SetRedDebugPilon(player->GetPosition() + bestDirection * 2.0f);
 
 
@@ -933,12 +932,9 @@ unsigned int AI_GetBallControlMovement(const MentalImage *mentalImage, Player *p
   float toBallVelocity = toBallDistance * distanceToVelocityMultiplier;
   bestVelocityFloat = toBallVelocity;
 
-  //bestVelocityFloat = bestVelocityFloat * 0.5f + RangeVelocity(bestVelocityFloat) * 0.5f; // quantization is the root of all happiness
-  if (bestVelocityFloat < dribbleVelocity) { // don't quantize low velos
-    //bestVelocityFloat = idleVelocity;
-  } else {
-    float clampedDesiredVelocityFloat = clamp(desiredVelocityFloat, bestVelocityFloat, bestVelocityFloat + 8.0f);
-    bestVelocityFloat = clampedDesiredVelocityFloat;
+  if (desiredVelocityFloat > idleVelocity) {
+    float clampedDesiredVelocityFloat = clamp(desiredVelocityFloat, idleVelocity, sprintVelocity);
+    bestVelocityFloat = std::max(bestVelocityFloat, clampedDesiredVelocityFloat);
     if (RangeVelocity(bestVelocityFloat) < bestVelocityFloat) bestVelocityFloat = bestVelocityFloat * 0.9f + RangeVelocity(bestVelocityFloat) * 0.1f;
     if (RangeVelocity(bestVelocityFloat) > bestVelocityFloat) bestVelocityFloat = bestVelocityFloat * 0.1f + RangeVelocity(bestVelocityFloat) * 0.9f;
   }

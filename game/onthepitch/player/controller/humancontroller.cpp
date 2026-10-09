@@ -284,7 +284,7 @@ void HumanController::RequestCommand(PlayerCommandQueue &commandQueue) {
     // ball control?
     bool keepCurrentBodyDirection = false;
     // sidestep dribble disabled for now, too quirky: if (hid->GetButton(e_ButtonFunction_Dribble)) keepCurrentBodyDirection = true;
-    _BallControlCommand(commandQueue, idleTurnToOpponentGoal, knockOn, true, keepCurrentBodyDirection);
+    _BallControlCommand(commandQueue, idleTurnToOpponentGoal, knockOn, false, keepCurrentBodyDirection);
 
     // trap?
     _TrapCommand(commandQueue, idleTurnToOpponentGoal, knockOn);

@@ -602,7 +602,7 @@ void PlayerController::_MovementCommand(PlayerCommandQueue &commandQueue, bool f
     command.desiredDirection = resultingMovement.GetNormalized(quantizedInputDirection);
     command.desiredVelocityFloat = clamp(resultingMovement.GetLength(), idleVelocity, sprintVelocity);
 
-    if (command.desiredVelocityFloat < idleDribbleSwitch) command.desiredDirection = autoLookDirection;
+    if (command.desiredVelocityFloat < idleDribbleSwitch && manualVelocityFloat < idleDribbleSwitch) command.desiredDirection = autoLookDirection;
 
     Vector3 resultLookDirection = autoLookDirection;
     command.desiredLookAt = player->GetPosition() + resultLookDirection * 10.0f;

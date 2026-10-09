@@ -169,12 +169,12 @@ void ElizaController::RequestCommand(PlayerCommandQueue &commandQueue) {
       bool doCommand = true;
 
       if (team->GetController()->GetSetPieceType() == e_SetPiece_GoalKick) {
-        if (random(0.0f, 1.0f) > 0.4f && team->GetHumanGamerCount() == 0) {
+        if (random(0.0f, 1.0f) > 0.4f) {
           actionCommand.desiredFunctionType = e_FunctionType_HighPass;
-          desiredTargetPosition = Vector3((pitchHalfW * -team->GetSide()) * 0.2f, random(-pitchHalfH, pitchHalfH), 0.0f);
+          desiredTargetPosition = Vector3((pitchHalfW * -team->GetSide()) * 0.35f, random(-pitchHalfH * 0.5f, pitchHalfH * 0.5f), 0.0f);
         } else {
           actionCommand.desiredFunctionType = e_FunctionType_ShortPass;
-          desiredTargetPosition = Vector3(player->GetPosition().coords[0] * 0.9f, random(-pitchHalfH, pitchHalfH), 0.0f);
+          desiredTargetPosition = Vector3(player->GetPosition().coords[0] + -team->GetSide() * 22.0f, random(-pitchHalfH * 0.5f, pitchHalfH * 0.5f), 0.0f);
         }
 
       } else if (team->GetController()->GetSetPieceType() == e_SetPiece_KickOff) {
@@ -205,7 +205,7 @@ void ElizaController::RequestCommand(PlayerCommandQueue &commandQueue) {
 
       } else if (match->GetBallRetainer() == player) { // keeper fetched ball, probably
         actionCommand.desiredFunctionType = e_FunctionType_HighPass;
-        desiredTargetPosition = Vector3(pitchHalfW * team->GetSide(), random(-pitchHalfH, pitchHalfH), 0.0f);
+        desiredTargetPosition = Vector3(pitchHalfW * -team->GetSide() * 0.35f, random(-pitchHalfH * 0.5f, pitchHalfH * 0.5f), 0.0f);
         Player *targetPlayer = AI_GetClosestPlayer(team, desiredTargetPosition, false, CastPlayer());
 
         if (targetPlayer) {

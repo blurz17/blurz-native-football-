@@ -326,8 +326,14 @@ void Team::HumanGamersSelectAnyone() {
   if (match->IsInPlay()) {
     for (unsigned int i = 0; i < humanGamers.size(); i++) {
       if (humanGamers.at(i)->GetSelectedPlayerID() == -1) {
-        int playerID = AI_GetClosestPlayer(this, match->GetBall()->Predict(0).Get2D(), true)->GetID();
-        humanGamers.at(i)->SetSelectedPlayerID(playerID);
+        Player *closest = 0;
+        if (match->GetBallRetainer() == GetGoalie() || (match->IsInSetPiece() && teamController->GetPieceTaker() == GetGoalie())) {
+          closest = GetGoalie();
+        } else {
+          closest = AI_GetClosestPlayer(this, match->GetBall()->Predict(0).Get2D(), true, GetGoalie());
+        }
+        if (!closest) closest = AI_GetClosestPlayer(this, match->GetBall()->Predict(0).Get2D(), true);
+        if (closest) humanGamers.at(i)->SetSelectedPlayerID(closest->GetID());
       }
     }
   }
@@ -583,28 +589,48 @@ void Team::UpdateSwitch() {
 
   // autoswitch on proximity / defense
   if (match->IsInPlay() && humanGamers.size() > 0) {
-    if (!IsHumanControlled(designatedTeamPossessionPlayer->GetID()) && designatedTeamPossessionPlayer != GetGoalie()) {
-      int timeNeeded = designatedTeamPossessionPlayer->GetTimeNeededToGetToBall_ms();
-      // In attack: when designated receiver is close to receiving ball
-      if (GetTeamPossessionAmount() >= 1.0f && timeNeeded < 1000) {
-        SelectPlayer(designatedTeamPossessionPlayer);
-      }
-      // In defense: when designated team player is contesting ball close by
-      else if (GetTeamPossessionAmount() < 1.0f && timeNeeded < 700 && timeNeeded <= this->GetTimeNeededToGetToBall_ms()) {
-        SelectPlayer(designatedTeamPossessionPlayer);
+    Player *currentSelected = GetPlayer(humanGamers.at(0)->GetSelectedPlayerID());
+    bool currentHasBall = currentSelected && (currentSelected->HasPossession() || 
+                                              currentSelected == designatedTeamPossessionPlayer ||
+                                              match->GetBallRetainer() == currentSelected);
+
+    // If current selected player has the ball, DO NOT autoswitch away mid-dribble!
+    if (!currentHasBall) {
+      if (!IsHumanControlled(designatedTeamPossessionPlayer->GetID()) && designatedTeamPossessionPlayer != GetGoalie()) {
+        int timeNeeded = designatedTeamPossessionPlayer->GetTimeNeededToGetToBall_ms();
+        // In attack: when ball is loose or being passed to designated receiver
+        if (GetTeamPossessionAmount() >= 1.0f && timeNeeded < 600 && timeNeeded <= this->GetTimeNeededToGetToBall_ms()) {
+          SelectPlayer(designatedTeamPossessionPlayer);
+        }
+        // In defense: when designated team player is contesting ball close by
+        else if (GetTeamPossessionAmount() < 1.0f && timeNeeded < 700 && timeNeeded <= this->GetTimeNeededToGetToBall_ms()) {
+          SelectPlayer(designatedTeamPossessionPlayer);
+        }
       }
     }
   }
 
-  //if (GetID() == 0) printf("teamposs %f\n", GetTeamPossessionAmount());
-
-
   // team player in possession is not human selected
 
   if (match->IsInPlay() && humanGamers.size() > 0) {
-    if (!IsHumanControlled(designatedTeamPossessionPlayer->GetID()) && (designatedTeamPossessionPlayer->HasUniquePossession() || match->IsInSetPiece())) {
-      if (designatedTeamPossessionPlayer != GetGoalie()) {
+    if (!IsHumanControlled(designatedTeamPossessionPlayer->GetID()) && 
+        (designatedTeamPossessionPlayer->HasUniquePossession() || match->IsInSetPiece() || match->GetBallRetainer() == designatedTeamPossessionPlayer)) {
+      bool isGoalie = (designatedTeamPossessionPlayer == GetGoalie());
+      bool allowGoalie = isGoalie && (match->GetBallRetainer() == GetGoalie() || 
+                                     (match->IsInSetPiece() && teamController->GetPieceTaker() == GetGoalie()));
+      if (!isGoalie || allowGoalie) {
         SelectPlayer(designatedTeamPossessionPlayer);
+      }
+    }
+
+    // If goalie just released/kicked the ball, immediately switch to the receiver / designated outfield player
+    if (IsHumanControlled(GetGoalie()->GetID()) && match->GetBallRetainer() != GetGoalie() && !match->IsInSetPiece()) {
+      Player *receiver = designatedTeamPossessionPlayer;
+      if (!receiver || receiver == GetGoalie()) {
+        receiver = GetBestPossessionPlayer();
+      }
+      if (receiver && receiver != GetGoalie()) {
+        SelectPlayer(receiver);
       }
     }
   }
