@@ -32,8 +32,8 @@ const float walkSprintSwitch = 6.0f;
 // Continuous analog control mode (disabled 8-way quantization for fluid 360-degree control)
 const bool quantizeDirection = false;
 
-// Mobile/analog standard 15% deadzone (was 0.75f which blocked gentle analog movement)
-const float analogStickDeadzone = 0.15f;
+// Mobile/analog standard deadzone (5% for high-fidelity continuous analog steering)
+const float analogStickDeadzone = 0.05f;
 
 const float _default_CameraZoom = 0.5f;
 const float _default_CameraHeight = 0.3f;

@@ -7,9 +7,7 @@ import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.RadialGradient;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.util.AttributeSet;
@@ -23,10 +21,10 @@ import java.util.List;
 
 /**
  * Modern In-Game Match UI & Touch Overlay.
- * Implements the "Apex Pitch HUD" design specification:
- * - Floating glassmorphic Scoreboard Capsule with live match telemetry
- * - Futuristic Virtual Joystick with 8-direction cardinal ticks and glowing nub
- * - Ergonomic 4-node Action Button Diamond with contextual Attack/Defense states
+ * Designed for clarity, simplicity, and deterministic input control:
+ * - Minimalist Dark Capsule Scoreboard with live match telemetry
+ * - Anchored Virtual Joystick with continuous linear deadzone scaling and cardinal orientation
+ * - High-contrast single-label Action Buttons with contextual Attack/Defense states
  * - Sleek circular Pause Button and Glassmorphic Pause Modal
  * - Full-Time Match Result Screen with possession bars and shot statistics
  */
@@ -78,7 +76,6 @@ public class MobileControlsView extends View {
     private float joyRadius = 180f;
     private float joyHandleRadius = 70f;
     private int joyPointerId = -1;
-    private boolean isJoyFloating = false;
     private float defaultJoyBaseX, defaultJoyBaseY;
 
     // Action Buttons
@@ -86,18 +83,24 @@ public class MobileControlsView extends View {
         float cx, cy, radius;
         String labelOffense;
         String labelDefense;
+        int accentColorOffense;
+        int accentColorDefense;
         int keycodeOffense;
         int keycodeDefense;
         int pointerId = -1;
         boolean isPressed = false;
 
-        ActionButton(float cx, float cy, float radius, String labelOffense, String labelDefense,
+        ActionButton(float cx, float cy, float radius,
+                     String labelOffense, String labelDefense,
+                     int accentColorOffense, int accentColorDefense,
                      int keycodeOffense, int keycodeDefense) {
             this.cx = cx;
             this.cy = cy;
             this.radius = radius;
             this.labelOffense = labelOffense;
             this.labelDefense = labelDefense;
+            this.accentColorOffense = accentColorOffense;
+            this.accentColorDefense = accentColorDefense;
             this.keycodeOffense = keycodeOffense;
             this.keycodeDefense = keycodeDefense;
         }
@@ -171,17 +174,17 @@ public class MobileControlsView extends View {
     private void recalculateLayout(int w, int h) {
         if (w <= 0 || h <= 0) return;
 
-        // Joystick dimensions & base position (Bottom-Left)
+        // Joystick dimensions & anchored base position (Bottom-Left)
         joyRadius = h * 0.22f;
         joyHandleRadius = joyRadius * 0.38f;
         defaultJoyBaseX = Math.max(w * 0.14f, safeInsetLeft + joyRadius + 24f);
         defaultJoyBaseY = h * 0.74f;
 
+        joyBaseX = defaultJoyBaseX;
+        joyBaseY = defaultJoyBaseY;
         if (joyPointerId == -1) {
-            joyBaseX = defaultJoyBaseX;
-            joyBaseY = defaultJoyBaseY;
-            joyHandleX = joyBaseX;
-            joyHandleY = joyBaseY;
+            joyHandleX = defaultJoyBaseX;
+            joyHandleY = defaultJoyBaseY;
         }
 
         // Action Buttons (Bottom-Right Ergonomic Diamond)
@@ -194,27 +197,36 @@ public class MobileControlsView extends View {
         float spacingX = w * 0.125f;
         float spacingY = h * 0.21f;
 
-        // 1. PASS / SWITCH (South: Left of Dash)
+        // 1. PASS (Attack) / SWITCH (Defense) - Blue
         buttons.add(new ActionButton(baseX - spacingX, baseY + h * 0.02f, normalRad,
-                "Pass", "Switch", 0, 4));
+                "PASS", "SWITCH",
+                Color.parseColor("#2979FF"), Color.parseColor("#2979FF"),
+                0, 4));
 
-        // 2. DASH / SPRINT (East: Bottom-Right)
+        // 2. SPRINT (Both) - Amber
         buttons.add(new ActionButton(baseX, baseY, dashRad,
-                "Dash", "Dash", 5, 5));
+                "SPRINT", "SPRINT",
+                Color.parseColor("#FF9100"), Color.parseColor("#FF9100"),
+                5, 5));
 
-        // 3. THROUGH / PRESS (West: North-West of Dash)
+        // 3. THROUGH (Attack) / PRESS (Defense) - Emerald Green
         buttons.add(new ActionButton(baseX - spacingX * 0.92f, baseY - spacingY, normalRad,
-                "Through", "Press", 3, 0));
+                "THROUGH", "PRESS",
+                Color.parseColor("#00E676"), Color.parseColor("#00E676"),
+                3, 0));
 
-        // 4. SHOOT / CLEAR (North: Above Dash)
+        // 4. SHOOT (Attack) / SLIDE (Defense) - Crimson Red
         buttons.add(new ActionButton(baseX - w * 0.015f, baseY - spacingY - h * 0.02f, normalRad,
-                "Shoot", "Clear", 2, 1));
+                "SHOOT", "SLIDE",
+                Color.parseColor("#FF1744"), Color.parseColor("#FF1744"),
+                2, 1));
 
         // Top-Right Pause Button
         float pauseR = normalRad * 0.50f;
         float pauseX = w - Math.max(w * 0.045f, safeInsetRight + 28f);
         float pauseY = Math.max(h * 0.07f, safeInsetTop + 24f);
-        pauseButton = new ActionButton(pauseX, pauseY, pauseR, "||", "||", 7, 7);
+        pauseButton = new ActionButton(pauseX, pauseY, pauseR, "||", "||",
+                Color.parseColor("#00E5FF"), Color.parseColor("#00E5FF"), 7, 7);
     }
 
     // ── External State Updates ──
@@ -288,36 +300,35 @@ public class MobileControlsView extends View {
     }
 
     /**
-     * Draw modern floating scoreboard pill capsule at top-left.
+     * Draw modern minimalist scoreboard pill at top-left.
      */
     private void drawScoreboard(Canvas canvas, int w, int h) {
-        float sbW = Math.min(w * 0.35f, 430f);
-        float sbH = Math.max(h * 0.088f, 46f);
+        float sbW = Math.min(w * 0.36f, 440f);
+        float sbH = Math.max(h * 0.082f, 44f);
         float sbX = Math.max(w * 0.035f, safeInsetLeft + 20f);
         float sbY = Math.max(h * 0.04f, safeInsetTop + 14f);
 
         RectF pillRect = new RectF(sbX, sbY, sbX + sbW, sbY + sbH);
 
-        // Glassmorphic Capsule Background
-        cardPaint.setColor(Color.argb(205, 10, 16, 28));
+        // Minimalist Dark Slate Pill
+        cardPaint.setColor(Color.argb(205, 12, 18, 30));
         canvas.drawRoundRect(pillRect, sbH * 0.5f, sbH * 0.5f, cardPaint);
 
-        // Neon Specular Border
-        borderPaint.setColor(Color.argb(130, 0, 240, 255));
-        borderPaint.setStrokeWidth(2.5f);
+        borderPaint.setColor(Color.argb(70, 255, 255, 255));
+        borderPaint.setStrokeWidth(1.8f);
         canvas.drawRoundRect(pillRect, sbH * 0.5f, sbH * 0.5f, borderPaint);
 
-        // Column widths
+        // Columns: Team 1 | Score Badge | Team 2 | Clock
         float colTeamW = sbW * 0.24f;
-        float colScoreW = sbW * 0.28f;
-        float colClockW = sbW * 0.24f;
+        float colScoreW = sbW * 0.26f;
+        float colClockW = sbW * 0.26f;
 
-        float team1CenterX = sbX + colTeamW * 0.55f;
+        float team1CenterX = sbX + colTeamW * 0.52f;
         float scoreCenterX = sbX + colTeamW + colScoreW * 0.5f;
-        float team2CenterX = sbX + colTeamW + colScoreW + colTeamW * 0.45f;
+        float team2CenterX = sbX + colTeamW + colScoreW + colTeamW * 0.48f;
         float clockCenterX = sbX + sbW - colClockW * 0.5f;
 
-        float textY = sbY + sbH * 0.62f;
+        float textY = sbY + sbH * 0.63f;
 
         // Team 1 Name
         textPaint.setTextSize(sbH * 0.38f);
@@ -325,23 +336,17 @@ public class MobileControlsView extends View {
         textPaint.setColor(Color.WHITE);
         canvas.drawText(team1Name, team1CenterX, textY, textPaint);
 
-        // Possession indicator dot (under attacking team)
-        if (isAttacking) {
-            accentPaint.setColor(Color.parseColor("#00F0FF"));
-            canvas.drawCircle(team1CenterX, sbY + sbH * 0.84f, sbH * 0.07f, accentPaint);
-        }
-
         // Score Badge
-        RectF scoreBadge = new RectF(scoreCenterX - colScoreW * 0.42f, sbY + sbH * 0.16f,
-                scoreCenterX + colScoreW * 0.42f, sbY + sbH * 0.84f);
-        cardPaint.setColor(Color.argb(160, 4, 28, 52));
+        RectF scoreBadge = new RectF(scoreCenterX - colScoreW * 0.44f, sbY + sbH * 0.16f,
+                scoreCenterX + colScoreW * 0.44f, sbY + sbH * 0.84f);
+        cardPaint.setColor(Color.argb(230, 8, 12, 22));
         canvas.drawRoundRect(scoreBadge, sbH * 0.34f, sbH * 0.34f, cardPaint);
 
-        borderPaint.setColor(Color.argb(160, 0, 240, 255));
+        borderPaint.setColor(Color.argb(130, 0, 229, 255));
         borderPaint.setStrokeWidth(1.5f);
         canvas.drawRoundRect(scoreBadge, sbH * 0.34f, sbH * 0.34f, borderPaint);
 
-        textPaint.setColor(Color.parseColor("#00F0FF"));
+        textPaint.setColor(Color.parseColor("#00E5FF"));
         textPaint.setTextSize(sbH * 0.44f);
         canvas.drawText(score1 + " - " + score2, scoreCenterX, textY, textPaint);
 
@@ -350,114 +355,101 @@ public class MobileControlsView extends View {
         textPaint.setTextSize(sbH * 0.38f);
         canvas.drawText(team2Name, team2CenterX, textY, textPaint);
 
-        if (!isAttacking) {
-            accentPaint.setColor(Color.parseColor("#0080FF"));
-            canvas.drawCircle(team2CenterX, sbY + sbH * 0.84f, sbH * 0.07f, accentPaint);
-        }
-
-        // Clock Divider
-        borderPaint.setColor(Color.argb(90, 80, 120, 160));
-        borderPaint.setStrokeWidth(2f);
+        // Thin clock divider
+        borderPaint.setColor(Color.argb(50, 255, 255, 255));
+        borderPaint.setStrokeWidth(1.5f);
         float divX = sbX + sbW - colClockW;
-        canvas.drawLine(divX, sbY + sbH * 0.20f, divX, sbY + sbH * 0.80f, borderPaint);
+        canvas.drawLine(divX, sbY + sbH * 0.22f, divX, sbY + sbH * 0.78f, borderPaint);
 
         // Match Clock
-        textPaint.setColor(Color.parseColor("#E0F7FA"));
+        textPaint.setColor(Color.parseColor("#B0BEC5"));
         textPaint.setTextSize(sbH * 0.36f);
         canvas.drawText(matchTime, clockCenterX, textY, textPaint);
     }
 
     /**
-     * Draw Virtual Analog Directional Joystick.
+     * Draw Anchored Virtual Analog Joystick.
+     * Fixed base ensures 100% muscle-memory consistency.
      */
     private void drawVirtualJoystick(Canvas canvas) {
-        // Outer Frosted Glass Base
-        bgPaint.setShader(new RadialGradient(joyBaseX, joyBaseY, joyRadius,
-                Color.argb(90, 30, 42, 64), Color.argb(20, 10, 15, 25), Shader.TileMode.CLAMP));
+        boolean isActive = (joyPointerId != -1);
+
+        // Base circular disc
+        bgPaint.setColor(Color.argb(isActive ? 90 : 50, 15, 23, 42));
         canvas.drawCircle(joyBaseX, joyBaseY, joyRadius, bgPaint);
 
-        // Outer Glass Border
-        boolean isActive = (joyPointerId != -1);
-        btnBorderPaint.setColor(isActive ? Color.parseColor("#00F0FF") : Color.argb(90, 160, 200, 240));
-        btnBorderPaint.setStrokeWidth(isActive ? 5f : 2.5f);
+        // Outer border ring
+        btnBorderPaint.setColor(isActive ? Color.parseColor("#00E5FF") : Color.argb(70, 255, 255, 255));
+        btnBorderPaint.setStrokeWidth(isActive ? 3.0f : 2.0f);
         canvas.drawCircle(joyBaseX, joyBaseY, joyRadius, btnBorderPaint);
 
-        // 8 Directional Cardinal Ticks
-        Paint tickPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        tickPaint.setColor(Color.argb(isActive ? 160 : 80, 0, 240, 255));
-        tickPaint.setStrokeWidth(isActive ? 3.5f : 2.5f);
-        for (int i = 0; i < 8; i++) {
-            double angle = i * Math.PI / 4.0;
-            float innerR = joyRadius * 0.84f;
-            float outerR = joyRadius * 0.96f;
-            float x1 = joyBaseX + (float) (Math.cos(angle) * innerR);
-            float y1 = joyBaseY + (float) (Math.sin(angle) * innerR);
-            float x2 = joyBaseX + (float) (Math.cos(angle) * outerR);
-            float y2 = joyBaseY + (float) (Math.sin(angle) * outerR);
-            canvas.drawLine(x1, y1, x2, y2, tickPaint);
-        }
+        // 4 subtle cardinal dot markers (N, E, S, W)
+        Paint dotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        dotPaint.setStyle(Paint.Style.FILL);
+        dotPaint.setColor(isActive ? Color.argb(170, 0, 229, 255) : Color.argb(60, 255, 255, 255));
+        float dotDist = joyRadius * 0.82f;
+        float dotR = joyRadius * 0.035f;
+        canvas.drawCircle(joyBaseX, joyBaseY - dotDist, dotR, dotPaint); // North
+        canvas.drawCircle(joyBaseX + dotDist, joyBaseY, dotR, dotPaint); // East
+        canvas.drawCircle(joyBaseX, joyBaseY + dotDist, dotR, dotPaint); // South
+        canvas.drawCircle(joyBaseX - dotDist, joyBaseY, dotR, dotPaint); // West
 
-        // Active Vector Guide Line
-        if (isActive) {
+        // Direction guide line when moved
+        float dx = joyHandleX - joyBaseX;
+        float dy = joyHandleY - joyBaseY;
+        float dist = (float) Math.sqrt(dx * dx + dy * dy);
+
+        if (isActive && dist > joyRadius * 0.08f) {
             Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            linePaint.setColor(Color.argb(160, 0, 240, 255));
-            linePaint.setStrokeWidth(5f);
+            linePaint.setColor(Color.argb(120, 0, 229, 255));
+            linePaint.setStrokeWidth(3.0f);
             canvas.drawLine(joyBaseX, joyBaseY, joyHandleX, joyHandleY, linePaint);
         }
 
-        // Center Thumb Nub
-        float hScale = isActive ? 1.10f : 1.0f;
-        handlePaint.setShader(new RadialGradient(joyHandleX, joyHandleY, joyHandleRadius * hScale,
-                isActive ? Color.parseColor("#00F0FF") : Color.argb(240, 220, 235, 255),
-                Color.argb(190, 20, 45, 80), Shader.TileMode.CLAMP));
-        canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius * hScale, handlePaint);
+        // Center Thumb Knob
+        handlePaint.setColor(isActive ? Color.parseColor("#00E5FF") : Color.argb(230, 240, 245, 255));
+        canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius, handlePaint);
 
-        // Nub Specular Border
-        btnBorderPaint.setColor(isActive ? Color.WHITE : Color.argb(180, 140, 190, 240));
-        btnBorderPaint.setStrokeWidth(3.5f);
-        canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius * hScale, btnBorderPaint);
+        // Knob border
+        btnBorderPaint.setColor(isActive ? Color.WHITE : Color.argb(140, 100, 160, 240));
+        btnBorderPaint.setStrokeWidth(2.5f);
+        canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius, btnBorderPaint);
 
-        // Nub Core Gem
-        Paint gemPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        gemPaint.setColor(Color.parseColor("#00F0FF"));
-        canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius * 0.22f, gemPaint);
+        // Knob center dot
+        Paint innerDot = new Paint(Paint.ANTI_ALIAS_FLAG);
+        innerDot.setColor(isActive ? Color.argb(230, 12, 18, 30) : Color.argb(180, 120, 150, 190));
+        canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius * 0.28f, innerDot);
     }
 
     /**
-     * Draw Action Buttons Cluster with contextual Attack/Defense text.
+     * Draw Action Buttons with clean, bold single labels and distinct color accents.
      */
     private void drawActionButtons(Canvas canvas) {
         for (ActionButton btn : buttons) {
-            float scale = btn.isPressed ? 0.91f : 1.0f;
+            float scale = btn.isPressed ? 0.92f : 1.0f;
             float r = btn.radius * scale;
 
-            // Frosted Radial Fill
-            int baseCol = btn.isPressed ? Color.argb(200, 0, 160, 220) : Color.argb(115, 14, 24, 42);
-            btnBgPaint.setShader(new RadialGradient(btn.cx, btn.cy, r,
-                    baseCol, Color.argb(70, 8, 14, 26), Shader.TileMode.CLAMP));
+            String label = isAttacking ? btn.labelOffense : btn.labelDefense;
+            int accent = isAttacking ? btn.accentColorOffense : btn.accentColorDefense;
+
+            // Button Disc: Sleek dark slate with accent glow when pressed
+            int baseBg = btn.isPressed ? Color.argb(170, Color.red(accent), Color.green(accent), Color.blue(accent))
+                    : Color.argb(140, 16, 24, 40);
+            btnBgPaint.setColor(baseBg);
             canvas.drawCircle(btn.cx, btn.cy, r, btnBgPaint);
 
-            // Specular Cyan Border
-            int borderCol = btn.isPressed ? Color.parseColor("#00F0FF") : Color.argb(150, 70, 140, 210);
-            btnBorderPaint.setColor(borderCol);
-            btnBorderPaint.setStrokeWidth(btn.isPressed ? 5.5f : 3.0f);
+            // Crisp Accent Border
+            btnBorderPaint.setColor(btn.isPressed ? Color.WHITE : accent);
+            btnBorderPaint.setAlpha(btn.isPressed ? 255 : 190);
+            btnBorderPaint.setStrokeWidth(btn.isPressed ? 4.5f : 2.5f);
             canvas.drawCircle(btn.cx, btn.cy, r, btnBorderPaint);
 
-            // Contextual Labels
-            String primaryLabel = isAttacking ? btn.labelOffense : btn.labelDefense;
-            String secondaryLabel = isAttacking ? btn.labelDefense : btn.labelOffense;
-
-            // Primary Command (Center)
-            textPaint.setTextSize(r * 0.35f);
-            textPaint.setColor(btn.isPressed ? Color.parseColor("#00F0FF") : Color.WHITE);
-            canvas.drawText(primaryLabel.toUpperCase(), btn.cx, btn.cy - r * 0.04f, textPaint);
-
-            // Secondary Context Subtitle (Top/Bottom)
-            if (!secondaryLabel.equalsIgnoreCase(primaryLabel)) {
-                subTextPaint.setTextSize(r * 0.20f);
-                subTextPaint.setColor(Color.argb(150, 0, 240, 255));
-                canvas.drawText(secondaryLabel.toUpperCase(), btn.cx, btn.cy + r * 0.34f, subTextPaint);
-            }
+            // Single Bold, High-Contrast Centered Label
+            textPaint.setTextSize(r * 0.36f);
+            textPaint.setColor(Color.WHITE);
+            Paint.FontMetrics fm = textPaint.getFontMetrics();
+            float textY = btn.cy - (fm.ascent + fm.descent) / 2f;
+            canvas.drawText(label, btn.cx, textY, textPaint);
         }
     }
 
@@ -475,13 +467,13 @@ public class MobileControlsView extends View {
         cardPaint.setColor(Color.argb(pauseButton.isPressed ? 220 : 150, 16, 24, 40));
         canvas.drawCircle(cx, cy, r, cardPaint);
 
-        borderPaint.setColor(pauseButton.isPressed ? Color.parseColor("#00F0FF") : Color.argb(130, 0, 240, 255));
-        borderPaint.setStrokeWidth(pauseButton.isPressed ? 3.5f : 2.0f);
+        borderPaint.setColor(pauseButton.isPressed ? Color.parseColor("#00E5FF") : Color.argb(110, 255, 255, 255));
+        borderPaint.setStrokeWidth(pauseButton.isPressed ? 3.0f : 1.8f);
         canvas.drawCircle(cx, cy, r, borderPaint);
 
         // Dual Vertical Pause Bars
         Paint barPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        barPaint.setColor(pauseButton.isPressed ? Color.parseColor("#00F0FF") : Color.WHITE);
+        barPaint.setColor(pauseButton.isPressed ? Color.parseColor("#00E5FF") : Color.WHITE);
         float barW = r * 0.20f;
         float barH = r * 0.70f;
         float barSpacing = r * 0.16f;
@@ -516,12 +508,12 @@ public class MobileControlsView extends View {
         cardPaint.setColor(Color.argb(120, 20, 30, 48));
         canvas.drawRoundRect(statCard, 16f, 16f, cardPaint);
 
-        borderPaint.setColor(Color.argb(90, 0, 240, 255));
+        borderPaint.setColor(Color.argb(90, 0, 229, 255));
         borderPaint.setStrokeWidth(2f);
         canvas.drawRoundRect(statCard, 16f, 16f, borderPaint);
 
         // Scoreline inside stat card
-        textPaint.setColor(Color.parseColor("#00F0FF"));
+        textPaint.setColor(Color.parseColor("#00E5FF"));
         textPaint.setTextSize(h * 0.065f);
         canvas.drawText(team1Name + "   " + score1 + " - " + score2 + "   " + team2Name,
                 leftX + 24f, cardY + cardH * 0.52f, textPaint);
@@ -556,22 +548,22 @@ public class MobileControlsView extends View {
             canvas.drawRoundRect(new RectF(startX, y, startX + btnW, y + btnH), 18f, 18f, cardPaint);
 
             // Card Border
-            int borderCol = (i == 0) ? Color.parseColor("#00F0FF")
-                    : (isPressed ? Color.parseColor("#00F0FF") : Color.argb(110, 50, 75, 105));
+            int borderCol = (i == 0) ? Color.parseColor("#00E5FF")
+                    : (isPressed ? Color.parseColor("#00E5FF") : Color.argb(110, 50, 75, 105));
             borderPaint.setColor(borderCol);
-            borderPaint.setStrokeWidth(isPressed || i == 0 ? 3.5f : 2f);
+            borderPaint.setStrokeWidth(isPressed || i == 0 ? 3.0f : 1.8f);
             canvas.drawRoundRect(new RectF(startX, y, startX + btnW, y + btnH), 18f, 18f, borderPaint);
 
             // Left Accent Indicator
             accentPaint.setColor(i == 5 ? Color.parseColor("#FF3366")
-                    : (i == 0 || isPressed ? Color.parseColor("#00F0FF") : Color.parseColor("#00E676")));
+                    : (i == 0 || isPressed ? Color.parseColor("#00E5FF") : Color.parseColor("#00E676")));
             canvas.drawRoundRect(new RectF(startX, y + btnH * 0.20f, startX + 10f, y + btnH * 0.80f),
                     4f, 4f, accentPaint);
 
             // Item Text
             textPaint.setTextAlign(Paint.Align.LEFT);
             textPaint.setTextSize(btnH * 0.38f);
-            textPaint.setColor(isPressed || i == 0 ? Color.parseColor("#00F0FF") : Color.WHITE);
+            textPaint.setColor(isPressed || i == 0 ? Color.parseColor("#00E5FF") : Color.WHITE);
             canvas.drawText(menuItems[i], startX + 28f, y + btnH * 0.62f, textPaint);
         }
     }
@@ -591,7 +583,7 @@ public class MobileControlsView extends View {
         canvas.drawText("FULL TIME", w * 0.5f, h * 0.18f, textPaint);
 
         // Scoreline
-        textPaint.setColor(Color.parseColor("#00F0FF"));
+        textPaint.setColor(Color.parseColor("#00E5FF"));
         textPaint.setTextSize(h * 0.16f);
         canvas.drawText(goT1Score + " - " + goT2Score, w * 0.5f, h * 0.40f, textPaint);
 
@@ -612,11 +604,11 @@ public class MobileControlsView extends View {
         float t1W = barW * t1Ratio;
 
         // T1 Possession Bar (Electric Cyan)
-        cardPaint.setColor(Color.parseColor("#00F0FF"));
+        cardPaint.setColor(Color.parseColor("#00E5FF"));
         canvas.drawRoundRect(new RectF(barLeft, barTop, barLeft + t1W, barTop + barH), 6f, 6f, cardPaint);
 
         // T2 Possession Bar (Laser Blue)
-        cardPaint.setColor(Color.parseColor("#0080FF"));
+        cardPaint.setColor(Color.parseColor("#2979FF"));
         canvas.drawRoundRect(new RectF(barLeft + t1W, barTop, barLeft + barW, barTop + barH), 6f, 6f, cardPaint);
 
         // Possession Percent Text
@@ -630,7 +622,7 @@ public class MobileControlsView extends View {
         subTextPaint.setTextSize(h * 0.045f);
         canvas.drawText("TOTAL SHOTS", w * 0.5f, h * 0.69f, subTextPaint);
 
-        subTextPaint.setColor(Color.parseColor("#00F0FF"));
+        subTextPaint.setColor(Color.parseColor("#00E5FF"));
         subTextPaint.setTextSize(h * 0.055f);
         canvas.drawText(goT1Shots + "   -   " + goT2Shots, w * 0.5f, h * 0.76f, subTextPaint);
 
@@ -644,8 +636,8 @@ public class MobileControlsView extends View {
         cardPaint.setColor(gameOverButtonPressed ? Color.argb(200, 0, 180, 240) : Color.argb(130, 20, 32, 52));
         canvas.drawRoundRect(contRect, 16f, 16f, cardPaint);
 
-        borderPaint.setColor(Color.parseColor("#00F0FF"));
-        borderPaint.setStrokeWidth(3f);
+        borderPaint.setColor(Color.parseColor("#00E5FF"));
+        borderPaint.setStrokeWidth(2.5f);
         canvas.drawRoundRect(contRect, 16f, 16f, borderPaint);
 
         textPaint.setColor(Color.WHITE);
@@ -733,7 +725,7 @@ public class MobileControlsView extends View {
                         invalidate();
 
                         if (index == 0) {
-                            // Resume Match: unpause simulation and close pause screen
+                            // Resume Match
                             isPaused = false;
                             invalidate();
                             SDLActivity.setVirtualKey(27, true);
@@ -810,21 +802,18 @@ public class MobileControlsView extends View {
                     }
                 }
 
-                // Check Left Screen: Floating Virtual Joystick
+                // Check Left Screen: Anchored Virtual Joystick
                 if (x < getWidth() * 0.45f && joyPointerId == -1) {
                     joyPointerId = pointerId;
-                    isJoyFloating = true;
-                    joyBaseX = x;
-                    joyBaseY = y;
-                    joyHandleX = x;
-                    joyHandleY = y;
+                    joyBaseX = defaultJoyBaseX;
+                    joyBaseY = defaultJoyBaseY;
                     updateJoystick(x, y);
                 } else {
                     // Check Right Screen: Action Button Cluster
                     for (ActionButton btn : buttons) {
                         float dx = x - btn.cx;
                         float dy = y - btn.cy;
-                        if (dx * dx + dy * dy <= btn.radius * btn.radius * 2.5f && btn.pointerId == -1) {
+                        if (dx * dx + dy * dy <= btn.radius * btn.radius * 2.2f && btn.pointerId == -1) {
                             btn.pointerId = pointerId;
                             btn.isPressed = true;
                             int keycode = isAttacking ? btn.keycodeOffense : btn.keycodeDefense;
@@ -849,11 +838,8 @@ public class MobileControlsView extends View {
             case MotionEvent.ACTION_CANCEL:
                 if (pointerId == joyPointerId) {
                     joyPointerId = -1;
-                    isJoyFloating = false;
-                    joyBaseX = defaultJoyBaseX;
-                    joyBaseY = defaultJoyBaseY;
-                    joyHandleX = joyBaseX;
-                    joyHandleY = joyBaseY;
+                    joyHandleX = defaultJoyBaseX;
+                    joyHandleY = defaultJoyBaseY;
                     SDLActivity.setVirtualJoystickAxis(0, 0f);
                     SDLActivity.setVirtualJoystickAxis(1, 0f);
                 } else {
@@ -875,26 +861,34 @@ public class MobileControlsView extends View {
         return true;
     }
 
+    /**
+     * Compute analog stick deflection relative to anchored base.
+     * Applies continuous linear deadzone scaling without cliffs.
+     */
     private void updateJoystick(float x, float y) {
         float dx = x - joyBaseX;
         float dy = y - joyBaseY;
         float dist = (float) Math.sqrt(dx * dx + dy * dy);
 
-        if (dist > joyRadius) {
-            dx = (dx / dist) * joyRadius;
-            dy = (dy / dist) * joyRadius;
+        // Clamping knob travel strictly within joyRadius
+        float clampedDist = Math.min(dist, joyRadius);
+        if (dist > 0.001f) {
+            joyHandleX = joyBaseX + (dx / dist) * clampedDist;
+            joyHandleY = joyBaseY + (dy / dist) * clampedDist;
+        } else {
+            joyHandleX = joyBaseX;
+            joyHandleY = joyBaseY;
         }
 
-        joyHandleX = joyBaseX + dx;
-        joyHandleY = joyBaseY + dy;
+        // Smooth linear deadzone remapping (8% deadzone)
+        float deadzone = joyRadius * 0.08f;
+        float normX = 0f;
+        float normY = 0f;
 
-        // Apply 15% Deadzone
-        float normX = dx / joyRadius;
-        float normY = dy / joyRadius;
-
-        if (dist < joyRadius * 0.15f) {
-            normX = 0f;
-            normY = 0f;
+        if (dist > deadzone && dist > 0.001f) {
+            float remapped = Math.min(1.0f, (dist - deadzone) / (joyRadius - deadzone));
+            normX = (dx / dist) * remapped;
+            normY = (dy / dist) * remapped;
         }
 
         SDLActivity.setVirtualJoystickAxis(0, normX);
