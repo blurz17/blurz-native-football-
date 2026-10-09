@@ -19,6 +19,10 @@
 
 #include <cmath>
 
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
+
 #include "mentalimage.hpp"
 
 #include "../match.hpp"
@@ -683,6 +687,10 @@ unsigned int AI_GetToBallMovement(Match *match, const MentalImage *mentalImage, 
   angle *= pi * 2.0f;
 
   float bias = 1.0f;
+  if (player->GetExternalController() != nullptr) {
+    // Human/external input: disable 16-way quantization to retain full continuous 360-degree analog precision
+    bias = 0.0f;
+  }
   adaptedDesiredDirectionBallSpace = (adaptedDesiredDirectionBallSpace * (1.0 - bias) + (Vector3(1, 0, 0).GetRotated2D(angle) * bias)).GetNormalized(adaptedDesiredDirectionBallSpace);
 
   adaptedDesiredDirection = adaptedDesiredDirectionBallSpace.GetRotated2D(toBallSpaceAngle);
@@ -1258,6 +1266,15 @@ void AI_GetPass(Player *player, e_FunctionType passType, const Vector3 &inputDir
   //SetGreenDebugPilon(playerPos);
 
   AI_GetAutoPass(passType, resultingTargetRel, resultingDirection, resultingPower);
+
+#ifdef __ANDROID__
+  __android_log_print(ANDROID_LOG_INFO, "FOOTBALL_INPUT",
+    "[AI_PASS_RESULT] P%d -> T%d, type=%d, inDir=(%.2f,%.2f), resDir=(%.2f,%.2f), pwr=%.2f, autoBias=%.2f",
+    player->GetID(), targetPlayer ? targetPlayer->GetID() : -1, (int)passType,
+    inputDirection.coords[0], inputDirection.coords[1],
+    resultingDirection.coords[0], resultingDirection.coords[1],
+    resultingPower, adaptedAutoDirectionBias);
+#endif
 }
 
 Vector3 AI_GetShotDirection(Player *player, const Vector3 &inputDirection, float autoDirectionBias) {

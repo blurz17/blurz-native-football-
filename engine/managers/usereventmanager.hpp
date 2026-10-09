@@ -83,6 +83,8 @@ namespace blunted {
       float GetJoystickAxisCalibrationMax(int joyID, int axisID);
       float GetJoystickAxisCalibrationRest(int joyID, int axisID);
       void SetJoystickAxisCalibration(int joyID, int axisID, float min, float max, float rest);
+      void SetVirtualJoystickAxisDirect(int axisID, float value);
+      void SetVirtualJoystickButtonDirect(int buttonID, bool pressed);
 
     protected:
       // may need to switch to the vectors below in the future. why? SDL_keysym also takes into account unicode and modifier stuff, and contains the SDL_Keycodes.

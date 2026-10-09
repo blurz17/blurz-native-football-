@@ -52,6 +52,9 @@ class HumanController : public PlayerController {
     Vector3 steadyDirection;
     int lastSteadyDirectionSnapshotTime_ms;
 
+    Vector3 lastSignificantInputDirection;
+    unsigned long lastSignificantInputTime_ms;
+
 };
 
 #endif

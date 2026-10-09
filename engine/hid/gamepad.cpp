@@ -7,6 +7,10 @@
 #include "managers/usereventmanager.hpp"
 #include "base/utils.hpp"
 
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
+
 #include "../main.hpp"
 
 HIDGamepad::HIDGamepad(int gamepadID) : gamepadID(gamepadID) {
@@ -138,14 +142,34 @@ bool HIDGamepad::GetPreviousButtonState(e_ButtonFunction buttonFunction) {
 
 Vector3 HIDGamepad::GetDirection() {
   Vector3 inputDirection;
-  inputDirection.coords[0] -= GetButtonValue(e_ButtonFunction_Left);
-  inputDirection.coords[0] += GetButtonValue(e_ButtonFunction_Right);
-  inputDirection.coords[1] += GetButtonValue(e_ButtonFunction_Up);
-  inputDirection.coords[1] -= GetButtonValue(e_ButtonFunction_Down);
-  if (inputDirection.GetLength() < analogStickDeadzone) {
+  float lVal = GetButtonValue(e_ButtonFunction_Left);
+  float rVal = GetButtonValue(e_ButtonFunction_Right);
+  float uVal = GetButtonValue(e_ButtonFunction_Up);
+  float dVal = GetButtonValue(e_ButtonFunction_Down);
+  inputDirection.coords[0] -= lVal;
+  inputDirection.coords[0] += rVal;
+  inputDirection.coords[1] += uVal;
+  inputDirection.coords[1] -= dVal;
+  float len = inputDirection.GetLength();
+  if (len < analogStickDeadzone) {
     inputDirection = Vector3(0);
-  } else if (inputDirection.GetLength() > 1.0f) {
+  } else if (len > 1.0f) {
     inputDirection.Normalize(0);
   }
+
+#ifdef __ANDROID__
+  static unsigned long lastLogTime = 0;
+  static Vector3 lastLoggedDir;
+  unsigned long now = blunted::EnvironmentManager::GetInstance().GetTime_ms();
+  bool dirChanged = (inputDirection - lastLoggedDir).GetLength() > 0.15f || (inputDirection.GetLength() == 0.0f && lastLoggedDir.GetLength() > 0.0f);
+  if (dirChanged || (now - lastLogTime > 300 && len >= analogStickDeadzone)) {
+    lastLoggedDir = inputDirection;
+    lastLogTime = now;
+    float angleDeg = inputDirection.GetAngle2D() * 180.0f / pi;
+    __android_log_print(ANDROID_LOG_INFO, "FOOTBALL_INPUT", "[HID_DIR] dir=(%.3f, %.3f) len=%.3f angle=%.1f deg (L=%.2f R=%.2f U=%.2f D=%.2f)",
+                        inputDirection.coords[0], inputDirection.coords[1], len, angleDeg, lVal, rVal, uVal, dVal);
+  }
+#endif
+
   return inputDirection;
 }

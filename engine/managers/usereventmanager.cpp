@@ -21,6 +21,7 @@
 
 #ifdef __ANDROID__
 #include <jni.h>
+#include <android/log.h>
 #include <SDL.h>
 #include <SDL_system.h>
 
@@ -42,20 +43,39 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualKey(
 }
 
 extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoystickAxis(JNIEnv* env, jclass cls, jint axis, jfloat value) {
+    if (value > 1.0f) value = 1.0f;
+    if (value < -1.0f) value = -1.0f;
+    Sint16 int_val = (Sint16)(value * 32767.0f);
+
+    // Immediate zero-latency update directly to UserEventManager
+    blunted::UserEventManager::GetInstance().SetVirtualJoystickAxisDirect(axis, (float)int_val);
+
     if (virtual_joystick) {
-        if (value > 1.0f) value = 1.0f;
-        if (value < -1.0f) value = -1.0f;
-        Sint16 int_val = (Sint16)(value * 32767.0f);
         SDL_JoystickSetVirtualAxis(virtual_joystick, axis, int_val);
         SDL_JoystickUpdate();
+    }
+
+    static unsigned long lastLogTime = 0;
+    static float lastLoggedAxes[4] = {0, 0, 0, 0};
+    unsigned long now = blunted::EnvironmentManager::GetInstance().GetTime_ms();
+    bool changed = (axis >= 0 && axis < 4 && (fabs(value - lastLoggedAxes[axis]) > 0.08f || (value == 0.0f && lastLoggedAxes[axis] != 0.0f)));
+    if (changed || (now - lastLogTime > 250 && value != 0.0f)) {
+        if (axis >= 0 && axis < 4) lastLoggedAxes[axis] = value;
+        lastLogTime = now;
+        __android_log_print(ANDROID_LOG_INFO, "FOOTBALL_INPUT", "[JNI_AXIS] axis=%d floatVal=%.3f sint16Val=%d", axis, value, int_val);
     }
 }
 
 extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoystickButton(JNIEnv* env, jclass cls, jint button, jboolean pressed) {
+    // Immediate zero-latency update directly to UserEventManager
+    blunted::UserEventManager::GetInstance().SetVirtualJoystickButtonDirect(button, pressed == JNI_TRUE);
+
     if (virtual_joystick) {
         SDL_JoystickSetVirtualButton(virtual_joystick, button, pressed ? SDL_PRESSED : SDL_RELEASED);
         SDL_JoystickUpdate();
     }
+
+    __android_log_print(ANDROID_LOG_INFO, "FOOTBALL_INPUT", "[JNI_BTN] button=%d pressed=%s", button, pressed ? "TRUE" : "FALSE");
 }
 
 extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_pauseMatch(JNIEnv* env, jclass cls) {
@@ -114,6 +134,10 @@ namespace blunted {
 #ifndef GPFB_HEADLESS
     // init the joy!
 
+#ifdef __ANDROID__
+    SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
+#endif
+
     SDL_Init(SDL_INIT_JOYSTICK);
 
 #ifdef __ANDROID__
@@ -121,6 +145,8 @@ namespace blunted {
         int device_index = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 2, 8, 0);
         if (device_index >= 0) {
             virtual_joystick = SDL_JoystickOpen(device_index);
+            __android_log_print(ANDROID_LOG_INFO, "FOOTBALL_INPUT", "[JOY_INIT] Attached virtual joystick device_index=%d instanceID=%d",
+                                device_index, virtual_joystick ? SDL_JoystickInstanceID(virtual_joystick) : -1);
         }
     }
 #endif
@@ -174,33 +200,48 @@ namespace blunted {
         joyButtonPressedMutex.lock();
         joyID = event.jaxis.which;
 #ifdef __ANDROID__
-        if (virtual_joystick && SDL_JoystickInstanceID(virtual_joystick) == joyID) joyID = 0;
-#endif
+        if (virtual_joystick && SDL_JoystickInstanceID(virtual_joystick) == joyID) {
+            if (event.jaxis.axis < _JOYSTICK_MAXAXES) {
+                joyAxis[0][event.jaxis.axis] = event.jaxis.value;
+            }
+        }
+#else
         if (joyID < _JOYSTICK_MAX) {
             joyAxis[joyID][event.jaxis.axis] = event.jaxis.value;
         }
+#endif
         joyButtonPressedMutex.unlock();
         break;
       case SDL_JOYBUTTONDOWN:
         joyButtonPressedMutex.lock();
         joyID = event.jbutton.which;
 #ifdef __ANDROID__
-        if (virtual_joystick && SDL_JoystickInstanceID(virtual_joystick) == joyID) joyID = 0;
-#endif
+        if (virtual_joystick && SDL_JoystickInstanceID(virtual_joystick) == joyID) {
+            if (event.jbutton.button < _JOYSTICK_MAXBUTTONS) {
+                joyButtonPressed[0][event.jbutton.button] = true;
+            }
+        }
+#else
         if (joyID < _JOYSTICK_MAX && event.jbutton.button < _JOYSTICK_MAXBUTTONS) {
             joyButtonPressed[joyID][event.jbutton.button] = true;
         }
+#endif
         joyButtonPressedMutex.unlock();
         break;
       case SDL_JOYBUTTONUP:
         joyButtonPressedMutex.lock();
         joyID = event.jbutton.which;
 #ifdef __ANDROID__
-        if (virtual_joystick && SDL_JoystickInstanceID(virtual_joystick) == joyID) joyID = 0;
-#endif
+        if (virtual_joystick && SDL_JoystickInstanceID(virtual_joystick) == joyID) {
+            if (event.jbutton.button < _JOYSTICK_MAXBUTTONS) {
+                joyButtonPressed[0][event.jbutton.button] = false;
+            }
+        }
+#else
         if (joyID < _JOYSTICK_MAX && event.jbutton.button < _JOYSTICK_MAXBUTTONS) {
             joyButtonPressed[joyID][event.jbutton.button] = false;
         }
+#endif
         joyButtonPressedMutex.unlock();
         break;
     }
@@ -326,8 +367,28 @@ namespace blunted {
     return joyAxisCalibration[joyID][axisID][2];
   }
 
+  void UserEventManager::SetVirtualJoystickAxisDirect(int axisID, float value) {
+    boost::mutex::scoped_lock lock(joyButtonPressedMutex);
+    if (axisID >= 0 && axisID < _JOYSTICK_MAXAXES) {
+      joyAxis[0][axisID] = value;
+    }
+  }
+
+  void UserEventManager::SetVirtualJoystickButtonDirect(int buttonID, bool pressed) {
+    boost::mutex::scoped_lock lock(joyButtonPressedMutex);
+    if (buttonID >= 0 && buttonID < _JOYSTICK_MAXBUTTONS) {
+      joyButtonPressed[0][buttonID] = pressed;
+    }
+  }
+
   void UserEventManager::SetPossession(bool isAttacking) {
 #ifdef __ANDROID__
+    static bool hasSentPossession = false;
+    static bool lastPossessionState = false;
+    if (hasSentPossession && lastPossessionState == isAttacking) return;
+    hasSentPossession = true;
+    lastPossessionState = isAttacking;
+
     JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
     if (env != nullptr) {
       jobject activity = (jobject)SDL_AndroidGetActivity();

@@ -6,6 +6,10 @@
 
 #include "../../AIsupport/AIfunctions.hpp"
 
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
+
 #include "base/gamecontext.hpp"
 
 #include "gametask.hpp"
@@ -148,6 +152,14 @@ void HumanController::RequestCommand(PlayerCommandQueue &commandQueue) {
         command.touchInfo.inputPower = inputPower;
         command.touchInfo.autoDirectionBias = GetContext()->config->GetReal("gameplay_shortpass_autodirection", _default_ShortPass_AutoDirection);
         command.touchInfo.autoPowerBias = GetContext()->config->GetReal("gameplay_shortpass_autopower", _default_ShortPass_AutoPower);
+
+#ifdef __ANDROID__
+        float passAngleDeg = inputDirection.GetAngle2D() * 180.0f / pi;
+        __android_log_print(ANDROID_LOG_INFO, "FOOTBALL_INPUT", "[HUMAN_PASS] EXEC ShortPass Player=%d Role=%d gauge_ms=%d power=%.2f inputDir=(%.3f, %.3f) angle=%.1f deg",
+                            player ? player->GetID() : -1, (int)CastPlayer()->GetFormationEntry().role,
+                            gauge_ms, inputPower, inputDirection.coords[0], inputDirection.coords[1], passAngleDeg);
+#endif
+
         AI_GetPass(CastPlayer(), command.desiredFunctionType, command.touchInfo.inputDirection, command.touchInfo.inputPower, command.touchInfo.autoDirectionBias, command.touchInfo.autoPowerBias, command.touchInfo.desiredDirection, command.touchInfo.desiredPower, command.touchInfo.targetPlayer);
 
         commandQueue.push_back(command);
@@ -165,6 +177,14 @@ void HumanController::RequestCommand(PlayerCommandQueue &commandQueue) {
         command.touchInfo.inputPower = inputPower;
         command.touchInfo.autoDirectionBias = GetContext()->config->GetReal("gameplay_throughpass_autodirection", _default_ThroughPass_AutoDirection);
         command.touchInfo.autoPowerBias = GetContext()->config->GetReal("gameplay_throughpass_autopower", _default_ThroughPass_AutoPower);
+
+#ifdef __ANDROID__
+        float passAngleDeg = inputDirection.GetAngle2D() * 180.0f / pi;
+        __android_log_print(ANDROID_LOG_INFO, "FOOTBALL_INPUT", "[HUMAN_PASS] EXEC LongPass/Through Player=%d Role=%d gauge_ms=%d power=%.2f inputDir=(%.3f, %.3f) angle=%.1f deg",
+                            player ? player->GetID() : -1, (int)CastPlayer()->GetFormationEntry().role,
+                            gauge_ms, inputPower, inputDirection.coords[0], inputDirection.coords[1], passAngleDeg);
+#endif
+
         AI_GetPass(CastPlayer(), command.desiredFunctionType, command.touchInfo.inputDirection, command.touchInfo.inputPower, command.touchInfo.autoDirectionBias, command.touchInfo.autoPowerBias, command.touchInfo.desiredDirection, command.touchInfo.desiredPower, command.touchInfo.targetPlayer);
 
         commandQueue.push_back(command);
@@ -182,6 +202,14 @@ void HumanController::RequestCommand(PlayerCommandQueue &commandQueue) {
         command.touchInfo.inputPower = inputPower;
         command.touchInfo.autoDirectionBias = GetContext()->config->GetReal("gameplay_highpass_autodirection", _default_HighPass_AutoDirection);
         command.touchInfo.autoPowerBias = GetContext()->config->GetReal("gameplay_highpass_autopower", _default_HighPass_AutoPower);
+
+#ifdef __ANDROID__
+        float passAngleDeg = inputDirection.GetAngle2D() * 180.0f / pi;
+        __android_log_print(ANDROID_LOG_INFO, "FOOTBALL_INPUT", "[HUMAN_PASS] EXEC HighPass Player=%d Role=%d gauge_ms=%d power=%.2f inputDir=(%.3f, %.3f) angle=%.1f deg",
+                            player ? player->GetID() : -1, (int)CastPlayer()->GetFormationEntry().role,
+                            gauge_ms, inputPower, inputDirection.coords[0], inputDirection.coords[1], passAngleDeg);
+#endif
+
         AI_GetPass(CastPlayer(), command.desiredFunctionType, command.touchInfo.inputDirection, command.touchInfo.inputPower, command.touchInfo.autoDirectionBias, command.touchInfo.autoPowerBias, command.touchInfo.desiredDirection, command.touchInfo.desiredPower, command.touchInfo.targetPlayer);
 
         commandQueue.push_back(command);
@@ -199,6 +227,13 @@ void HumanController::RequestCommand(PlayerCommandQueue &commandQueue) {
         if (GetHIDevice()->GetDeviceType() == e_HIDeviceType_Keyboard) command.touchInfo.autoDirectionBias = 1.0f;
         command.touchInfo.desiredDirection = AI_GetShotDirection(CastPlayer(), command.touchInfo.inputDirection, command.touchInfo.autoDirectionBias);
         command.touchInfo.desiredPower = clamp(0.30f + 0.70f * pow(gaugeFactor, 0.6f), 0.30f, 1.0f);
+
+#ifdef __ANDROID__
+        float shotAngleDeg = inputDirection.GetAngle2D() * 180.0f / pi;
+        __android_log_print(ANDROID_LOG_INFO, "FOOTBALL_INPUT", "[HUMAN_SHOT] EXEC Shot Player=%d Role=%d gauge_ms=%d power=%.2f inputDir=(%.3f, %.3f) angle=%.1f deg",
+                            player ? player->GetID() : -1, (int)CastPlayer()->GetFormationEntry().role,
+                            gauge_ms, command.touchInfo.desiredPower, inputDirection.coords[0], inputDirection.coords[1], shotAngleDeg);
+#endif
 
         commandQueue.push_back(command);
 
@@ -502,6 +537,9 @@ void HumanController::Reset() {
   steadyDirection = Vector3(0, -1, 0);
   previousDirection = Vector3(0, -1, 0);
 
+  lastSignificantInputDirection = Vector3(0);
+  lastSignificantInputTime_ms = 0;
+
   fadingTeamPossessionAmount = 1.0;
 }
 
@@ -511,9 +549,19 @@ void HumanController::_GetHidInput(Vector3 &rawInputDirection, float &rawInputVe
   float analogMagnitude = rawInputDirection.GetLength();
 
   if (analogMagnitude < analogStickDeadzone) {
-    rawInputDirection = CastPlayer()->GetDirectionVec();
-    rawInputVelocityFloat = idleVelocity;
+    // If the user charged a pass/shot and released their thumb slightly before releasing the button,
+    // retain the user's intended aim instead of instantly snapping back to the player facing direction!
+    if (actionMode == 2 && lastSignificantInputDirection.GetLength() > 0.01f && (match->GetActualTime_ms() - lastSignificantInputTime_ms) < 450) {
+      rawInputDirection = lastSignificantInputDirection;
+      rawInputVelocityFloat = idleVelocity;
+    } else {
+      rawInputDirection = CastPlayer()->GetDirectionVec();
+      rawInputVelocityFloat = idleVelocity;
+    }
   } else {
+    lastSignificantInputDirection = rawInputDirection.GetNormalized(CastPlayer()->GetDirectionVec());
+    lastSignificantInputTime_ms = match->GetActualTime_ms();
+
     float maxVelocity = walkVelocity;
     if (hid->GetButton(e_ButtonFunction_Sprint)) maxVelocity = sprintVelocity;
     else if (hid->GetButton(e_ButtonFunction_Dribble)) maxVelocity = dribbleVelocity;
@@ -536,4 +584,18 @@ void HumanController::_GetHidInput(Vector3 &rawInputDirection, float &rawInputVe
     rawInputVelocityFloat = resultMovement.GetLength();
   }
 
+#ifdef __ANDROID__
+  static unsigned long lastLogTime = 0;
+  static Vector3 lastLoggedDir;
+  unsigned long now = match->GetActualTime_ms();
+  bool changed = (rawInputDirection - lastLoggedDir).GetLength() > 0.15f || (analogMagnitude < analogStickDeadzone != (lastLoggedDir.GetLength() == 0.0f));
+  if (changed || (now - lastLogTime > 400 && analogMagnitude >= analogStickDeadzone)) {
+    lastLoggedDir = (analogMagnitude < analogStickDeadzone) ? Vector3(0) : rawInputDirection;
+    lastLogTime = now;
+    __android_log_print(ANDROID_LOG_INFO, "FOOTBALL_INPUT", "[HUMAN_INPUT] Player=%d mag=%.2f deadzone=%s -> rawDir=(%.2f, %.2f) velo=%.2f",
+                        player ? player->GetID() : -1, analogMagnitude,
+                        (analogMagnitude < analogStickDeadzone) ? "YES" : "NO",
+                        rawInputDirection.coords[0], rawInputDirection.coords[1], rawInputVelocityFloat);
+  }
+#endif
 }

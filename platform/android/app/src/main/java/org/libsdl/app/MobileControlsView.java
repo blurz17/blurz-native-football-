@@ -13,6 +13,7 @@ import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.DisplayCutout;
 import android.view.MotionEvent;
 import android.view.View;
@@ -80,6 +81,7 @@ public class MobileControlsView extends View {
     private int joyPointerId = -1;
     private boolean isJoyFloating = false;
     private float defaultJoyBaseX, defaultJoyBaseY;
+    private long lastJoyLogTime = 0;
 
     // Action Buttons
     private static class ActionButton {
@@ -810,24 +812,35 @@ public class MobileControlsView extends View {
                     }
                 }
 
-                // Check Left Screen: Floating Virtual Joystick
-                if (x < getWidth() * 0.45f && joyPointerId == -1) {
+                // Check Left Screen: Floating / Centered Virtual Joystick
+                if (x < getWidth() * 0.48f && joyPointerId == -1) {
                     joyPointerId = pointerId;
-                    isJoyFloating = true;
-                    joyBaseX = x;
-                    joyBaseY = y;
+                    float distToDefault = (float) Math.hypot(x - defaultJoyBaseX, y - defaultJoyBaseY);
+                    if (distToDefault <= joyRadius * 1.3f) {
+                        // User touched near default joystick: keep default anchor
+                        isJoyFloating = false;
+                        joyBaseX = defaultJoyBaseX;
+                        joyBaseY = defaultJoyBaseY;
+                    } else {
+                        // User touched elsewhere on left side: float anchor to touch
+                        isJoyFloating = true;
+                        joyBaseX = x;
+                        joyBaseY = y;
+                    }
                     joyHandleX = x;
                     joyHandleY = y;
+                    Log.i("FOOTBALL_INPUT", "[TOUCH_JOY_DOWN] id=" + pointerId + " pos=(" + (int)x + "," + (int)y + ") base=(" + (int)joyBaseX + "," + (int)joyBaseY + ") floating=" + isJoyFloating);
                     updateJoystick(x, y);
                 } else {
                     // Check Right Screen: Action Button Cluster
                     for (ActionButton btn : buttons) {
                         float dx = x - btn.cx;
                         float dy = y - btn.cy;
-                        if (dx * dx + dy * dy <= btn.radius * btn.radius * 2.5f && btn.pointerId == -1) {
+                        if (dx * dx + dy * dy <= btn.radius * btn.radius * 2.8f && btn.pointerId == -1) {
                             btn.pointerId = pointerId;
                             btn.isPressed = true;
                             int keycode = isAttacking ? btn.keycodeOffense : btn.keycodeDefense;
+                            Log.i("FOOTBALL_INPUT", "[TOUCH_BTN_DOWN] id=" + pointerId + " btn=" + (isAttacking ? btn.labelOffense : btn.labelDefense) + " code=" + keycode);
                             SDLActivity.setVirtualJoystickButton(keycode, true);
                             break;
                         }
@@ -847,7 +860,30 @@ public class MobileControlsView extends View {
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_POINTER_UP:
             case MotionEvent.ACTION_CANCEL:
-                if (pointerId == joyPointerId) {
+                if (action == MotionEvent.ACTION_CANCEL || (action == MotionEvent.ACTION_UP && event.getPointerCount() <= 1)) {
+                    // All touches up or gesture canceled: fully reset
+                    if (joyPointerId != -1) {
+                        Log.i("FOOTBALL_INPUT", "[TOUCH_JOY_UP] reset all");
+                        joyPointerId = -1;
+                        isJoyFloating = false;
+                        joyBaseX = defaultJoyBaseX;
+                        joyBaseY = defaultJoyBaseY;
+                        joyHandleX = joyBaseX;
+                        joyHandleY = joyBaseY;
+                        SDLActivity.setVirtualJoystickAxis(0, 0f);
+                        SDLActivity.setVirtualJoystickAxis(1, 0f);
+                    }
+                    for (ActionButton btn : buttons) {
+                        if (btn.isPressed) {
+                            Log.i("FOOTBALL_INPUT", "[TOUCH_BTN_UP] reset all btn=" + btn.labelOffense);
+                            btn.pointerId = -1;
+                            btn.isPressed = false;
+                            SDLActivity.setVirtualJoystickButton(btn.keycodeOffense, false);
+                            SDLActivity.setVirtualJoystickButton(btn.keycodeDefense, false);
+                        }
+                    }
+                } else if (pointerId == joyPointerId) {
+                    Log.i("FOOTBALL_INPUT", "[TOUCH_JOY_UP] id=" + pointerId);
                     joyPointerId = -1;
                     isJoyFloating = false;
                     joyBaseX = defaultJoyBaseX;
@@ -859,10 +895,9 @@ public class MobileControlsView extends View {
                 } else {
                     for (ActionButton btn : buttons) {
                         if (btn.pointerId == pointerId) {
+                            Log.i("FOOTBALL_INPUT", "[TOUCH_BTN_UP] id=" + pointerId + " btn=" + (isAttacking ? btn.labelOffense : btn.labelDefense));
                             btn.pointerId = -1;
                             btn.isPressed = false;
-                            int keycode = isAttacking ? btn.keycodeOffense : btn.keycodeDefense;
-                            SDLActivity.setVirtualJoystickButton(keycode, false);
                             SDLActivity.setVirtualJoystickButton(btn.keycodeOffense, false);
                             SDLActivity.setVirtualJoystickButton(btn.keycodeDefense, false);
                         }
@@ -881,20 +916,40 @@ public class MobileControlsView extends View {
         float dist = (float) Math.sqrt(dx * dx + dy * dy);
 
         if (dist > joyRadius) {
+            // Dynamic follow anchor: base smoothly follows the touch thumb
+            // Guarantees immediate zero-lag response when reversing thumb direction
+            joyBaseX = x - (dx / dist) * joyRadius;
+            joyBaseY = y - (dy / dist) * joyRadius;
             dx = (dx / dist) * joyRadius;
             dy = (dy / dist) * joyRadius;
+            dist = joyRadius;
         }
 
         joyHandleX = joyBaseX + dx;
         joyHandleY = joyBaseY + dy;
 
-        // Apply 15% Deadzone
-        float normX = dx / joyRadius;
-        float normY = dy / joyRadius;
+        // Smooth Linearized Deadzone (10% deadzone)
+        float deadzone = 0.10f;
+        float normDist = dist / joyRadius;
+        float normX, normY;
 
-        if (dist < joyRadius * 0.15f) {
+        if (normDist <= deadzone) {
             normX = 0f;
             normY = 0f;
+        } else {
+            // Remap smoothly from [deadzone, 1.0] to [0.0, 1.0]
+            float scaledMag = (normDist - deadzone) / (1.0f - deadzone);
+            if (scaledMag > 1.0f) scaledMag = 1.0f;
+            normX = (dx / dist) * scaledMag;
+            normY = (dy / dist) * scaledMag;
+        }
+
+        long now = System.currentTimeMillis();
+        if (now - lastJoyLogTime > 60 || (normX == 0f && normY == 0f && lastJoyLogTime != 0)) {
+            lastJoyLogTime = now;
+            float angleDeg = (float) Math.toDegrees(Math.atan2(normY, normX));
+            Log.i("FOOTBALL_INPUT", String.format(java.util.Locale.US,
+                "[TOUCH_JOY_MOVE] norm=(%.2f, %.2f) mag=%.2f deg=%.1f", normX, normY, normDist, angleDeg));
         }
 
         SDLActivity.setVirtualJoystickAxis(0, normX);

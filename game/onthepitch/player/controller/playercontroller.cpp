@@ -18,6 +18,10 @@
 #include "playercontroller.hpp"
 #include <cmath>
 
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
+
 #include "../../match.hpp"
 #include "../../team.hpp"
 #include "../player.hpp"
@@ -488,7 +492,11 @@ void PlayerController::_MovementCommand(PlayerCommandQueue &commandQueue, bool f
       Vector3 autoLookAt; // dud
       CastPlayer()->SetDesiredTimeToBall_ms(AI_GetBallControlMovement(_mentalImage, CastPlayer(), quantizedInputDirection, inputVelocityFloat, autoDirection, autoVelocityFloat, autoLookAt));
       autoLookDirection = (autoLookAt - player->GetPosition()).GetNormalized(0);
-      autoBias = 1.0f;
+      if (team->IsHumanControlled(player->GetID())) {
+        autoBias = 0.20f; // Keep 80% human stick authority to prevent sudden halts while running
+      } else {
+        autoBias = 1.0f;
+      }
 
     } else { // !hasPossession
 
@@ -606,6 +614,24 @@ void PlayerController::_MovementCommand(PlayerCommandQueue &commandQueue, bool f
 
     Vector3 resultLookDirection = autoLookDirection;
     command.desiredLookAt = player->GetPosition() + resultLookDirection * 10.0f;
+
+#ifdef __ANDROID__
+    if (team->IsHumanControlled(player->GetID())) {
+      static unsigned long lastLogTime = 0;
+      static Vector3 lastLoggedDesDir;
+      unsigned long now = match->GetActualTime_ms();
+      bool changed = (command.desiredDirection - lastLoggedDesDir).GetLength() > 0.15f;
+      if (changed || (now - lastLogTime > 400 && command.desiredVelocityFloat > idleVelocity)) {
+        lastLoggedDesDir = command.desiredDirection;
+        lastLogTime = now;
+        __android_log_print(ANDROID_LOG_INFO, "FOOTBALL_INPUT", "[PLAYER_MOVE] Player=%d manDir=(%.2f, %.2f) manVelo=%.2f autoDir=(%.2f, %.2f) autoVelo=%.2f autoBias=%.2f -> desDir=(%.2f, %.2f) desVelo=%.2f",
+                            player->GetID(),
+                            manualDirection.coords[0], manualDirection.coords[1], manualVelocityFloat,
+                            autoDirection.coords[0], autoDirection.coords[1], autoVelocityFloat, autoBias,
+                            command.desiredDirection.coords[0], command.desiredDirection.coords[1], command.desiredVelocityFloat);
+      }
+    }
+#endif
   }
 
   commandQueue.push_back(command);
