@@ -361,10 +361,10 @@ public class MobileControlsView extends View {
         if (w <= 0 || h <= 0) return;
 
         // Joystick dimensions & base position (Bottom-Left)
-        joyRadius = h * 0.19f;
+        joyRadius = h * 0.190f;
         joyHandleRadius = joyRadius * 0.38f;
-        defaultJoyBaseX = Math.max(w * 0.13f, safeInsetLeft + joyRadius + 18f);
-        defaultJoyBaseY = h * 0.74f;
+        defaultJoyBaseX = Math.max(w * 0.165f, safeInsetLeft + joyRadius + 16f);
+        defaultJoyBaseY = h * 0.70f;
 
         if (joyPointerId == -1) {
             joyBaseX = defaultJoyBaseX;
@@ -376,24 +376,24 @@ public class MobileControlsView extends View {
         // Action Buttons (Bottom-Right Curved Ergonomic Diamond matching FC Mobile)
         buttons.clear();
 
-        float dashRad = h * 0.110f;
-        float normalRad = h * 0.080f;
+        float dashRad = h * 0.104f;
+        float normalRad = h * 0.075f;
 
-        // Anchor SPRINT & SKILL at bottom-right
-        float sprintX = w - Math.max(w * 0.095f, safeInsetRight + dashRad + 14f);
-        float sprintY = h - Math.max(h * 0.165f, safeInsetBottom + dashRad + 14f);
+        // Anchor SPRINT & SKILL at bottom-right (matching reference: 0.880w, 0.776h)
+        float sprintX = w - Math.max(w * 0.090f, safeInsetRight + dashRad + 14f);
+        float sprintY = h - Math.max(h * 0.170f, safeInsetBottom + dashRad + 14f);
 
-        // PASS (South-West: left of Sprint)
-        float passX = sprintX - dashRad - normalRad - w * 0.048f;
-        float passY = sprintY + h * 0.005f;
+        // 1. SHOOT (Top-Right: directly above Sprint, slightly right of Sprint's center: +0.022h, -0.230h)
+        float shootX = sprintX + h * 0.022f;
+        float shootY = sprintY - h * 0.230f;
 
-        // SHOOT (North: above Sprint & Skill, slightly left of sprint center)
-        float shootX = sprintX - dashRad * 0.18f;
-        float shootY = sprintY - h * 0.275f;
+        // 2. THROUGH (Upper-Center-Left: gracefully between Pass and Shoot: -0.154h, -0.157h)
+        float throughX = sprintX - h * 0.154f;
+        float throughY = sprintY - h * 0.157f;
 
-        // THROUGH (North-West: diagonally above Pass, comfortably spaced from Shoot)
-        float throughX = passX + (shootX - passX) * 0.36f;
-        float throughY = sprintY - h * 0.170f;
+        // 3. PASS (Bottom-Left: left of Sprint: -0.215h, +0.021h)
+        float passX = sprintX - h * 0.215f;
+        float passY = sprintY + h * 0.021f;
 
         // 1. PASS / SWITCH (Cyan outer ring)
         buttons.add(new ActionButton(passX, passY, normalRad,
@@ -674,8 +674,8 @@ public class MobileControlsView extends View {
         float dist = (float) Math.hypot(joyHandleX - joyBaseX, joyHandleY - joyBaseY);
         if (dist > 8f || isActive) {
             double angle = Math.atan2(joyHandleY - joyBaseY, joyHandleX - joyBaseX);
-            float arrowLen = hR * 0.28f; // Compact & smaller pointer
-            float wingW = hR * 0.16f;
+            float arrowLen = hR * 0.22f; // Compact & sleek directional cursor
+            float wingW = hR * 0.12f;
             float baseDist = hR + 2f;
 
             float tipX = joyHandleX + (float) Math.cos(angle) * (baseDist + arrowLen);
