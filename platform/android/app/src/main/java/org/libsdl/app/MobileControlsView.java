@@ -700,84 +700,38 @@ public class MobileControlsView extends View {
         cardPaint.setColor(Color.argb(140, 8, 16, 12));
         canvas.drawRect(0, 0, w, h, cardPaint);
 
-        float padL = Math.max(w * 0.08f, safeInsetLeft + 28f);
-        float padR = Math.max(w * 0.08f, safeInsetRight + 28f);
-        float topY = Math.max(h * 0.04f, safeInsetTop + 10f);
-
-        // ── TOP HEADER (Large Team Crests & Prominent Centered Score) ──
-        float leftTeamCx = w * 0.25f;
-        float rightTeamCx = w * 0.75f;
-        float scoreCx = w * 0.50f;
-
-        float crestR = Math.min(h * 0.085f, 44f);
-        float crestCy = topY + crestR + 2f;
-
-        // Team 1 Crest (Large Circular Badge)
-        drawTeamCrest(canvas, leftTeamCx, crestCy, crestR, 0, team1Name, Color.parseColor("#E53935"), Color.parseColor("#1E88E5"));
-
-        // Team 1 Name below crest
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(Math.min(h * 0.044f, 18f));
-        float t1NameY = crestCy + crestR + 18f;
-        canvas.drawText(team1Name.toUpperCase(), leftTeamCx, t1NameY, textPaint);
-
-        // Team 1 Subtitle ("blurz" / Manager)
-        subTextPaint.setTextAlign(Paint.Align.CENTER);
-        subTextPaint.setColor(Color.parseColor("#B0BEC5"));
-        subTextPaint.setTextSize(Math.min(h * 0.032f, 13.5f));
-        canvas.drawText("blurz", leftTeamCx, t1NameY + 16f, subTextPaint);
-
-        // Center Big Bold Score "0 - 0"
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(Math.min(h * 0.12f, 48f));
-        canvas.drawText(score1 + "  -  " + score2, scoreCx, crestCy + 14f, textPaint);
-
-        // Subtle Match Records Hint under Score
-        subTextPaint.setColor(Color.parseColor("#80DEEA"));
-        subTextPaint.setTextSize(Math.min(h * 0.028f, 12f));
-        canvas.drawText("TAP FOR MATCH STATS", scoreCx, crestCy + 34f, subTextPaint);
-
-        // Team 2 Crest (Large Circular Badge)
-        drawTeamCrest(canvas, rightTeamCx, crestCy, crestR, 1, team2Name, Color.parseColor("#3949AB"), Color.parseColor("#D81B60"));
-
-        // Team 2 Name below crest
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(Math.min(h * 0.044f, 18f));
-        float t2NameY = crestCy + crestR + 18f;
-        canvas.drawText(team2Name.toUpperCase(), rightTeamCx, t2NameY, textPaint);
-
-        // Team 2 Subtitle ("Special Team")
-        subTextPaint.setColor(Color.parseColor("#B0BEC5"));
-        subTextPaint.setTextSize(Math.min(h * 0.032f, 13.5f));
-        canvas.drawText("Special Team", rightTeamCx, t2NameY + 16f, subTextPaint);
-
-        // ── 6 WHITE ROUNDED CARDS GRID (COMPACT, CENTERED ICONS, INCLUDES REPLAY) ──
-        padL = Math.max(w * 0.12f, safeInsetLeft + 36f);
-        padR = Math.max(w * 0.12f, safeInsetRight + 36f);
-        float gridW = w - padL - padR;
-        float gapX = gridW * 0.026f;
-        float gapY = 14f;
-        float cardW = (gridW - 2f * gapX) / 3f;
-
-        float gridTop = t1NameY + 22f;
-        float bottomBarH = 56f;
-        float gridBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - bottomBarH;
-        float maxAvailableH = gridBottom - gridTop;
-        float cardH = Math.min((maxAvailableH - gapY) / 2f, 130f);
+        // ── 6 CARDS GRID COMPUTATION (MODERATE PROPORTIONS, HARMONIOUS PES LAYOUT) ──
+        float cardH = Math.max(h * 0.215f, 150f);
+        float gapY = Math.max(h * 0.024f, 16f);
         float actualGridH = 2f * cardH + gapY;
-        float startGridY = gridTop + (maxAvailableH - actualGridH) * 0.35f;
 
-        String[] cardTitles = {
-                "Squad Management",
-                "Controls List",
-                "General Settings",
-                "Camera Settings",
-                "Sound Settings",
-                "Replay"
-        };
+        // Bottom Resume button dimensions
+        float btnH = Math.max(h * 0.075f, 44f);
+        float btnW = btnH * 3.2f;
+        float btnY = h - Math.max(h * 0.045f, safeInsetBottom + 14f) - btnH;
+
+        // Top Header dimensions
+        float topY = Math.max(h * 0.045f, safeInsetTop + 12f);
+        float crestR = Math.max(h * 0.075f, 46f);
+        float crestCy = topY + crestR;
+        float t1NameY = crestCy + crestR + Math.max(h * 0.022f, 16f);
+        float tSubY = t1NameY + Math.max(h * 0.024f, 16f);
+
+        // Space available for grid
+        float gridTop = tSubY + Math.max(h * 0.035f, 20f);
+        float gridBottom = btnY - Math.max(h * 0.02f, 12f);
+        float availableH = Math.max(gridBottom - gridTop, actualGridH);
+        float startGridY = gridTop + (availableH - actualGridH) * 0.45f;
+
+        // Card width & horizontal spacing (aligned with top columns)
+        float sideMargin = Math.max(w * 0.11f, safeInsetLeft + 28f);
+        float availableW = w - 2f * sideMargin;
+        float gapX = Math.max(availableW * 0.024f, 18f);
+        // Moderate card aspect ratio: roughly 2.15 : 1 (max 2.25 : 1)
+        float targetCardW = Math.min((availableW - 2f * gapX) / 3f, cardH * 2.25f);
+        float cardW = Math.max(targetCardW, 200f);
+        float gridW = 3f * cardW + 2f * gapX;
+        float padL = (w - gridW) * 0.5f;
 
         RectF[] cardRects = new RectF[6];
         // Row 1: 3 cards
@@ -789,46 +743,105 @@ public class MobileControlsView extends View {
         cardRects[4] = new RectF(padL + 1 * (cardW + gapX), startGridY + cardH + gapY, padL + 1 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
         cardRects[5] = new RectF(padL + 2 * (cardW + gapX), startGridY + cardH + gapY, padL + 2 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
 
+        // ── TOP HEADER (Harmonious column alignment with card grid) ──
+        float leftTeamCx = cardRects[0].centerX();
+        float scoreCx = cardRects[1].centerX();
+        float rightTeamCx = cardRects[2].centerX();
+
+        // Team 1 Crest
+        drawTeamCrest(canvas, leftTeamCx, crestCy, crestR, 0, team1Name, Color.parseColor("#E53935"), Color.parseColor("#1E88E5"));
+
+        // Team 1 Name & Subtitle
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(Math.max(h * 0.034f, 18f));
+        canvas.drawText(team1Name.toUpperCase(), leftTeamCx, t1NameY, textPaint);
+
+        subTextPaint.setTextAlign(Paint.Align.CENTER);
+        subTextPaint.setColor(Color.parseColor("#B0BEC5"));
+        subTextPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
+        subTextPaint.setTextSize(Math.max(h * 0.023f, 13f));
+        canvas.drawText("blurz", leftTeamCx, tSubY, subTextPaint);
+
+        // Center Big Bold Score "0 - 0"
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(Math.max(h * 0.095f, 44f));
+        canvas.drawText(score1 + "  -  " + score2, scoreCx, crestCy + h * 0.024f, textPaint);
+
+        // Subtle Match Records Hint under Score
+        subTextPaint.setColor(Color.parseColor("#80DEEA"));
+        subTextPaint.setTextSize(Math.max(h * 0.020f, 11f));
+        canvas.drawText("TAP FOR MATCH STATS", scoreCx, crestCy + h * 0.054f, subTextPaint);
+
+        // Team 2 Crest
+        drawTeamCrest(canvas, rightTeamCx, crestCy, crestR, 1, team2Name, Color.parseColor("#3949AB"), Color.parseColor("#D81B60"));
+
+        // Team 2 Name & Subtitle
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextSize(Math.max(h * 0.034f, 18f));
+        canvas.drawText(team2Name.toUpperCase(), rightTeamCx, t1NameY, textPaint);
+
+        subTextPaint.setColor(Color.parseColor("#B0BEC5"));
+        subTextPaint.setTextSize(Math.max(h * 0.023f, 13f));
+        canvas.drawText("Special Team", rightTeamCx, tSubY, subTextPaint);
+
+        // ── 6 WHITE ROUNDED CARDS ──
+        String[] cardTitles = {
+                "Squad Management",
+                "Controls List",
+                "General Settings",
+                "Camera Settings",
+                "Sound Settings",
+                "Replay"
+        };
+
+        float cardCorner = cardH * 0.14f;
+        float iconR = Math.min(cardH * 0.22f, cardW * 0.12f);
+        float titleTextSize = Math.max(cardH * 0.125f, 15f);
+
         for (int i = 0; i < 6; i++) {
             RectF r = cardRects[i];
             boolean isPressed = (pressedSettingsCardIndex == i);
 
-            // Pure White Card Fill with soft elevation
+            // Pure White Card Fill
             cardPaint.setColor(isPressed ? Color.parseColor("#E4E7ED") : Color.parseColor("#FFFFFF"));
-            canvas.drawRoundRect(r, 18f, 18f, cardPaint);
+            canvas.drawRoundRect(r, cardCorner, cardCorner, cardPaint);
 
             // Subtle border
             borderPaint.setColor(Color.parseColor("#DFE3EC"));
-            borderPaint.setStrokeWidth(1.5f);
-            canvas.drawRoundRect(r, 18f, 18f, borderPaint);
+            borderPaint.setStrokeWidth(Math.max(1.5f, cardH * 0.012f));
+            canvas.drawRoundRect(r, cardCorner, cardCorner, borderPaint);
 
             // Icon resident in center of upper card
             float iconCx = r.centerX();
-            float iconCy = r.top + r.height() * 0.40f;
-            float iconR = Math.min(r.height() * 0.22f, 26f);
+            float iconCy = r.top + r.height() * 0.38f;
             drawSettingsCardIcon(canvas, i, iconCx, iconCy, iconR);
 
-            // Single-line Royal Blue Title centered below icon
+            // Royal Blue Title centered below icon
             textPaint.setTextAlign(Paint.Align.CENTER);
             textPaint.setColor(Color.parseColor("#1565C0")); // PES Royal Blue
-            textPaint.setTextSize(Math.min(r.height() * 0.155f, 14.5f));
+            textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+            textPaint.setTextSize(titleTextSize);
             canvas.drawText(cardTitles[i], r.centerX(), r.top + r.height() * 0.83f, textPaint);
         }
 
         // ── BOTTOM LEFT BLUE PILL RESUME BUTTON ──
-        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
-        RectF resumeBtn = new RectF(padL, btnY, padL + 150f, btnY + 48f);
+        RectF resumeBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
         cardPaint.setColor(Color.parseColor("#007AFF")); // Vibrant Blue
-        canvas.drawRoundRect(resumeBtn, 24f, 24f, cardPaint);
+        canvas.drawRoundRect(resumeBtn, btnH * 0.5f, btnH * 0.5f, cardPaint);
 
         borderPaint.setColor(Color.argb(120, 255, 255, 255));
-        borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(resumeBtn, 24f, 24f, borderPaint);
+        borderPaint.setStrokeWidth(1.8f);
+        canvas.drawRoundRect(resumeBtn, btnH * 0.5f, btnH * 0.5f, borderPaint);
 
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(18f);
-        canvas.drawText("❮  Resume", resumeBtn.centerX(), resumeBtn.centerY() + 6.5f, textPaint);
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(btnH * 0.38f);
+        canvas.drawText("❮  Resume", resumeBtn.centerX(), resumeBtn.centerY() + btnH * 0.12f, textPaint);
     }
 
     /**
@@ -838,18 +851,21 @@ public class MobileControlsView extends View {
         cardPaint.setColor(Color.argb(140, 6, 12, 10));
         canvas.drawRect(0, 0, w, h, cardPaint);
 
-        float sheetW = Math.min(w * 0.70f, 720f);
+        float sheetW = Math.min(w * 0.65f, 1300f);
         float sheetX = (w - sheetW) * 0.5f;
-        float sheetTop = Math.max(h * 0.03f, safeInsetTop + 6f);
-        float sheetBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 52f;
+        float sheetTop = Math.max(h * 0.035f, safeInsetTop + 6f);
+        float btnH = Math.max(h * 0.075f, 44f);
+        float btnW = btnH * 3.0f;
+        float btnY = h - Math.max(h * 0.045f, safeInsetBottom + 14f) - btnH;
+        float sheetBottom = btnY - Math.max(h * 0.02f, 10f);
         float sheetH = sheetBottom - sheetTop;
         RectF sheetRect = new RectF(sheetX, sheetTop, sheetX + sheetW, sheetBottom);
 
         cardPaint.setColor(Color.WHITE);
-        canvas.drawRoundRect(sheetRect, 16f, 16f, cardPaint);
+        canvas.drawRoundRect(sheetRect, 18f, 18f, cardPaint);
         borderPaint.setColor(Color.parseColor("#DDE5ED"));
         borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(sheetRect, 16f, 16f, borderPaint);
+        canvas.drawRoundRect(sheetRect, 18f, 18f, borderPaint);
 
         // Header: Crests and Score
         float headerH = sheetH * 0.18f;
@@ -861,7 +877,7 @@ public class MobileControlsView extends View {
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setColor(Color.parseColor("#1B1B1B"));
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        textPaint.setTextSize(14f);
+        textPaint.setTextSize(Math.max(headerH * 0.22f, 15f));
         canvas.drawText(team1Name, t1Cx, scoreCy + headerH * 0.40f, textPaint);
 
         // Team 2 Crest & Name
@@ -870,14 +886,14 @@ public class MobileControlsView extends View {
         canvas.drawText(team2Name, t2Cx, scoreCy + headerH * 0.40f, textPaint);
 
         // Score
-        textPaint.setTextSize(26f);
+        textPaint.setTextSize(Math.max(headerH * 0.44f, 26f));
         canvas.drawText(score1 + "   -   " + score2, sheetX + sheetW * 0.50f, scoreCy + 8f, textPaint);
 
         // Time Pill
         subTextPaint.setTextAlign(Paint.Align.CENTER);
         subTextPaint.setColor(Color.parseColor("#5A738E"));
-        subTextPaint.setTextSize(12f);
-        canvas.drawText(matchTime, sheetX + sheetW * 0.50f, scoreCy + 28f, subTextPaint);
+        subTextPaint.setTextSize(Math.max(headerH * 0.20f, 13f));
+        canvas.drawText(matchTime, sheetX + sheetW * 0.50f, scoreCy + headerH * 0.32f, subTextPaint);
 
         // 10-Row Stats Table
         float tableTop = sheetTop + headerH;
@@ -907,12 +923,12 @@ public class MobileControlsView extends View {
             float textRowY = ry + rowH * 0.65f;
             textPaint.setTextAlign(Paint.Align.CENTER);
             textPaint.setColor(Color.parseColor("#1565C0"));
-            textPaint.setTextSize(rowH * 0.44f);
+            textPaint.setTextSize(Math.max(rowH * 0.44f, 13f));
             canvas.drawText(statsData[r][0], sheetX + sheetW * 0.20f, textRowY, textPaint);
 
             subTextPaint.setTextAlign(Paint.Align.CENTER);
             subTextPaint.setColor(Color.parseColor("#2C5282"));
-            subTextPaint.setTextSize(rowH * 0.40f);
+            subTextPaint.setTextSize(Math.max(rowH * 0.40f, 12f));
             canvas.drawText(statsData[r][1], sheetX + sheetW * 0.50f, textRowY, subTextPaint);
 
             textPaint.setColor(Color.parseColor("#1565C0"));
@@ -921,15 +937,19 @@ public class MobileControlsView extends View {
 
         // Bottom-Left Floating Back Button
         float padL = Math.max(w * 0.08f, safeInsetLeft + 24f);
-        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
-        RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+        RectF backBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
         cardPaint.setColor(Color.parseColor("#007AFF"));
-        canvas.drawRoundRect(backBtn, 24f, 24f, cardPaint);
+        canvas.drawRoundRect(backBtn, btnH * 0.5f, btnH * 0.5f, cardPaint);
+
+        borderPaint.setColor(Color.argb(120, 255, 255, 255));
+        borderPaint.setStrokeWidth(1.8f);
+        canvas.drawRoundRect(backBtn, btnH * 0.5f, btnH * 0.5f, borderPaint);
 
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(btnH * 0.38f);
+        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + btnH * 0.12f, textPaint);
     }
 
     /**
@@ -939,25 +959,28 @@ public class MobileControlsView extends View {
         cardPaint.setColor(Color.argb(140, 6, 12, 10));
         canvas.drawRect(0, 0, w, h, cardPaint);
 
-        float sheetW = Math.min(w * 0.78f, 800f);
+        float sheetW = Math.min(w * 0.72f, 1400f);
         float sheetX = (w - sheetW) * 0.5f;
-        float sheetTop = Math.max(h * 0.03f, safeInsetTop + 6f);
-        float sheetBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 52f;
+        float sheetTop = Math.max(h * 0.035f, safeInsetTop + 6f);
+        float btnH = Math.max(h * 0.075f, 44f);
+        float btnW = btnH * 3.0f;
+        float btnY = h - Math.max(h * 0.045f, safeInsetBottom + 14f) - btnH;
+        float sheetBottom = btnY - Math.max(h * 0.02f, 10f);
         float sheetH = sheetBottom - sheetTop;
         RectF sheetRect = new RectF(sheetX, sheetTop, sheetX + sheetW, sheetBottom);
 
         cardPaint.setColor(Color.WHITE);
-        canvas.drawRoundRect(sheetRect, 16f, 16f, cardPaint);
+        canvas.drawRoundRect(sheetRect, 18f, 18f, cardPaint);
         borderPaint.setColor(Color.parseColor("#DDE5ED"));
         borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(sheetRect, 16f, 16f, borderPaint);
+        canvas.drawRoundRect(sheetRect, 18f, 18f, borderPaint);
 
         float headerH = sheetH * 0.13f;
         textPaint.setTextAlign(Paint.Align.LEFT);
         textPaint.setColor(Color.parseColor("#1B1B1B"));
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        textPaint.setTextSize(Math.min(headerH * 0.46f, 26f));
-        canvas.drawText("Squad Management (4-3-3)", sheetX + 28f, sheetTop + headerH * 0.65f, textPaint);
+        textPaint.setTextSize(Math.max(headerH * 0.44f, 22f));
+        canvas.drawText("Squad Management (4-3-3)", sheetX + 32f, sheetTop + headerH * 0.65f, textPaint);
 
         float bodyTop = sheetTop + headerH;
         float bodyH = sheetH - headerH - 12f;
@@ -988,15 +1011,15 @@ public class MobileControlsView extends View {
             float py = pitchCard.top + 12f + pos433[p][1] * (pitchCard.height() - 24f);
 
             cardPaint.setColor(Color.WHITE);
-            canvas.drawCircle(px, py, 13f, cardPaint);
+            canvas.drawCircle(px, py, 14f, cardPaint);
             borderPaint.setColor(Color.parseColor("#E53935"));
             borderPaint.setStrokeWidth(2.5f);
-            canvas.drawCircle(px, py, 13f, borderPaint);
+            canvas.drawCircle(px, py, 14f, borderPaint);
 
             textPaint.setTextAlign(Paint.Align.CENTER);
             textPaint.setColor(Color.parseColor("#1B1B1B"));
-            textPaint.setTextSize(9.5f);
-            canvas.drawText(posNames[p], px, py + 3.5f, textPaint);
+            textPaint.setTextSize(10.5f);
+            canvas.drawText(posNames[p], px, py + 3.8f, textPaint);
         }
 
         // RIGHT: Lineup Roster Table (Light Blue / White alternating)
@@ -1015,7 +1038,7 @@ public class MobileControlsView extends View {
             }
             textPaint.setTextAlign(Paint.Align.LEFT);
             textPaint.setColor(Color.parseColor("#1E3A8A"));
-            textPaint.setTextSize(rRowH * 0.48f);
+            textPaint.setTextSize(Math.max(rRowH * 0.48f, 12f));
             canvas.drawText(lineupPlayers[r], rosterCard.left + 14f, ry + rRowH * 0.65f, textPaint);
 
             textPaint.setTextAlign(Paint.Align.RIGHT);
@@ -1024,15 +1047,19 @@ public class MobileControlsView extends View {
         }
 
         float padL = Math.max(w * 0.08f, safeInsetLeft + 24f);
-        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
-        RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+        RectF backBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
         cardPaint.setColor(Color.parseColor("#007AFF"));
-        canvas.drawRoundRect(backBtn, 24f, 24f, cardPaint);
+        canvas.drawRoundRect(backBtn, btnH * 0.5f, btnH * 0.5f, cardPaint);
+
+        borderPaint.setColor(Color.argb(120, 255, 255, 255));
+        borderPaint.setStrokeWidth(1.8f);
+        canvas.drawRoundRect(backBtn, btnH * 0.5f, btnH * 0.5f, borderPaint);
 
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(btnH * 0.38f);
+        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + btnH * 0.12f, textPaint);
     }
 
     /**
@@ -1042,25 +1069,28 @@ public class MobileControlsView extends View {
         cardPaint.setColor(Color.argb(140, 6, 12, 10));
         canvas.drawRect(0, 0, w, h, cardPaint);
 
-        float sheetW = Math.min(w * 0.68f, 680f);
+        float sheetW = Math.min(w * 0.65f, 1300f);
         float sheetX = (w - sheetW) * 0.5f;
-        float sheetTop = Math.max(h * 0.03f, safeInsetTop + 6f);
-        float sheetBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 52f;
+        float sheetTop = Math.max(h * 0.035f, safeInsetTop + 6f);
+        float btnH = Math.max(h * 0.075f, 44f);
+        float btnW = btnH * 3.0f;
+        float btnY = h - Math.max(h * 0.045f, safeInsetBottom + 14f) - btnH;
+        float sheetBottom = btnY - Math.max(h * 0.02f, 10f);
         float sheetH = sheetBottom - sheetTop;
         RectF sheetRect = new RectF(sheetX, sheetTop, sheetX + sheetW, sheetBottom);
 
         cardPaint.setColor(Color.WHITE);
-        canvas.drawRoundRect(sheetRect, 16f, 16f, cardPaint);
+        canvas.drawRoundRect(sheetRect, 18f, 18f, cardPaint);
         borderPaint.setColor(Color.parseColor("#DDE5ED"));
         borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(sheetRect, 16f, 16f, borderPaint);
+        canvas.drawRoundRect(sheetRect, 18f, 18f, borderPaint);
 
         float headerH = sheetH * 0.14f;
         textPaint.setTextAlign(Paint.Align.LEFT);
         textPaint.setColor(Color.parseColor("#1B1B1B"));
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        textPaint.setTextSize(Math.min(headerH * 0.44f, 26f));
-        canvas.drawText("Controls List", sheetX + 28f, sheetTop + headerH * 0.65f, textPaint);
+        textPaint.setTextSize(Math.max(headerH * 0.44f, 22f));
+        canvas.drawText("Controls List", sheetX + 32f, sheetTop + headerH * 0.65f, textPaint);
 
         float rowsTop = sheetTop + headerH;
         float rowsH = sheetH - headerH;
@@ -1084,25 +1114,29 @@ public class MobileControlsView extends View {
             textPaint.setTextAlign(Paint.Align.LEFT);
             textPaint.setColor(Color.parseColor("#1565C0"));
             textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-            textPaint.setTextSize(15f);
-            canvas.drawText(guides[r][0], sheetX + 28f, ry + rowH * 0.42f, textPaint);
+            textPaint.setTextSize(Math.max(rowH * 0.30f, 16f));
+            canvas.drawText(guides[r][0], sheetX + 32f, ry + rowH * 0.42f, textPaint);
 
             subTextPaint.setTextAlign(Paint.Align.LEFT);
             subTextPaint.setColor(Color.parseColor("#4B5563"));
-            subTextPaint.setTextSize(13f);
-            canvas.drawText(guides[r][1], sheetX + 28f, ry + rowH * 0.76f, subTextPaint);
+            subTextPaint.setTextSize(Math.max(rowH * 0.24f, 13f));
+            canvas.drawText(guides[r][1], sheetX + 32f, ry + rowH * 0.76f, subTextPaint);
         }
 
         float padL = Math.max(w * 0.08f, safeInsetLeft + 24f);
-        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
-        RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+        RectF backBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
         cardPaint.setColor(Color.parseColor("#007AFF"));
-        canvas.drawRoundRect(backBtn, 24f, 24f, cardPaint);
+        canvas.drawRoundRect(backBtn, btnH * 0.5f, btnH * 0.5f, cardPaint);
+
+        borderPaint.setColor(Color.argb(120, 255, 255, 255));
+        borderPaint.setStrokeWidth(1.8f);
+        canvas.drawRoundRect(backBtn, btnH * 0.5f, btnH * 0.5f, borderPaint);
 
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(btnH * 0.38f);
+        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + btnH * 0.12f, textPaint);
     }
 
     /**
@@ -1112,26 +1146,29 @@ public class MobileControlsView extends View {
         cardPaint.setColor(Color.argb(140, 6, 12, 10));
         canvas.drawRect(0, 0, w, h, cardPaint);
 
-        float sheetW = Math.min(w * 0.64f, 620f);
+        float sheetW = Math.min(w * 0.65f, 1300f);
         float sheetX = (w - sheetW) * 0.5f;
-        float sheetTop = Math.max(h * 0.03f, safeInsetTop + 6f);
-        float sheetBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 52f;
+        float sheetTop = Math.max(h * 0.035f, safeInsetTop + 6f);
+        float btnH = Math.max(h * 0.075f, 44f);
+        float btnW = btnH * 3.0f;
+        float btnY = h - Math.max(h * 0.045f, safeInsetBottom + 14f) - btnH;
+        float sheetBottom = btnY - Math.max(h * 0.02f, 10f);
         float sheetH = sheetBottom - sheetTop;
         RectF sheetRect = new RectF(sheetX, sheetTop, sheetX + sheetW, sheetBottom);
 
         cardPaint.setColor(Color.WHITE);
-        canvas.drawRoundRect(sheetRect, 16f, 16f, cardPaint);
+        canvas.drawRoundRect(sheetRect, 18f, 18f, cardPaint);
         borderPaint.setColor(Color.parseColor("#DDE5ED"));
         borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(sheetRect, 16f, 16f, borderPaint);
+        canvas.drawRoundRect(sheetRect, 18f, 18f, borderPaint);
 
         // Header Title: "General Settings" in Bold Black
         float headerH = sheetH * 0.14f;
         textPaint.setTextAlign(Paint.Align.LEFT);
         textPaint.setColor(Color.parseColor("#1B1B1B"));
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        textPaint.setTextSize(Math.min(headerH * 0.44f, 26f));
-        canvas.drawText("General Settings", sheetX + 28f, sheetTop + headerH * 0.65f, textPaint);
+        textPaint.setTextSize(Math.max(headerH * 0.44f, 22f));
+        canvas.drawText("General Settings", sheetX + 32f, sheetTop + headerH * 0.65f, textPaint);
 
         float rowsTop = sheetTop + headerH;
         float rowsH = sheetH - headerH;
@@ -1146,7 +1183,7 @@ public class MobileControlsView extends View {
                 "Match Management"
         };
 
-        float btnH = rowH * 0.62f;
+        float rBtnH = rowH * 0.62f;
 
         for (int r = 0; r < 6; r++) {
             float ry = rowsTop + r * rowH;
@@ -1160,15 +1197,15 @@ public class MobileControlsView extends View {
             textPaint.setTextAlign(Paint.Align.LEFT);
             textPaint.setColor(Color.parseColor("#224A7A"));
             textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
-            textPaint.setTextSize(15f);
-            canvas.drawText(rowTitles[r], sheetX + 28f, ry + rowH * 0.58f, textPaint);
+            textPaint.setTextSize(Math.max(rowH * 0.32f, 16f));
+            canvas.drawText(rowTitles[r], sheetX + 32f, ry + rowH * 0.58f, textPaint);
 
-            float btnY = ry + (rowH - btnH) * 0.5f;
+            float rBtnY = ry + (rowH - rBtnH) * 0.5f;
 
             if (r == 0) { // Team 1 Kit
-                float kitW = 85f;
-                RectF kit1_0 = new RectF(sheetX + sheetW - 28f - 2f * kitW - 10f, btnY, sheetX + sheetW - 28f - kitW - 10f, btnY + btnH);
-                RectF kit1_1 = new RectF(sheetX + sheetW - 28f - kitW, btnY, sheetX + sheetW - 28f, btnY + btnH);
+                float kitW = Math.max(sheetW * 0.13f, 85f);
+                RectF kit1_0 = new RectF(sheetX + sheetW - 28f - 2f * kitW - 10f, rBtnY, sheetX + sheetW - 28f - kitW - 10f, rBtnY + rBtnH);
+                RectF kit1_1 = new RectF(sheetX + sheetW - 28f - kitW, rBtnY, sheetX + sheetW - 28f, rBtnY + rBtnH);
 
                 cardPaint.setColor(selectedKit1 == 0 ? Color.parseColor("#007AFF") : Color.WHITE);
                 canvas.drawRoundRect(kit1_0, 10f, 10f, cardPaint);
@@ -1181,16 +1218,16 @@ public class MobileControlsView extends View {
                 canvas.drawRoundRect(kit1_1, 10f, 10f, borderPaint);
 
                 textPaint.setTextAlign(Paint.Align.CENTER);
-                textPaint.setTextSize(13.5f);
+                textPaint.setTextSize(Math.max(rBtnH * 0.42f, 13f));
                 textPaint.setColor(selectedKit1 == 0 ? Color.WHITE : Color.parseColor("#224A7A"));
-                canvas.drawText("Kit 01", kit1_0.centerX(), kit1_0.centerY() + 4.5f, textPaint);
+                canvas.drawText("Kit 01", kit1_0.centerX(), kit1_0.centerY() + rBtnH * 0.12f, textPaint);
                 textPaint.setColor(selectedKit1 == 1 ? Color.WHITE : Color.parseColor("#224A7A"));
-                canvas.drawText("Kit 02", kit1_1.centerX(), kit1_1.centerY() + 4.5f, textPaint);
+                canvas.drawText("Kit 02", kit1_1.centerX(), kit1_1.centerY() + rBtnH * 0.12f, textPaint);
 
             } else if (r == 1) { // Team 2 Kit
-                float kitW = 85f;
-                RectF kit2_0 = new RectF(sheetX + sheetW - 28f - 2f * kitW - 10f, btnY, sheetX + sheetW - 28f - kitW - 10f, btnY + btnH);
-                RectF kit2_1 = new RectF(sheetX + sheetW - 28f - kitW, btnY, sheetX + sheetW - 28f, btnY + btnH);
+                float kitW = Math.max(sheetW * 0.13f, 85f);
+                RectF kit2_0 = new RectF(sheetX + sheetW - 28f - 2f * kitW - 10f, rBtnY, sheetX + sheetW - 28f - kitW - 10f, rBtnY + rBtnH);
+                RectF kit2_1 = new RectF(sheetX + sheetW - 28f - kitW, rBtnY, sheetX + sheetW - 28f, rBtnY + rBtnH);
 
                 cardPaint.setColor(selectedKit2 == 0 ? Color.parseColor("#007AFF") : Color.WHITE);
                 canvas.drawRoundRect(kit2_0, 10f, 10f, cardPaint);
@@ -1203,46 +1240,49 @@ public class MobileControlsView extends View {
                 canvas.drawRoundRect(kit2_1, 10f, 10f, borderPaint);
 
                 textPaint.setTextAlign(Paint.Align.CENTER);
-                textPaint.setTextSize(13.5f);
+                textPaint.setTextSize(Math.max(rBtnH * 0.42f, 13f));
                 textPaint.setColor(selectedKit2 == 0 ? Color.WHITE : Color.parseColor("#224A7A"));
-                canvas.drawText("Kit 01", kit2_0.centerX(), kit2_0.centerY() + 4.5f, textPaint);
+                canvas.drawText("Kit 01", kit2_0.centerX(), kit2_0.centerY() + rBtnH * 0.12f, textPaint);
                 textPaint.setColor(selectedKit2 == 1 ? Color.WHITE : Color.parseColor("#224A7A"));
-                canvas.drawText("Kit 02", kit2_1.centerX(), kit2_1.centerY() + 4.5f, textPaint);
+                canvas.drawText("Kit 02", kit2_1.centerX(), kit2_1.centerY() + rBtnH * 0.12f, textPaint);
 
             } else if (r == 2) { // Sun position
-                RectF sunBtn = new RectF(sheetX + sheetW - 28f - 180f, btnY, sheetX + sheetW - 28f, btnY + btnH);
+                float sunW = Math.max(sheetW * 0.26f, 180f);
+                RectF sunBtn = new RectF(sheetX + sheetW - 28f - sunW, rBtnY, sheetX + sheetW - 28f, rBtnY + rBtnH);
                 cardPaint.setColor(Color.parseColor("#007AFF"));
                 canvas.drawRoundRect(sunBtn, 10f, 10f, cardPaint);
 
                 textPaint.setTextAlign(Paint.Align.CENTER);
                 textPaint.setColor(Color.WHITE);
-                textPaint.setTextSize(13.5f);
-                canvas.drawText("☀  Randomize Sun", sunBtn.centerX(), sunBtn.centerY() + 4.5f, textPaint);
+                textPaint.setTextSize(Math.max(rBtnH * 0.40f, 13f));
+                canvas.drawText("☀  Randomize Sun", sunBtn.centerX(), sunBtn.centerY() + rBtnH * 0.12f, textPaint);
 
             } else if (r == 3) { // Radar
-                RectF radarBtn = new RectF(sheetX + sheetW - 28f - 85f, btnY, sheetX + sheetW - 28f, btnY + btnH);
+                float toggleW = Math.max(sheetW * 0.13f, 85f);
+                RectF radarBtn = new RectF(sheetX + sheetW - 28f - toggleW, rBtnY, sheetX + sheetW - 28f, rBtnY + rBtnH);
                 cardPaint.setColor(settingRadarEnabled ? Color.parseColor("#00C853") : Color.parseColor("#9E9E9E"));
                 canvas.drawRoundRect(radarBtn, 10f, 10f, cardPaint);
 
                 textPaint.setTextAlign(Paint.Align.CENTER);
                 textPaint.setColor(Color.WHITE);
-                textPaint.setTextSize(13.5f);
-                canvas.drawText(settingRadarEnabled ? "ON" : "OFF", radarBtn.centerX(), radarBtn.centerY() + 4.5f, textPaint);
+                textPaint.setTextSize(Math.max(rBtnH * 0.42f, 13f));
+                canvas.drawText(settingRadarEnabled ? "ON" : "OFF", radarBtn.centerX(), radarBtn.centerY() + rBtnH * 0.12f, textPaint);
 
             } else if (r == 4) { // Overhead Indicators
-                RectF namesBtn = new RectF(sheetX + sheetW - 28f - 85f, btnY, sheetX + sheetW - 28f, btnY + btnH);
+                float toggleW = Math.max(sheetW * 0.13f, 85f);
+                RectF namesBtn = new RectF(sheetX + sheetW - 28f - toggleW, rBtnY, sheetX + sheetW - 28f, rBtnY + rBtnH);
                 cardPaint.setColor(settingPlayerNames ? Color.parseColor("#00C853") : Color.parseColor("#9E9E9E"));
                 canvas.drawRoundRect(namesBtn, 10f, 10f, cardPaint);
 
                 textPaint.setTextAlign(Paint.Align.CENTER);
                 textPaint.setColor(Color.WHITE);
-                textPaint.setTextSize(13.5f);
-                canvas.drawText(settingPlayerNames ? "ON" : "OFF", namesBtn.centerX(), namesBtn.centerY() + 4.5f, textPaint);
+                textPaint.setTextSize(Math.max(rBtnH * 0.42f, 13f));
+                canvas.drawText(settingPlayerNames ? "ON" : "OFF", namesBtn.centerX(), namesBtn.centerY() + rBtnH * 0.12f, textPaint);
 
             } else if (r == 5) { // Match Actions
-                float actW = 125f;
-                RectF recordsBtn = new RectF(sheetX + sheetW - 28f - 2f * actW - 10f, btnY, sheetX + sheetW - 28f - actW - 10f, btnY + btnH);
-                RectF forfeitBtn = new RectF(sheetX + sheetW - 28f - actW, btnY, sheetX + sheetW - 28f, btnY + btnH);
+                float actW = Math.max(sheetW * 0.18f, 125f);
+                RectF recordsBtn = new RectF(sheetX + sheetW - 28f - 2f * actW - 10f, rBtnY, sheetX + sheetW - 28f - actW - 10f, rBtnY + rBtnH);
+                RectF forfeitBtn = new RectF(sheetX + sheetW - 28f - actW, rBtnY, sheetX + sheetW - 28f, rBtnY + rBtnH);
 
                 cardPaint.setColor(Color.WHITE);
                 canvas.drawRoundRect(recordsBtn, 10f, 10f, cardPaint);
@@ -1254,25 +1294,29 @@ public class MobileControlsView extends View {
                 canvas.drawRoundRect(forfeitBtn, 10f, 10f, cardPaint);
 
                 textPaint.setTextAlign(Paint.Align.CENTER);
-                textPaint.setTextSize(13f);
+                textPaint.setTextSize(Math.max(rBtnH * 0.38f, 12.5f));
                 textPaint.setColor(Color.parseColor("#007AFF"));
-                canvas.drawText("Match Records", recordsBtn.centerX(), recordsBtn.centerY() + 4.5f, textPaint);
+                canvas.drawText("Match Records", recordsBtn.centerX(), recordsBtn.centerY() + rBtnH * 0.12f, textPaint);
                 textPaint.setColor(Color.WHITE);
-                canvas.drawText("Forfeit Match", forfeitBtn.centerX(), forfeitBtn.centerY() + 4.5f, textPaint);
+                canvas.drawText("Forfeit Match", forfeitBtn.centerX(), forfeitBtn.centerY() + rBtnH * 0.12f, textPaint);
             }
         }
 
         // Bottom-Left Floating Back Button
         float padL = Math.max(w * 0.08f, safeInsetLeft + 24f);
-        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
-        RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+        RectF backBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
         cardPaint.setColor(Color.parseColor("#007AFF"));
-        canvas.drawRoundRect(backBtn, 24f, 24f, cardPaint);
+        canvas.drawRoundRect(backBtn, btnH * 0.5f, btnH * 0.5f, cardPaint);
+
+        borderPaint.setColor(Color.argb(120, 255, 255, 255));
+        borderPaint.setStrokeWidth(1.8f);
+        canvas.drawRoundRect(backBtn, btnH * 0.5f, btnH * 0.5f, borderPaint);
 
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(btnH * 0.38f);
+        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + btnH * 0.12f, textPaint);
     }
 
     /**
@@ -1282,26 +1326,29 @@ public class MobileControlsView extends View {
         cardPaint.setColor(Color.argb(140, 6, 12, 10));
         canvas.drawRect(0, 0, w, h, cardPaint);
 
-        float sheetW = Math.min(w * 0.64f, 620f);
+        float sheetW = Math.min(w * 0.65f, 1300f);
         float sheetX = (w - sheetW) * 0.5f;
-        float sheetTop = Math.max(h * 0.03f, safeInsetTop + 6f);
-        float sheetBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 52f;
+        float sheetTop = Math.max(h * 0.035f, safeInsetTop + 6f);
+        float btnH = Math.max(h * 0.075f, 44f);
+        float btnW = btnH * 3.0f;
+        float btnY = h - Math.max(h * 0.045f, safeInsetBottom + 14f) - btnH;
+        float sheetBottom = btnY - Math.max(h * 0.02f, 10f);
         float sheetH = sheetBottom - sheetTop;
         RectF sheetRect = new RectF(sheetX, sheetTop, sheetX + sheetW, sheetBottom);
 
         cardPaint.setColor(Color.WHITE);
-        canvas.drawRoundRect(sheetRect, 16f, 16f, cardPaint);
+        canvas.drawRoundRect(sheetRect, 18f, 18f, cardPaint);
         borderPaint.setColor(Color.parseColor("#DDE5ED"));
         borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(sheetRect, 16f, 16f, borderPaint);
+        canvas.drawRoundRect(sheetRect, 18f, 18f, borderPaint);
 
         // Header Title: "Camera Settings" in Bold Black
         float headerH = sheetH * 0.16f;
         textPaint.setTextAlign(Paint.Align.LEFT);
         textPaint.setColor(Color.parseColor("#1B1B1B"));
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        textPaint.setTextSize(Math.min(headerH * 0.44f, 26f));
-        canvas.drawText("Camera Settings", sheetX + 28f, sheetTop + headerH * 0.65f, textPaint);
+        textPaint.setTextSize(Math.max(headerH * 0.44f, 22f));
+        canvas.drawText("Camera Settings", sheetX + 32f, sheetTop + headerH * 0.65f, textPaint);
 
         float rowsTop = sheetTop + headerH;
         float rowsH = sheetH - headerH;
@@ -1319,8 +1366,8 @@ public class MobileControlsView extends View {
                 Math.max(0f, Math.min(1f, settingCamAngle))
         };
 
-        float trackLeft = sheetX + 54f;
-        float trackRight = sheetX + sheetW - 60f;
+        float trackLeft = sheetX + sheetW * 0.08f;
+        float trackRight = sheetX + sheetW * 0.88f;
         float trackW = trackRight - trackLeft;
 
         for (int r = 0; r < 4; r++) {
@@ -1335,8 +1382,8 @@ public class MobileControlsView extends View {
             textPaint.setTextAlign(Paint.Align.LEFT);
             textPaint.setColor(Color.parseColor("#224A7A"));
             textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
-            textPaint.setTextSize(15f);
-            canvas.drawText(rowTitles[r], sheetX + 28f, ry + rowH * 0.32f, textPaint);
+            textPaint.setTextSize(Math.max(rowH * 0.28f, 16f));
+            canvas.drawText(rowTitles[r], sheetX + 32f, ry + rowH * 0.32f, textPaint);
 
             if (r < 3) {
                 float frac = fracs[r];
@@ -1345,15 +1392,15 @@ public class MobileControlsView extends View {
                 // Left min icon
                 textPaint.setTextAlign(Paint.Align.CENTER);
                 textPaint.setColor(Color.parseColor("#5A738E"));
-                textPaint.setTextSize(16f);
-                canvas.drawText("−", sheetX + 32f, cy + 5f, textPaint);
+                textPaint.setTextSize(Math.max(rowH * 0.32f, 18f));
+                canvas.drawText("−", sheetX + sheetW * 0.04f, cy + 5f, textPaint);
 
                 // Right max icon
-                canvas.drawText("+", sheetX + sheetW - 32f, cy + 5f, textPaint);
+                canvas.drawText("+", sheetX + sheetW * 0.94f, cy + 5f, textPaint);
 
                 // Track Background
                 borderPaint.setColor(Color.parseColor("#C2D9EE"));
-                borderPaint.setStrokeWidth(4.5f);
+                borderPaint.setStrokeWidth(Math.max(rowH * 0.07f, 5.0f));
                 borderPaint.setStrokeCap(Paint.Cap.ROUND);
                 canvas.drawLine(trackLeft, cy, trackRight, cy, borderPaint);
 
@@ -1363,43 +1410,49 @@ public class MobileControlsView extends View {
                 canvas.drawLine(trackLeft, cy, thumbX, cy, borderPaint);
 
                 // Blue Circular Thumb
+                float thumbR = Math.max(rowH * 0.16f, 12f);
                 cardPaint.setColor(Color.parseColor("#007AFF"));
-                canvas.drawCircle(thumbX, cy, 12f, cardPaint);
+                canvas.drawCircle(thumbX, cy, thumbR, cardPaint);
                 borderPaint.setColor(Color.WHITE);
-                borderPaint.setStrokeWidth(2.5f);
-                canvas.drawCircle(thumbX, cy, 12f, borderPaint);
+                borderPaint.setStrokeWidth(Math.max(thumbR * 0.22f, 2.5f));
+                canvas.drawCircle(thumbX, cy, thumbR, borderPaint);
 
                 // Percentage text
                 textPaint.setTextAlign(Paint.Align.RIGHT);
                 textPaint.setColor(Color.parseColor("#007AFF"));
-                textPaint.setTextSize(14f);
+                textPaint.setTextSize(Math.max(rowH * 0.25f, 14f));
                 canvas.drawText(Math.round(frac * 100) + "%", sheetX + sheetW - 28f, ry + rowH * 0.32f, textPaint);
             } else {
                 // Reset to Defaults Button
-                float btnH = rowH * 0.50f;
-                float btnY = ry + (rowH - btnH) * 0.5f;
-                RectF resetBtn = new RectF(sheetX + 28f, btnY, sheetX + 28f + 180f, btnY + btnH);
+                float rBtnH = rowH * 0.50f;
+                float rBtnY = ry + (rowH - rBtnH) * 0.5f;
+                float rBtnW = Math.max(sheetW * 0.32f, 190f);
+                RectF resetBtn = new RectF(sheetX + 28f, rBtnY, sheetX + 28f + rBtnW, rBtnY + rBtnH);
                 cardPaint.setColor(Color.parseColor("#007AFF"));
                 canvas.drawRoundRect(resetBtn, 12f, 12f, cardPaint);
 
                 textPaint.setTextAlign(Paint.Align.CENTER);
                 textPaint.setColor(Color.WHITE);
-                textPaint.setTextSize(14.5f);
-                canvas.drawText("RESET DEFAULTS", resetBtn.centerX(), resetBtn.centerY() + 5f, textPaint);
+                textPaint.setTextSize(Math.max(rBtnH * 0.42f, 14f));
+                canvas.drawText("RESET DEFAULTS", resetBtn.centerX(), resetBtn.centerY() + rBtnH * 0.14f, textPaint);
             }
         }
 
         // Bottom-Left Floating Back Button (Vibrant Blue Pill)
         float padL = Math.max(w * 0.08f, safeInsetLeft + 24f);
-        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
-        RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+        RectF backBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
         cardPaint.setColor(Color.parseColor("#007AFF"));
-        canvas.drawRoundRect(backBtn, 24f, 24f, cardPaint);
+        canvas.drawRoundRect(backBtn, btnH * 0.5f, btnH * 0.5f, cardPaint);
+
+        borderPaint.setColor(Color.argb(120, 255, 255, 255));
+        borderPaint.setStrokeWidth(1.8f);
+        canvas.drawRoundRect(backBtn, btnH * 0.5f, btnH * 0.5f, borderPaint);
 
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(btnH * 0.38f);
+        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + btnH * 0.12f, textPaint);
     }
 
     /**
@@ -1409,26 +1462,29 @@ public class MobileControlsView extends View {
         cardPaint.setColor(Color.argb(140, 6, 12, 10));
         canvas.drawRect(0, 0, w, h, cardPaint);
 
-        float sheetW = Math.min(w * 0.64f, 620f);
+        float sheetW = Math.min(w * 0.65f, 1300f);
         float sheetX = (w - sheetW) * 0.5f;
-        float sheetTop = Math.max(h * 0.03f, safeInsetTop + 6f);
-        float sheetBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 52f;
+        float sheetTop = Math.max(h * 0.035f, safeInsetTop + 6f);
+        float btnH = Math.max(h * 0.075f, 44f);
+        float btnW = btnH * 3.0f;
+        float btnY = h - Math.max(h * 0.045f, safeInsetBottom + 14f) - btnH;
+        float sheetBottom = btnY - Math.max(h * 0.02f, 10f);
         float sheetH = sheetBottom - sheetTop;
         RectF sheetRect = new RectF(sheetX, sheetTop, sheetX + sheetW, sheetBottom);
 
         cardPaint.setColor(Color.WHITE);
-        canvas.drawRoundRect(sheetRect, 16f, 16f, cardPaint);
+        canvas.drawRoundRect(sheetRect, 18f, 18f, cardPaint);
         borderPaint.setColor(Color.parseColor("#DDE5ED"));
         borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(sheetRect, 16f, 16f, borderPaint);
+        canvas.drawRoundRect(sheetRect, 18f, 18f, borderPaint);
 
         // Header Title: "Sound Settings" in Bold Black
         float headerH = sheetH * 0.16f;
         textPaint.setTextAlign(Paint.Align.LEFT);
         textPaint.setColor(Color.parseColor("#1B1B1B"));
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        textPaint.setTextSize(Math.min(headerH * 0.44f, 26f));
-        canvas.drawText("Sound Settings", sheetX + 28f, sheetTop + headerH * 0.65f, textPaint);
+        textPaint.setTextSize(Math.max(headerH * 0.44f, 22f));
+        canvas.drawText("Sound Settings", sheetX + 32f, sheetTop + headerH * 0.65f, textPaint);
 
         float rowsTop = sheetTop + headerH;
         float rowsH = sheetH - headerH;
@@ -1440,8 +1496,8 @@ public class MobileControlsView extends View {
                 "Master Audio Mute"
         };
 
-        float trackLeft = sheetX + 54f;
-        float trackRight = sheetX + sheetW - 60f;
+        float trackLeft = sheetX + sheetW * 0.08f;
+        float trackRight = sheetX + sheetW * 0.88f;
         float trackW = trackRight - trackLeft;
 
         for (int r = 0; r < 3; r++) {
@@ -1456,24 +1512,25 @@ public class MobileControlsView extends View {
             textPaint.setTextAlign(Paint.Align.LEFT);
             textPaint.setColor(Color.parseColor("#224A7A"));
             textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
-            textPaint.setTextSize(15f);
-            canvas.drawText(rowTitles[r], sheetX + 28f, ry + rowH * 0.32f, textPaint);
+            textPaint.setTextSize(Math.max(rowH * 0.28f, 16f));
+            canvas.drawText(rowTitles[r], sheetX + 32f, ry + rowH * 0.32f, textPaint);
 
             if (r < 2) {
                 float frac = (r == 0) ? settingAudioVolume : Math.min(1.0f, settingAudioVolume * 1.1f);
                 frac = Math.max(0f, Math.min(1f, frac));
 
                 float cy = ry + rowH * 0.70f;
+                float spkR = Math.max(rowH * 0.14f, 12f);
 
                 // Left min speaker icon
-                drawSmallSpeakerIcon(canvas, sheetX + 32f, cy, 10f, false);
+                drawSmallSpeakerIcon(canvas, sheetX + sheetW * 0.04f, cy, spkR, false);
 
                 // Right max speaker icon
-                drawSmallSpeakerIcon(canvas, sheetX + sheetW - 32f, cy, 10f, true);
+                drawSmallSpeakerIcon(canvas, sheetX + sheetW * 0.94f, cy, spkR, true);
 
                 // Track Background
                 borderPaint.setColor(Color.parseColor("#C2D9EE"));
-                borderPaint.setStrokeWidth(4.5f);
+                borderPaint.setStrokeWidth(Math.max(rowH * 0.07f, 5.0f));
                 borderPaint.setStrokeCap(Paint.Cap.ROUND);
                 canvas.drawLine(trackLeft, cy, trackRight, cy, borderPaint);
 
@@ -1483,44 +1540,50 @@ public class MobileControlsView extends View {
                 canvas.drawLine(trackLeft, cy, thumbX, cy, borderPaint);
 
                 // Blue Circular Thumb
+                float thumbR = Math.max(rowH * 0.16f, 12f);
                 cardPaint.setColor(Color.parseColor("#007AFF"));
-                canvas.drawCircle(thumbX, cy, 12f, cardPaint);
+                canvas.drawCircle(thumbX, cy, thumbR, cardPaint);
                 borderPaint.setColor(Color.WHITE);
-                borderPaint.setStrokeWidth(2.5f);
-                canvas.drawCircle(thumbX, cy, 12f, borderPaint);
+                borderPaint.setStrokeWidth(Math.max(thumbR * 0.22f, 2.5f));
+                canvas.drawCircle(thumbX, cy, thumbR, borderPaint);
 
                 // Percentage text
                 textPaint.setTextAlign(Paint.Align.RIGHT);
                 textPaint.setColor(Color.parseColor("#007AFF"));
-                textPaint.setTextSize(14f);
+                textPaint.setTextSize(Math.max(rowH * 0.25f, 14f));
                 canvas.drawText(Math.round(frac * 100) + "%", sheetX + sheetW - 28f, ry + rowH * 0.32f, textPaint);
             } else {
                 // Mute toggle button
-                float btnH = rowH * 0.50f;
-                float btnY = ry + (rowH - btnH) * 0.5f;
-                RectF muteBtn = new RectF(sheetX + 28f, btnY, sheetX + 28f + 160f, btnY + btnH);
+                float mBtnH = rowH * 0.50f;
+                float mBtnY = ry + (rowH - mBtnH) * 0.5f;
+                float mBtnW = Math.max(sheetW * 0.30f, 180f);
+                RectF muteBtn = new RectF(sheetX + 28f, mBtnY, sheetX + 28f + mBtnW, mBtnY + mBtnH);
                 boolean isMuted = (settingAudioVolume < 0.01f);
                 cardPaint.setColor(isMuted ? Color.parseColor("#E53935") : Color.parseColor("#007AFF"));
                 canvas.drawRoundRect(muteBtn, 12f, 12f, cardPaint);
 
                 textPaint.setTextAlign(Paint.Align.CENTER);
                 textPaint.setColor(Color.WHITE);
-                textPaint.setTextSize(14.5f);
-                canvas.drawText(isMuted ? "UNMUTE AUDIO" : "MUTE AUDIO", muteBtn.centerX(), muteBtn.centerY() + 5f, textPaint);
+                textPaint.setTextSize(Math.max(mBtnH * 0.42f, 14f));
+                canvas.drawText(isMuted ? "UNMUTE AUDIO" : "MUTE AUDIO", muteBtn.centerX(), muteBtn.centerY() + mBtnH * 0.14f, textPaint);
             }
         }
 
         // Bottom-Left Floating Back Button (Vibrant Blue Pill)
         float padL = Math.max(w * 0.08f, safeInsetLeft + 24f);
-        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
-        RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+        RectF backBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
         cardPaint.setColor(Color.parseColor("#007AFF"));
-        canvas.drawRoundRect(backBtn, 24f, 24f, cardPaint);
+        canvas.drawRoundRect(backBtn, btnH * 0.5f, btnH * 0.5f, cardPaint);
+
+        borderPaint.setColor(Color.argb(120, 255, 255, 255));
+        borderPaint.setStrokeWidth(1.8f);
+        canvas.drawRoundRect(backBtn, btnH * 0.5f, btnH * 0.5f, borderPaint);
 
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(btnH * 0.38f);
+        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + btnH * 0.12f, textPaint);
     }
 
     private void drawSmallSpeakerIcon(Canvas canvas, float cx, float cy, float r, boolean withWaves) {
@@ -1705,7 +1768,7 @@ public class MobileControlsView extends View {
         Paint pBlue = new Paint(Paint.ANTI_ALIAS_FLAG);
         pBlue.setColor(Color.parseColor("#1976D2"));
         pBlue.setStyle(Paint.Style.STROKE);
-        pBlue.setStrokeWidth(2.6f);
+        pBlue.setStrokeWidth(Math.max(2.8f, radius * 0.08f));
 
         Paint pGreen = new Paint(Paint.ANTI_ALIAS_FLAG);
         pGreen.setColor(Color.parseColor("#00C853"));
@@ -2001,34 +2064,39 @@ public class MobileControlsView extends View {
         if (isPaused) {
             // 2.A: SETTINGS_GRID TOUCHES (PES Mobile 6-Card Grid)
             if (pauseSubView == PauseSubView.SETTINGS_GRID) {
-                float padL = Math.max(getWidth() * 0.12f, safeInsetLeft + 36f);
-                float padR = Math.max(getWidth() * 0.12f, safeInsetRight + 36f);
-                float topY = Math.max(getHeight() * 0.04f, safeInsetTop + 10f);
-
-                float scoreCx = getWidth() * 0.50f;
-                float crestR = Math.min(getHeight() * 0.085f, 44f);
-                float crestCy = topY + crestR + 2f;
-                float t1NameY = crestCy + crestR + 18f;
-
-                float gridW = getWidth() - padL - padR;
-                float gapX = gridW * 0.026f;
-                float gapY = 14f;
-                float cardW = (gridW - 2f * gapX) / 3f;
-
-                float gridTop = t1NameY + 22f;
-                float bottomBarH = 56f;
-                float gridBottom = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - bottomBarH;
-                float maxAvailableH = gridBottom - gridTop;
-                float cardH = Math.min((maxAvailableH - gapY) / 2f, 130f);
+                float cardH = Math.max(getHeight() * 0.215f, 150f);
+                float gapY = Math.max(getHeight() * 0.024f, 16f);
                 float actualGridH = 2f * cardH + gapY;
-                float startGridY = gridTop + (maxAvailableH - actualGridH) * 0.35f;
+
+                float btnH = Math.max(getHeight() * 0.075f, 44f);
+                float btnW = btnH * 3.2f;
+                float btnY = getHeight() - Math.max(getHeight() * 0.045f, safeInsetBottom + 14f) - btnH;
+
+                float topY = Math.max(getHeight() * 0.045f, safeInsetTop + 12f);
+                float crestR = Math.max(getHeight() * 0.075f, 46f);
+                float crestCy = topY + crestR;
+                float t1NameY = crestCy + crestR + Math.max(getHeight() * 0.022f, 16f);
+                float tSubY = t1NameY + Math.max(getHeight() * 0.024f, 16f);
+
+                float gridTop = tSubY + Math.max(getHeight() * 0.035f, 20f);
+                float gridBottom = btnY - Math.max(getHeight() * 0.02f, 12f);
+                float availableH = Math.max(gridBottom - gridTop, actualGridH);
+                float startGridY = gridTop + (availableH - actualGridH) * 0.45f;
+
+                float sideMargin = Math.max(getWidth() * 0.11f, safeInsetLeft + 28f);
+                float availableW = getWidth() - 2f * sideMargin;
+                float gapX = Math.max(availableW * 0.024f, 18f);
+                float targetCardW = Math.min((availableW - 2f * gapX) / 3f, cardH * 2.25f);
+                float cardW = Math.max(targetCardW, 200f);
+                float gridW = 3f * cardW + 2f * gapX;
+                float padL = (getWidth() - gridW) * 0.5f;
 
                 // Resume button at bottom left
-                float btnY = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 48f;
-                RectF resumeBtn = new RectF(padL, btnY, padL + 150f, btnY + 48f);
+                RectF resumeBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
 
                 // Center score area (tap to open Match Records)
-                RectF scoreArea = new RectF(scoreCx - 140f, topY, scoreCx + 140f, gridTop);
+                float scoreCx = getWidth() * 0.50f;
+                RectF scoreArea = new RectF(scoreCx - cardW * 0.5f, topY, scoreCx + cardW * 0.5f, gridTop);
 
                 RectF card0 = new RectF(padL + 0 * (cardW + gapX), startGridY, padL + 0 * (cardW + gapX) + cardW, startGridY + cardH);
                 RectF card1 = new RectF(padL + 1 * (cardW + gapX), startGridY, padL + 1 * (cardW + gapX) + cardW, startGridY + cardH);
@@ -2099,8 +2167,10 @@ public class MobileControlsView extends View {
             // 2.B: SQUAD_MANAGEMENT & CONTROLS_LIST TOUCHES (Back button)
             if (pauseSubView == PauseSubView.SQUAD_MANAGEMENT || pauseSubView == PauseSubView.CONTROLS_LIST) {
                 float padL = Math.max(getWidth() * 0.08f, safeInsetLeft + 24f);
-                float btnY = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 48f;
-                RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+                float btnH = Math.max(getHeight() * 0.075f, 44f);
+                float btnW = btnH * 3.0f;
+                float btnY = getHeight() - Math.max(getHeight() * 0.045f, safeInsetBottom + 14f) - btnH;
+                RectF backBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
                 if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
                     if (backBtn.contains(x, y)) {
                         pauseSubView = PauseSubView.SETTINGS_GRID;
@@ -2113,44 +2183,48 @@ public class MobileControlsView extends View {
 
             // 2.C: GENERAL_SETTINGS TOUCHES
             if (pauseSubView == PauseSubView.GENERAL_SETTINGS) {
-                float sheetW = Math.min(getWidth() * 0.64f, 620f);
+                float sheetW = Math.min(getWidth() * 0.65f, 1300f);
                 float sheetX = (getWidth() - sheetW) * 0.5f;
-                float sheetTop = Math.max(getHeight() * 0.03f, safeInsetTop + 6f);
-                float sheetBottom = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 52f;
+                float sheetTop = Math.max(getHeight() * 0.035f, safeInsetTop + 6f);
+                float btnH = Math.max(getHeight() * 0.075f, 44f);
+                float btnW = btnH * 3.0f;
+                float btnY = getHeight() - Math.max(getHeight() * 0.045f, safeInsetBottom + 14f) - btnH;
+                float sheetBottom = btnY - Math.max(getHeight() * 0.02f, 10f);
                 float sheetH = sheetBottom - sheetTop;
 
                 float padL = Math.max(getWidth() * 0.08f, safeInsetLeft + 24f);
-                float btnY = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 48f;
-                RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+                RectF backBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
 
                 float headerH = sheetH * 0.14f;
                 float rowsTop = sheetTop + headerH;
                 float rowsH = sheetH - headerH;
                 float rowH = rowsH / 6f;
-                float btnH = rowH * 0.62f;
+                float rBtnH = rowH * 0.62f;
 
-                float kitW = 85f;
-                float btnY0 = rowsTop + 0 * rowH + (rowH - btnH) * 0.5f;
-                RectF kit1_0 = new RectF(sheetX + sheetW - 28f - 2f * kitW - 10f, btnY0, sheetX + sheetW - 28f - kitW - 10f, btnY0 + btnH);
-                RectF kit1_1 = new RectF(sheetX + sheetW - 28f - kitW, btnY0, sheetX + sheetW - 28f, btnY0 + btnH);
+                float kitW = Math.max(sheetW * 0.13f, 85f);
+                float btnY0 = rowsTop + 0 * rowH + (rowH - rBtnH) * 0.5f;
+                RectF kit1_0 = new RectF(sheetX + sheetW - 28f - 2f * kitW - 10f, btnY0, sheetX + sheetW - 28f - kitW - 10f, btnY0 + rBtnH);
+                RectF kit1_1 = new RectF(sheetX + sheetW - 28f - kitW, btnY0, sheetX + sheetW - 28f, btnY0 + rBtnH);
 
-                float btnY1 = rowsTop + 1 * rowH + (rowH - btnH) * 0.5f;
-                RectF kit2_0 = new RectF(sheetX + sheetW - 28f - 2f * kitW - 10f, btnY1, sheetX + sheetW - 28f - kitW - 10f, btnY1 + btnH);
-                RectF kit2_1 = new RectF(sheetX + sheetW - 28f - kitW, btnY1, sheetX + sheetW - 28f, btnY1 + btnH);
+                float btnY1 = rowsTop + 1 * rowH + (rowH - rBtnH) * 0.5f;
+                RectF kit2_0 = new RectF(sheetX + sheetW - 28f - 2f * kitW - 10f, btnY1, sheetX + sheetW - 28f - kitW - 10f, btnY1 + rBtnH);
+                RectF kit2_1 = new RectF(sheetX + sheetW - 28f - kitW, btnY1, sheetX + sheetW - 28f, btnY1 + rBtnH);
 
-                float btnY2 = rowsTop + 2 * rowH + (rowH - btnH) * 0.5f;
-                RectF sunBtn = new RectF(sheetX + sheetW - 28f - 180f, btnY2, sheetX + sheetW - 28f, btnY2 + btnH);
+                float sunW = Math.max(sheetW * 0.26f, 180f);
+                float btnY2 = rowsTop + 2 * rowH + (rowH - rBtnH) * 0.5f;
+                RectF sunBtn = new RectF(sheetX + sheetW - 28f - sunW, btnY2, sheetX + sheetW - 28f, btnY2 + rBtnH);
 
-                float btnY3 = rowsTop + 3 * rowH + (rowH - btnH) * 0.5f;
-                RectF radarBtn = new RectF(sheetX + sheetW - 28f - 85f, btnY3, sheetX + sheetW - 28f, btnY3 + btnH);
+                float toggleW = Math.max(sheetW * 0.13f, 85f);
+                float btnY3 = rowsTop + 3 * rowH + (rowH - rBtnH) * 0.5f;
+                RectF radarBtn = new RectF(sheetX + sheetW - 28f - toggleW, btnY3, sheetX + sheetW - 28f, btnY3 + rBtnH);
 
-                float btnY4 = rowsTop + 4 * rowH + (rowH - btnH) * 0.5f;
-                RectF namesBtn = new RectF(sheetX + sheetW - 28f - 85f, btnY4, sheetX + sheetW - 28f, btnY4 + btnH);
+                float btnY4 = rowsTop + 4 * rowH + (rowH - rBtnH) * 0.5f;
+                RectF namesBtn = new RectF(sheetX + sheetW - 28f - toggleW, btnY4, sheetX + sheetW - 28f, btnY4 + rBtnH);
 
-                float actW = 125f;
-                float btnY5 = rowsTop + 5 * rowH + (rowH - btnH) * 0.5f;
-                RectF recordsBtn = new RectF(sheetX + sheetW - 28f - 2f * actW - 10f, btnY5, sheetX + sheetW - 28f - actW - 10f, btnY5 + btnH);
-                RectF forfeitBtn = new RectF(sheetX + sheetW - 28f - actW, btnY5, sheetX + sheetW - 28f, btnY5 + btnH);
+                float actW = Math.max(sheetW * 0.18f, 125f);
+                float btnY5 = rowsTop + 5 * rowH + (rowH - rBtnH) * 0.5f;
+                RectF recordsBtn = new RectF(sheetX + sheetW - 28f - 2f * actW - 10f, btnY5, sheetX + sheetW - 28f - actW - 10f, btnY5 + rBtnH);
+                RectF forfeitBtn = new RectF(sheetX + sheetW - 28f - actW, btnY5, sheetX + sheetW - 28f, btnY5 + rBtnH);
 
                 if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
                     if (backBtn.contains(x, y)) {
@@ -2208,28 +2282,31 @@ public class MobileControlsView extends View {
 
             // 2.D: CAMERA_SETTINGS TOUCHES
             if (pauseSubView == PauseSubView.CAMERA_SETTINGS) {
-                float sheetW = Math.min(getWidth() * 0.64f, 620f);
+                float sheetW = Math.min(getWidth() * 0.65f, 1300f);
                 float sheetX = (getWidth() - sheetW) * 0.5f;
-                float sheetTop = Math.max(getHeight() * 0.03f, safeInsetTop + 6f);
-                float sheetBottom = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 52f;
+                float sheetTop = Math.max(getHeight() * 0.035f, safeInsetTop + 6f);
+                float btnH = Math.max(getHeight() * 0.075f, 44f);
+                float btnW = btnH * 3.0f;
+                float btnY = getHeight() - Math.max(getHeight() * 0.045f, safeInsetBottom + 14f) - btnH;
+                float sheetBottom = btnY - Math.max(getHeight() * 0.02f, 10f);
                 float sheetH = sheetBottom - sheetTop;
 
                 float padL = Math.max(getWidth() * 0.08f, safeInsetLeft + 24f);
-                float btnY = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 48f;
-                RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+                RectF backBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
 
                 float headerH = sheetH * 0.16f;
                 float rowsTop = sheetTop + headerH;
                 float rowsH = sheetH - headerH;
                 float rowH = rowsH / 4f;
 
-                float trackLeft = sheetX + 54f;
-                float trackRight = sheetX + sheetW - 60f;
+                float trackLeft = sheetX + sheetW * 0.08f;
+                float trackRight = sheetX + sheetW * 0.88f;
                 float trackW = trackRight - trackLeft;
 
-                float btnH = rowH * 0.50f;
-                float rBtnY = rowsTop + 3 * rowH + (rowH - btnH) * 0.5f;
-                RectF resetBtn = new RectF(sheetX + 28f, rBtnY, sheetX + 28f + 180f, rBtnY + btnH);
+                float rBtnH = rowH * 0.50f;
+                float rBtnY = rowsTop + 3 * rowH + (rowH - rBtnH) * 0.5f;
+                float rBtnW = Math.max(sheetW * 0.32f, 190f);
+                RectF resetBtn = new RectF(sheetX + 28f, rBtnY, sheetX + 28f + rBtnW, rBtnY + rBtnH);
 
                 switch (action) {
                     case MotionEvent.ACTION_DOWN:
@@ -2252,7 +2329,7 @@ public class MobileControlsView extends View {
                         for (int s = 0; s < 3; s++) {
                             float ry = rowsTop + s * rowH;
                             float cy = ry + rowH * 0.70f;
-                            if (y >= cy - 25f && y <= cy + 25f && x >= trackLeft - 30f && x <= trackRight + 30f) {
+                            if (y >= cy - 35f && y <= cy + 35f && x >= trackLeft - 35f && x <= trackRight + 35f) {
                                 draggingSlider = s;
                                 updateSliderValue(s, (x - trackLeft) / trackW);
                                 invalidate();
@@ -2286,28 +2363,31 @@ public class MobileControlsView extends View {
 
             // 2.E: SOUND_SETTINGS TOUCHES
             if (pauseSubView == PauseSubView.SOUND_SETTINGS) {
-                float sheetW = Math.min(getWidth() * 0.64f, 620f);
+                float sheetW = Math.min(getWidth() * 0.65f, 1300f);
                 float sheetX = (getWidth() - sheetW) * 0.5f;
-                float sheetTop = Math.max(getHeight() * 0.03f, safeInsetTop + 6f);
-                float sheetBottom = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 52f;
+                float sheetTop = Math.max(getHeight() * 0.035f, safeInsetTop + 6f);
+                float btnH = Math.max(getHeight() * 0.075f, 44f);
+                float btnW = btnH * 3.0f;
+                float btnY = getHeight() - Math.max(getHeight() * 0.045f, safeInsetBottom + 14f) - btnH;
+                float sheetBottom = btnY - Math.max(getHeight() * 0.02f, 10f);
                 float sheetH = sheetBottom - sheetTop;
 
                 float padL = Math.max(getWidth() * 0.08f, safeInsetLeft + 24f);
-                float btnY = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 48f;
-                RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+                RectF backBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
 
                 float headerH = sheetH * 0.16f;
                 float rowsTop = sheetTop + headerH;
                 float rowsH = sheetH - headerH;
                 float rowH = rowsH / 3f;
 
-                float trackLeft = sheetX + 54f;
-                float trackRight = sheetX + sheetW - 60f;
+                float trackLeft = sheetX + sheetW * 0.08f;
+                float trackRight = sheetX + sheetW * 0.88f;
                 float trackW = trackRight - trackLeft;
 
-                float btnH = rowH * 0.50f;
-                float mBtnY = rowsTop + 2 * rowH + (rowH - btnH) * 0.5f;
-                RectF muteBtn = new RectF(sheetX + 28f, mBtnY, sheetX + 28f + 160f, mBtnY + btnH);
+                float mBtnH = rowH * 0.50f;
+                float mBtnY = rowsTop + 2 * rowH + (rowH - mBtnH) * 0.5f;
+                float mBtnW = Math.max(sheetW * 0.30f, 180f);
+                RectF muteBtn = new RectF(sheetX + 28f, mBtnY, sheetX + 28f + mBtnW, mBtnY + mBtnH);
 
                 switch (action) {
                     case MotionEvent.ACTION_DOWN:
@@ -2331,8 +2411,8 @@ public class MobileControlsView extends View {
                         }
                         float cy0 = rowsTop + 0 * rowH + rowH * 0.70f;
                         float cy1 = rowsTop + 1 * rowH + rowH * 0.70f;
-                        if ((y >= cy0 - 25f && y <= cy0 + 25f || y >= cy1 - 25f && y <= cy1 + 25f)
-                                && x >= trackLeft - 30f && x <= trackRight + 30f) {
+                        if ((y >= cy0 - 35f && y <= cy0 + 35f || y >= cy1 - 35f && y <= cy1 + 35f)
+                                && x >= trackLeft - 35f && x <= trackRight + 35f) {
                             draggingSlider = 3;
                             updateSliderValue(3, (x - trackLeft) / trackW);
                             invalidate();
@@ -2437,8 +2517,10 @@ public class MobileControlsView extends View {
             // 2.H: OVERVIEW (PES MATCH RECORDS / TELEMETRY) TOUCHES
             if (pauseSubView == PauseSubView.OVERVIEW) {
                 float padL = Math.max(getWidth() * 0.08f, safeInsetLeft + 24f);
-                float btnY = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 48f;
-                RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+                float btnH = Math.max(getHeight() * 0.075f, 44f);
+                float btnW = btnH * 3.0f;
+                float btnY = getHeight() - Math.max(getHeight() * 0.045f, safeInsetBottom + 14f) - btnH;
+                RectF backBtn = new RectF(padL, btnY, padL + btnW, btnY + btnH);
 
                 if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
                     if (backBtn.contains(x, y)) {
