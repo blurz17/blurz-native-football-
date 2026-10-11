@@ -911,7 +911,9 @@ void Match::UpdateIngameCamera() {
       float distRot = average.coords[1] / 800.0f;
 
       cameraOrientation.SetAngleAxis(distRot + (0.42f - height * 0.01f) * pi, Vector3(1, 0, 0));
-      cameraNodeOrientation.SetAngleAxis((-average.coords[0] / pitchHalfW) * (1.0f - angleFac) * 0.25f * pi * 1.24f, Vector3(0, 0, 1));
+      float dynamicPanAngle = (-average.coords[0] / pitchHalfW) * (cameraUserAngleFactor * 0.5f + 0.1f) * 0.25f * pi * 1.24f;
+      float baseTiltAngle = (cameraUserAngleFactor - 0.5f) * 0.25f * pi;
+      cameraNodeOrientation.SetAngleAxis(dynamicPanAngle + baseTiltAngle, Vector3(0, 0, 1));
       cameraNodePosition = average * Vector3(1.0f * (1.0f - cameraUserAngleFactor * 0.2f) * (1.0f - cameraUserZoom * 0.3f), 0.9f - cameraUserZoom * 0.3f, 0.2f) + Vector3(0, -41.4f - (cameraUserFOV * 3.7f) + pow(height, 1.2f) * 0.46f, 10.0f + height) * zoom;
       cameraFOV = (fov * 28.0f) - (cameraNodePosition.coords[1] / 30.0f);
       cameraNearCap = cameraNodePosition.coords[2];
@@ -2343,6 +2345,16 @@ void Match::TriggerHighlightReplay(int rewind_ms) {
   replayState->dirty = true;
   replayState.Unlock();
   SetAutoUpdateIngameCamera(false);
+  ProcessReplayMessages();
+}
+
+void Match::StepReplay(int offset_ms) {
+  if (replay.empty()) return;
+  unsigned long now = GetActualTime_ms();
+  replayState.Lock();
+  replayState->viewTime_ms = std::min(now, (unsigned long)(replayState->viewTime_ms + offset_ms));
+  replayState->dirty = true;
+  replayState.Unlock();
   ProcessReplayMessages();
 }
 #endif

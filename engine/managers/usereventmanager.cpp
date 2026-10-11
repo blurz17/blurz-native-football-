@@ -27,6 +27,8 @@
 
 #include "main.hpp"
 #include "onthepitch/match.hpp"
+#include "onthepitch/team.hpp"
+#include "data/teamdata.hpp"
 
 SDL_Joystick* virtual_joystick = nullptr;
 
@@ -141,6 +143,78 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_triggerReplay(
             match->TriggerHighlightReplay(rewindSeconds * 1000);
         }
     }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_stepReplay(JNIEnv* env, jclass cls, jint offset_ms) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask) {
+        Match* match = gTask->GetMatch();
+        if (match) {
+            match->StepReplay(offset_ms);
+        }
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_stopReplay(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask) {
+        Match* match = gTask->GetMatch();
+        if (match) {
+            match->StopReplay();
+        }
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_quitMatchToMainMenu(JNIEnv* env, jclass cls) {
+    if (GetContext() && GetContext()->menuTask) {
+        if (GetContext()->gameTask && GetContext()->gameTask->GetMatch()) {
+            GetContext()->gameTask->GetMatch()->Pause(false);
+        }
+        GetContext()->menuTask->SetMenuAction(e_MenuAction_Menu);
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setTeamKit(JNIEnv* env, jclass cls, jint teamId, jint kitNumber) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch()) {
+        Team* team = gTask->GetMatch()->GetTeam(teamId);
+        if (team) {
+            team->SetKitNumber(kitNumber);
+        }
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_randomizeSunLighting(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch()) {
+        gTask->GetMatch()->SetRandomSunParams();
+    }
+}
+
+extern "C" JNIEXPORT jobjectArray JNICALL Java_org_libsdl_app_SDLActivity_getTeamInfo(JNIEnv* env, jclass cls, jint teamId) {
+    jclass stringClass = env->FindClass("java/lang/String");
+    jobjectArray array = env->NewObjectArray(4, stringClass, nullptr);
+    std::string name = (teamId == 0) ? "FC BAYERN MÜNCHEN" : "CERSIPLA JAKARTA";
+    std::string shortName = (teamId == 0) ? "BAY" : "CPJ";
+    std::string logoUrl = (teamId == 0) ? "databases/default/images_teams/1bundesliga/bayernmunich_logo.png" : "";
+    std::string kitUrl = (teamId == 0) ? "databases/default/images_teams/1bundesliga/bayernmunich_kit_01.png" : "";
+
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch()) {
+        Team* team = gTask->GetMatch()->GetTeam(teamId);
+        if (team && team->GetTeamData()) {
+            TeamData* td = team->GetTeamData();
+            name = td->GetName();
+            shortName = td->GetShortName();
+            logoUrl = td->GetLogoUrl();
+            kitUrl = td->GetKitUrl();
+        }
+    }
+    env->SetObjectArrayElement(array, 0, env->NewStringUTF(name.c_str()));
+    env->SetObjectArrayElement(array, 1, env->NewStringUTF(shortName.c_str()));
+    env->SetObjectArrayElement(array, 2, env->NewStringUTF(logoUrl.c_str()));
+    env->SetObjectArrayElement(array, 3, env->NewStringUTF(kitUrl.c_str()));
+    return array;
 }
 
 extern "C" JNIEXPORT jintArray JNICALL Java_org_libsdl_app_SDLActivity_getMatchStats(JNIEnv* env, jclass cls) {

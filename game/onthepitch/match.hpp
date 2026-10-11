@@ -134,7 +134,17 @@ class Match {
 
     void ResetSituation(const Vector3 &focusPos);
 
-    void Pause(bool doPause) { pause = doPause; }
+    void Pause(bool doPause) {
+      pause = doPause;
+#ifndef GPFB_HEADLESS
+      if (!doPause) SetAutoUpdateIngameCamera(true);
+#endif
+    }
+    void StopReplay() {
+#ifndef GPFB_HEADLESS
+      SetAutoUpdateIngameCamera(true);
+#endif
+    }
     bool GetPause() { return pause; }
     void SetMatchPhase(e_MatchPhase newMatchPhase);
     e_MatchPhase GetMatchPhase() const { return matchPhase; }
@@ -218,6 +228,7 @@ class Match {
     float GetCameraUserFOV() const { return cameraUserFOV; }
     float GetCameraUserAngleFactor() const { return cameraUserAngleFactor; }
     void TriggerHighlightReplay(int rewind_ms = 5000);
+    void StepReplay(int offset_ms);
 #endif
 
     MatchData* GetMatchData() { return matchData; }

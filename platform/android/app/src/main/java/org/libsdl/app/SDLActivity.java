@@ -331,6 +331,12 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     public static native void setAudioVolume(float volume);
     public static native void triggerReplay(int rewindSeconds);
     public static native int[] getMatchStats();
+    public static native void stepReplay(int offsetMs);
+    public static native void stopReplay();
+    public static native void quitMatchToMainMenu();
+    public static native void setTeamKit(int teamId, int kitNumber);
+    public static native void randomizeSunLighting();
+    public static native String[] getTeamInfo(int teamId);
     public static native void pauseEngine(boolean paused);
     public static native void forceQuitEngine();
     public static native void triggerInGamePause();
