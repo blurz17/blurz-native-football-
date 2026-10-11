@@ -161,11 +161,12 @@ public class MobileControlsView extends View {
         String labelDefense;
         int keycodeOffense;
         int keycodeDefense;
+        int accentColor;
         int pointerId = -1;
         boolean isPressed = false;
 
         ActionButton(float cx, float cy, float radius, String labelOffense, String labelDefense,
-                     int keycodeOffense, int keycodeDefense) {
+                     int keycodeOffense, int keycodeDefense, int accentColor) {
             this.cx = cx;
             this.cy = cy;
             this.radius = radius;
@@ -173,11 +174,19 @@ public class MobileControlsView extends View {
             this.labelDefense = labelDefense;
             this.keycodeOffense = keycodeOffense;
             this.keycodeDefense = keycodeDefense;
+            this.accentColor = accentColor;
         }
     }
 
     private final List<ActionButton> buttons = new ArrayList<>();
     private ActionButton pauseButton;
+    private final RectF pauseRect = new RectF();
+    private final RectF cameraRect = new RectF();
+    private final RectF tacticsRect = new RectF();
+
+    private int currentCamPreset = 0; // 0=Tele, 1=Dynamic, 2=Wide
+    private int currentTacticsIndex = 0;
+    private final String[] tacticsList = {"4-3-3 Attack", "4-3-3 Balanced", "4-3-3 Defend"};
 
     public MobileControlsView(Context context) {
         super(context);
@@ -257,6 +266,12 @@ public class MobileControlsView extends View {
                     } catch (Throwable ignored) {}
                 }
             }
+            if (team1LogoBitmap == null) {
+                try (InputStream is = getContext().getAssets().open("databases/default/images_teams/1bundesliga/bayernmunich_logo.png")) {
+                    team1LogoBitmap = BitmapFactory.decodeStream(is);
+                } catch (Throwable ignored) {}
+            }
+
             String[] t2 = SDLActivity.getTeamInfo(1);
             if (t2 != null && t2.length >= 4) {
                 if (t2[0] != null && !t2[0].isEmpty()) team2Name = t2[0];
@@ -268,7 +283,38 @@ public class MobileControlsView extends View {
                     } catch (Throwable ignored) {}
                 }
             }
+            if (team2LogoBitmap == null) {
+                try (InputStream is = getContext().getAssets().open("databases/default/images_teams/1bundesliga/borussiadortmund_logo.png")) {
+                    team2LogoBitmap = BitmapFactory.decodeStream(is);
+                } catch (Throwable ignored) {}
+            }
         } catch (Throwable ignored) {}
+    }
+
+    private void cycleCameraPreset() {
+        currentCamPreset = (currentCamPreset + 1) % 3;
+        if (currentCamPreset == 0) {
+            // Tele (Default broadcast)
+            settingCamZoom = 0.75f;
+            settingCamHeight = 0.40f;
+            settingCamAngle = 0.50f;
+        } else if (currentCamPreset == 1) {
+            // Dynamic (Close action)
+            settingCamZoom = 1.15f;
+            settingCamHeight = 0.30f;
+            settingCamAngle = 0.40f;
+        } else {
+            // Wide (Tactical broadcast)
+            settingCamZoom = 0.50f;
+            settingCamHeight = 0.75f;
+            settingCamAngle = 0.60f;
+        }
+        applyCameraAndAudioSettings();
+        saveSettingsToPrefs();
+    }
+
+    private void cycleTactics() {
+        currentTacticsIndex = (currentTacticsIndex + 1) % tacticsList.length;
     }
 
     private void saveSettingsToPrefs() {
@@ -315,9 +361,9 @@ public class MobileControlsView extends View {
         if (w <= 0 || h <= 0) return;
 
         // Joystick dimensions & base position (Bottom-Left)
-        joyRadius = h * 0.22f;
+        joyRadius = h * 0.20f;
         joyHandleRadius = joyRadius * 0.38f;
-        defaultJoyBaseX = Math.max(w * 0.14f, safeInsetLeft + joyRadius + 24f);
+        defaultJoyBaseX = Math.max(w * 0.14f, safeInsetLeft + joyRadius + 20f);
         defaultJoyBaseY = h * 0.74f;
 
         if (joyPointerId == -1) {
@@ -327,37 +373,62 @@ public class MobileControlsView extends View {
             joyHandleY = joyBaseY;
         }
 
-        // Action Buttons (Bottom-Right Ergonomic Diamond)
+        // Action Buttons (Bottom-Right Curved Ergonomic Diamond matching FC Mobile)
         buttons.clear();
 
-        float baseX = w - Math.max(w * 0.12f, safeInsetRight + 44f);
-        float baseY = h * 0.78f;
-        float dashRad = h * 0.105f;
+        float dashRad = h * 0.114f;
         float normalRad = h * 0.082f;
-        float spacingX = w * 0.125f;
-        float spacingY = h * 0.21f;
 
-        // 1. PASS / SWITCH (South: Left of Dash)
-        buttons.add(new ActionButton(baseX - spacingX, baseY + h * 0.02f, normalRad,
-                "Pass", "Switch", 0, 4));
+        // Anchor SPRINT & SKILL at bottom-right
+        float sprintX = w - Math.max(w * 0.11f, safeInsetRight + dashRad + 18f);
+        float sprintY = h - Math.max(h * 0.18f, safeInsetBottom + dashRad + 18f);
 
-        // 2. DASH / SPRINT (East: Bottom-Right)
-        buttons.add(new ActionButton(baseX, baseY, dashRad,
-                "Dash", "Dash", 5, 5));
+        // PASS (South-West: left of Sprint)
+        float passX = sprintX - dashRad - normalRad - w * 0.024f;
+        float passY = sprintY + h * 0.015f;
 
-        // 3. THROUGH / PRESS (West: North-West of Dash)
-        buttons.add(new ActionButton(baseX - spacingX * 0.92f, baseY - spacingY, normalRad,
-                "Through", "Press", 3, 0));
+        // THROUGH (North-West: diagonally above Pass)
+        float throughX = passX + normalRad * 0.65f;
+        float throughY = sprintY - h * 0.22f;
 
-        // 4. SHOOT / CLEAR (North: Above Dash)
-        buttons.add(new ActionButton(baseX - w * 0.015f, baseY - spacingY - h * 0.02f, normalRad,
-                "Shoot", "Clear", 2, 1));
+        // SHOOT (North: above Sprint & Skill, slightly left)
+        float shootX = sprintX - w * 0.018f;
+        float shootY = sprintY - h * 0.24f;
 
-        // Top-Right Pause Button
-        float pauseR = normalRad * 0.50f;
-        float pauseX = w - Math.max(w * 0.045f, safeInsetRight + 28f);
-        float pauseY = Math.max(h * 0.07f, safeInsetTop + 24f);
-        pauseButton = new ActionButton(pauseX, pauseY, pauseR, "||", "||", 7, 7);
+        // 1. PASS / SWITCH (Cyan outer ring)
+        buttons.add(new ActionButton(passX, passY, normalRad,
+                "PASS", "SWITCH", 0, 4, Color.parseColor("#00B0FF")));
+
+        // 2. SPRINT & SKILL (Neon Green outer ring - Largest button)
+        buttons.add(new ActionButton(sprintX, sprintY, dashRad,
+                "SPRINT\n&\nSKILL", "SPRINT\n&\nTACKLE", 5, 5, Color.parseColor("#00E676")));
+
+        // 3. THROUGH / PRESS (Gold Yellow outer ring)
+        buttons.add(new ActionButton(throughX, throughY, normalRad,
+                "THROUGH", "PRESS", 3, 0, Color.parseColor("#FFD600")));
+
+        // 4. SHOOT / CLEAR (Orange outer ring)
+        buttons.add(new ActionButton(shootX, shootY, normalRad,
+                "SHOOT", "CLEAR", 2, 1, Color.parseColor("#FF6D00")));
+
+        // Top-Right HUD Bar (Scoreboard-aligned height)
+        float trH = Math.max(h * 0.076f, 36f);
+        float trY = Math.max(h * 0.038f, safeInsetTop + 14f);
+
+        // Pause Button: Square dark box with hamburger icon
+        float pauseRight = w - Math.max(w * 0.035f, safeInsetRight + 16f);
+        float pauseBoxW = trH;
+        pauseRect.set(pauseRight - pauseBoxW, trY, pauseRight, trY + trH);
+        pauseButton = new ActionButton(pauseRect.centerX(), pauseRect.centerY(), trH * 0.5f, "||", "||", 7, 7, Color.WHITE);
+
+        // Camera Button: Square dark box with switch arrows
+        float gap = 12f;
+        float camBoxW = trH;
+        cameraRect.set(pauseRect.left - gap - camBoxW, trY, pauseRect.left - gap, trY + trH);
+
+        // Tactics Pill: Rounded rect pill with formation / mentality
+        float tacticsW = Math.max(trH * 3.4f, 135f);
+        tacticsRect.set(cameraRect.left - gap - tacticsW, trY, cameraRect.left - gap, trY + trH);
     }
 
     // ── External State Updates ──
@@ -436,218 +507,412 @@ public class MobileControlsView extends View {
             drawScoreboard(canvas, w, h);
             drawVirtualJoystick(canvas);
             drawActionButtons(canvas);
-            drawPauseButton(canvas);
+            drawTopRightHud(canvas);
         }
     }
 
     /**
-     * Draw modern floating scoreboard pill capsule at top-left.
+     * Draw authentic EA Sports FC Mobile Match Scoreboard & Timer HUD (Top-Left):
+     * Matches media_1791749694601_4dc03aae.png:
+     * - Left Crest Box: Dark square box (#10141D) with Team 1 crest
+     * - Middle Score Strip: Light silver panel (#F2F4F7) with RMA  2  ▲  2  ATM
+     * - Right Crest Box: Dark square box (#10141D) with Team 2 crest
+     * - Attached Timer Pill: Vivid neon green (#00E676) with bold black match time (20:30)
      */
     private void drawScoreboard(Canvas canvas, int w, int h) {
-        float sbW = Math.min(w * 0.35f, 430f);
-        float sbH = Math.max(h * 0.088f, 46f);
-        float sbX = Math.max(w * 0.035f, safeInsetLeft + 20f);
-        float sbY = Math.max(h * 0.04f, safeInsetTop + 14f);
+        float sbH = Math.max(h * 0.080f, 38f);
+        float sbX = Math.max(w * 0.035f, safeInsetLeft + 16f);
+        float sbY = Math.max(h * 0.038f, safeInsetTop + 14f);
 
-        RectF pillRect = new RectF(sbX, sbY, sbX + sbW, sbY + sbH);
+        float crestBoxW = sbH * 1.08f;
+        float midStripW = sbH * 4.6f;
+        float timerW = sbH * 1.85f;
+        float totalW = crestBoxW * 2f + midStripW + timerW;
 
-        // Glassmorphic Capsule Background
-        cardPaint.setColor(Color.argb(205, 10, 16, 28));
-        canvas.drawRoundRect(pillRect, sbH * 0.5f, sbH * 0.5f, cardPaint);
+        // Subtle drop shadow behind entire scoreboard strip
+        cardPaint.setColor(Color.argb(80, 0, 0, 0));
+        canvas.drawRoundRect(new RectF(sbX + 2f, sbY + 3f, sbX + totalW + 2f, sbY + sbH + 3f), 4f, 4f, cardPaint);
 
-        // Neon Specular Border
-        borderPaint.setColor(Color.argb(130, 0, 240, 255));
-        borderPaint.setStrokeWidth(2.5f);
-        canvas.drawRoundRect(pillRect, sbH * 0.5f, sbH * 0.5f, borderPaint);
-
-        // Column widths
-        float colTeamW = sbW * 0.24f;
-        float colScoreW = sbW * 0.28f;
-        float colClockW = sbW * 0.24f;
-
-        float team1CenterX = sbX + colTeamW * 0.55f;
-        float scoreCenterX = sbX + colTeamW + colScoreW * 0.5f;
-        float team2CenterX = sbX + colTeamW + colScoreW + colTeamW * 0.45f;
-        float clockCenterX = sbX + sbW - colClockW * 0.5f;
-
-        float textY = sbY + sbH * 0.62f;
-        float crestR = sbH * 0.32f;
-
-        // Team 1 Logo & Name
-        float t1CrestX = sbX + crestR + 12f;
-        drawTeamCrest(canvas, t1CrestX, sbY + sbH * 0.50f, crestR, 0, team1Name, Color.parseColor("#E53935"), Color.parseColor("#1E88E5"));
-        textPaint.setTextSize(sbH * 0.38f);
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.WHITE);
-        canvas.drawText(team1ShortName, team1CenterX, textY, textPaint);
-
-        // Possession indicator dot (under attacking team)
-        if (isAttacking) {
-            accentPaint.setColor(Color.parseColor("#00F0FF"));
-            canvas.drawCircle(team1CenterX, sbY + sbH * 0.84f, sbH * 0.07f, accentPaint);
-        }
-
-        // Score Badge
-        RectF scoreBadge = new RectF(scoreCenterX - colScoreW * 0.42f, sbY + sbH * 0.16f,
-                scoreCenterX + colScoreW * 0.42f, sbY + sbH * 0.84f);
-        cardPaint.setColor(Color.argb(160, 4, 28, 52));
-        canvas.drawRoundRect(scoreBadge, sbH * 0.34f, sbH * 0.34f, cardPaint);
-
-        borderPaint.setColor(Color.argb(160, 0, 240, 255));
+        // 1. LEFT CREST BOX (Team 1)
+        RectF t1Box = new RectF(sbX, sbY, sbX + crestBoxW, sbY + sbH);
+        cardPaint.setColor(Color.parseColor("#10141D"));
+        canvas.drawRect(t1Box, cardPaint);
+        drawTeamCrest(canvas, t1Box.centerX(), t1Box.centerY(), sbH * 0.36f, 0, team1Name, Color.parseColor("#E53935"), Color.parseColor("#1E88E5"));
+        borderPaint.setColor(Color.parseColor("#262C38"));
         borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(scoreBadge, sbH * 0.34f, sbH * 0.34f, borderPaint);
+        canvas.drawRect(t1Box, borderPaint);
 
-        textPaint.setColor(Color.parseColor("#00F0FF"));
+        // 2. MIDDLE SCORE STRIP (Light silver background)
+        RectF midBox = new RectF(t1Box.right, sbY, t1Box.right + midStripW, sbY + sbH);
+        cardPaint.setColor(Color.parseColor("#F2F4F7"));
+        canvas.drawRect(midBox, cardPaint);
+        borderPaint.setColor(Color.parseColor("#D0D5DD"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRect(midBox, borderPaint);
+
+        float textY = sbY + sbH * 0.64f;
+
+        // Team 1 Short Name (Left)
+        String s1 = (team1ShortName != null && !team1ShortName.isEmpty()) ? team1ShortName :
+                ((team1Name != null && team1Name.length() >= 3) ? team1Name.substring(0, 3) : "HOM");
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.parseColor("#111318"));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(sbH * 0.42f);
+        canvas.drawText(s1.toUpperCase(), midBox.left + midStripW * 0.17f, textY, textPaint);
+
+        // Team 1 Score
+        textPaint.setTextSize(sbH * 0.46f);
+        canvas.drawText(String.valueOf(score1), midBox.left + midStripW * 0.36f, textY, textPaint);
+
+        // Center FC Triangle Chevron Divider (▲)
+        float divCx = midBox.centerX();
+        float divCy = midBox.centerY();
+        float divS = sbH * 0.15f;
+        Path divPath = new Path();
+        divPath.moveTo(divCx, divCy - divS);
+        divPath.lineTo(divCx + divS * 0.85f, divCy + divS * 0.55f);
+        divPath.lineTo(divCx - divS * 0.85f, divCy + divS * 0.55f);
+        divPath.close();
+        Paint divPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        divPaint.setColor(Color.parseColor("#111318"));
+        divPaint.setStyle(Paint.Style.FILL);
+        canvas.drawPath(divPath, divPaint);
+
+        // Team 2 Score
+        textPaint.setTextSize(sbH * 0.46f);
+        canvas.drawText(String.valueOf(score2), midBox.right - midStripW * 0.36f, textY, textPaint);
+
+        // Team 2 Short Name (Right)
+        String s2 = (team2ShortName != null && !team2ShortName.isEmpty()) ? team2ShortName :
+                ((team2Name != null && team2Name.length() >= 3) ? team2Name.substring(0, 3) : "AWY");
+        textPaint.setTextSize(sbH * 0.42f);
+        canvas.drawText(s2.toUpperCase(), midBox.right - midStripW * 0.17f, textY, textPaint);
+
+        // 3. RIGHT CREST BOX (Team 2)
+        RectF t2Box = new RectF(midBox.right, sbY, midBox.right + crestBoxW, sbY + sbH);
+        cardPaint.setColor(Color.parseColor("#10141D"));
+        canvas.drawRect(t2Box, cardPaint);
+        drawTeamCrest(canvas, t2Box.centerX(), t2Box.centerY(), sbH * 0.36f, 1, team2Name, Color.parseColor("#3949AB"), Color.parseColor("#D81B60"));
+        borderPaint.setColor(Color.parseColor("#262C38"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRect(t2Box, borderPaint);
+
+        // 4. ATTACHED MATCH TIMER BOX (Vivid Neon Green Pill)
+        RectF timerBox = new RectF(t2Box.right, sbY, t2Box.right + timerW, sbY + sbH);
+        cardPaint.setColor(Color.parseColor("#00E676"));
+        canvas.drawRoundRect(timerBox, 4f, 4f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#00C853"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRoundRect(timerBox, 4f, 4f, borderPaint);
+
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.parseColor("#111318"));
         textPaint.setTextSize(sbH * 0.44f);
-        canvas.drawText(score1 + " - " + score2, scoreCenterX, textY, textPaint);
-
-        // Team 2 Logo & Name
-        float t2CrestX = sbX + sbW - colClockW - crestR - 12f;
-        drawTeamCrest(canvas, t2CrestX, sbY + sbH * 0.50f, crestR, 1, team2Name, Color.parseColor("#3949AB"), Color.parseColor("#D81B60"));
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(sbH * 0.38f);
-        canvas.drawText(team2ShortName, team2CenterX, textY, textPaint);
-
-        if (!isAttacking) {
-            accentPaint.setColor(Color.parseColor("#0080FF"));
-            canvas.drawCircle(team2CenterX, sbY + sbH * 0.84f, sbH * 0.07f, accentPaint);
-        }
-
-        // Clock Divider
-        borderPaint.setColor(Color.argb(90, 80, 120, 160));
-        borderPaint.setStrokeWidth(2f);
-        float divX = sbX + sbW - colClockW;
-        canvas.drawLine(divX, sbY + sbH * 0.20f, divX, sbY + sbH * 0.80f, borderPaint);
-
-        // Match Clock
-        textPaint.setColor(Color.parseColor("#E0F7FA"));
-        textPaint.setTextSize(sbH * 0.36f);
-        canvas.drawText(matchTime, clockCenterX, textY, textPaint);
+        canvas.drawText(matchTime, timerBox.centerX(), textY, textPaint);
     }
 
     /**
-     * Draw Virtual Analog Directional Joystick.
+     * Draw authentic EA Sports FC Mobile Virtual Joystick & 360° Analog Cursor:
+     * Matches media_1791749694601_4dc03aae.png:
+     * - Frosted translucent disc base
+     * - 3D metallic silver/white handle knob with specular gradient, drop shadow & center FC watermark
+     * - Sharp 360° white directional chevron arrow extending from handle edge in vector direction
      */
     private void drawVirtualJoystick(Canvas canvas) {
         // Outer Frosted Glass Base
         bgPaint.setShader(new RadialGradient(joyBaseX, joyBaseY, joyRadius,
-                Color.argb(90, 30, 42, 64), Color.argb(20, 10, 15, 25), Shader.TileMode.CLAMP));
+                Color.argb(85, 20, 26, 36), Color.argb(25, 12, 16, 24), Shader.TileMode.CLAMP));
         canvas.drawCircle(joyBaseX, joyBaseY, joyRadius, bgPaint);
 
         // Outer Glass Border
         boolean isActive = (joyPointerId != -1);
-        btnBorderPaint.setColor(isActive ? Color.parseColor("#00F0FF") : Color.argb(90, 160, 200, 240));
-        btnBorderPaint.setStrokeWidth(isActive ? 5f : 2.5f);
+        btnBorderPaint.setColor(Color.argb(isActive ? 90 : 45, 255, 255, 255));
+        btnBorderPaint.setStrokeWidth(isActive ? 3.0f : 2.0f);
         canvas.drawCircle(joyBaseX, joyBaseY, joyRadius, btnBorderPaint);
-
-        // 8 Directional Cardinal Ticks
-        Paint tickPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        tickPaint.setColor(Color.argb(isActive ? 160 : 80, 0, 240, 255));
-        tickPaint.setStrokeWidth(isActive ? 3.5f : 2.5f);
-        for (int i = 0; i < 8; i++) {
-            double angle = i * Math.PI / 4.0;
-            float innerR = joyRadius * 0.84f;
-            float outerR = joyRadius * 0.96f;
-            float x1 = joyBaseX + (float) (Math.cos(angle) * innerR);
-            float y1 = joyBaseY + (float) (Math.sin(angle) * innerR);
-            float x2 = joyBaseX + (float) (Math.cos(angle) * outerR);
-            float y2 = joyBaseY + (float) (Math.sin(angle) * outerR);
-            canvas.drawLine(x1, y1, x2, y2, tickPaint);
-        }
 
         // Active Vector Guide Line
         if (isActive) {
             Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            linePaint.setColor(Color.argb(160, 0, 240, 255));
-            linePaint.setStrokeWidth(5f);
+            linePaint.setColor(Color.argb(50, 255, 255, 255));
+            linePaint.setStrokeWidth(2.5f);
             canvas.drawLine(joyBaseX, joyBaseY, joyHandleX, joyHandleY, linePaint);
         }
 
-        // Center Thumb Nub
-        float hScale = isActive ? 1.10f : 1.0f;
-        handlePaint.setShader(new RadialGradient(joyHandleX, joyHandleY, joyHandleRadius * hScale,
-                isActive ? Color.parseColor("#00F0FF") : Color.argb(240, 220, 235, 255),
-                Color.argb(190, 20, 45, 80), Shader.TileMode.CLAMP));
-        canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius * hScale, handlePaint);
+        float hR = joyHandleRadius;
 
-        // Nub Specular Border
-        btnBorderPaint.setColor(isActive ? Color.WHITE : Color.argb(180, 140, 190, 240));
-        btnBorderPaint.setStrokeWidth(3.5f);
-        canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius * hScale, btnBorderPaint);
+        // 1. Knob Drop Shadow
+        Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shadowPaint.setColor(Color.argb(70, 0, 0, 0));
+        canvas.drawCircle(joyHandleX + 3f, joyHandleY + 4f, hR, shadowPaint);
 
-        // Nub Core Gem
-        Paint gemPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        gemPaint.setColor(Color.parseColor("#00F0FF"));
-        canvas.drawCircle(joyHandleX, joyHandleY, joyHandleRadius * 0.22f, gemPaint);
+        // 2. 3D Metallic Specular Gradient Handle
+        handlePaint.setShader(new RadialGradient(
+                joyHandleX - hR * 0.28f, joyHandleY - hR * 0.28f, hR * 1.25f,
+                new int[] { Color.parseColor("#FFFFFF"), Color.parseColor("#E2E8F0"), Color.parseColor("#A8B8C8"), Color.parseColor("#64748B") },
+                new float[] { 0.0f, 0.40f, 0.80f, 1.0f },
+                Shader.TileMode.CLAMP));
+        canvas.drawCircle(joyHandleX, joyHandleY, hR, handlePaint);
+
+        // 3. Knob Specular Outer Rim
+        btnBorderPaint.setColor(Color.argb(170, 200, 215, 230));
+        btnBorderPaint.setStrokeWidth(2.5f);
+        canvas.drawCircle(joyHandleX, joyHandleY, hR, btnBorderPaint);
+
+        // 4. Center Concentric Bevel
+        Paint innerRim = new Paint(Paint.ANTI_ALIAS_FLAG);
+        innerRim.setColor(Color.argb(45, 100, 116, 139));
+        innerRim.setStyle(Paint.Style.STROKE);
+        innerRim.setStrokeWidth(1.8f);
+        canvas.drawCircle(joyHandleX, joyHandleY, hR * 0.54f, innerRim);
+
+        // 5. Embossed EA FC Triangle Logo Watermark
+        Path fcPath = new Path();
+        float ts = hR * 0.22f;
+        fcPath.moveTo(joyHandleX, joyHandleY - ts);
+        fcPath.lineTo(joyHandleX + ts * 0.866f, joyHandleY + ts * 0.5f);
+        fcPath.lineTo(joyHandleX - ts * 0.866f, joyHandleY + ts * 0.5f);
+        fcPath.close();
+        Paint fcPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        fcPaint.setColor(Color.argb(65, 255, 255, 255));
+        fcPaint.setStyle(Paint.Style.FILL);
+        canvas.drawPath(fcPath, fcPaint);
+
+        // 6. Directional 360° Analog Cursor Arrow (White Chevron Pointer)
+        float dist = (float) Math.hypot(joyHandleX - joyBaseX, joyHandleY - joyBaseY);
+        if (dist > 8f || isActive) {
+            double angle = Math.atan2(joyHandleY - joyBaseY, joyHandleX - joyBaseX);
+            float arrowLen = hR * 0.52f;
+            float wingW = hR * 0.28f;
+            float baseDist = hR + 4f;
+
+            float tipX = joyHandleX + (float) Math.cos(angle) * (baseDist + arrowLen);
+            float tipY = joyHandleY + (float) Math.sin(angle) * (baseDist + arrowLen);
+
+            float leftX = joyHandleX + (float) Math.cos(angle) * baseDist - (float) Math.sin(angle) * wingW;
+            float leftY = joyHandleY + (float) Math.sin(angle) * baseDist + (float) Math.cos(angle) * wingW;
+
+            float rightX = joyHandleX + (float) Math.cos(angle) * baseDist + (float) Math.sin(angle) * wingW;
+            float rightY = joyHandleY + (float) Math.sin(angle) * baseDist - (float) Math.cos(angle) * wingW;
+
+            float notchX = joyHandleX + (float) Math.cos(angle) * (baseDist + arrowLen * 0.28f);
+            float notchY = joyHandleY + (float) Math.sin(angle) * (baseDist + arrowLen * 0.28f);
+
+            Path arrowPath = new Path();
+            arrowPath.moveTo(tipX, tipY);
+            arrowPath.lineTo(leftX, leftY);
+            arrowPath.lineTo(notchX, notchY);
+            arrowPath.lineTo(rightX, rightY);
+            arrowPath.close();
+
+            // Arrow Shadow
+            Paint arrowShadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+            arrowShadow.setColor(Color.argb(90, 0, 0, 0));
+            arrowShadow.setStyle(Paint.Style.FILL);
+            canvas.save();
+            canvas.translate(2f, 3f);
+            canvas.drawPath(arrowPath, arrowShadow);
+            canvas.restore();
+
+            // Arrow Body
+            Paint arrowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            arrowPaint.setColor(Color.WHITE);
+            arrowPaint.setStyle(Paint.Style.FILL);
+            canvas.drawPath(arrowPath, arrowPaint);
+        }
     }
 
     /**
-     * Draw Action Buttons Cluster with contextual Attack/Defense text.
+     * Draw authentic EA Sports FC Mobile Action Buttons Cluster:
+     * Matches media_1791749718331_d4e0eb6a.png:
+     * - SPRINT & SKILL: Largest button, neon green ring (#00E676), 4 outward tabs, 3-line text
+     * - PASS: Medium button, sky blue ring (#00B0FF), 4 outward tabs
+     * - THROUGH: Medium button, gold yellow ring (#FFD600), 4 outward tabs
+     * - SHOOT: Medium button, orange ring (#FF6D00), 4 outward tabs
      */
     private void drawActionButtons(Canvas canvas) {
         for (ActionButton btn : buttons) {
-            float scale = btn.isPressed ? 0.91f : 1.0f;
+            float scale = btn.isPressed ? 0.93f : 1.0f;
             float r = btn.radius * scale;
+            float cx = btn.cx;
+            float cy = btn.cy;
 
-            // Frosted Radial Fill
-            int baseCol = btn.isPressed ? Color.argb(200, 0, 160, 220) : Color.argb(115, 14, 24, 42);
-            btnBgPaint.setShader(new RadialGradient(btn.cx, btn.cy, r,
-                    baseCol, Color.argb(70, 8, 14, 26), Shader.TileMode.CLAMP));
-            canvas.drawCircle(btn.cx, btn.cy, r, btnBgPaint);
+            // 1. Dark semi-translucent circular base
+            btnBgPaint.setColor(btn.isPressed ? Color.argb(220, 24, 32, 44) : Color.argb(175, 16, 20, 28));
+            canvas.drawCircle(cx, cy, r, btnBgPaint);
 
-            // Specular Cyan Border
-            int borderCol = btn.isPressed ? Color.parseColor("#00F0FF") : Color.argb(150, 70, 140, 210);
-            btnBorderPaint.setColor(borderCol);
-            btnBorderPaint.setStrokeWidth(btn.isPressed ? 5.5f : 3.0f);
-            canvas.drawCircle(btn.cx, btn.cy, r, btnBorderPaint);
+            // 2. Press Glow
+            if (btn.isPressed) {
+                Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                glowPaint.setShader(new RadialGradient(cx, cy, r,
+                        Color.argb(120, Color.red(btn.accentColor), Color.green(btn.accentColor), Color.blue(btn.accentColor)),
+                        Color.TRANSPARENT, Shader.TileMode.CLAMP));
+                canvas.drawCircle(cx, cy, r, glowPaint);
+            }
 
-            // Contextual Labels
+            // 3. Colored Outer Ring
+            float strokeW = Math.max(3.2f, r * 0.075f);
+            btnBorderPaint.setColor(btn.accentColor);
+            btnBorderPaint.setStrokeWidth(strokeW);
+            btnBorderPaint.setStyle(Paint.Style.STROKE);
+            canvas.drawCircle(cx, cy, r, btnBorderPaint);
+
+            // 4. 4 Outward Triangular Notch Tabs (at 0°, 90°, 180°, 270°)
+            Paint tabPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            tabPaint.setColor(btn.accentColor);
+            tabPaint.setStyle(Paint.Style.FILL);
+
+            float notchLen = r * 0.16f;
+            float notchHalfW = r * 0.12f;
+
+            for (int i = 0; i < 4; i++) {
+                double a = i * Math.PI / 2.0;
+                float cosA = (float) Math.cos(a);
+                float sinA = (float) Math.sin(a);
+                float perpCos = -sinA;
+                float perpSin = cosA;
+
+                float tipX = cx + cosA * (r + notchLen);
+                float tipY = cy + sinA * (r + notchLen);
+
+                float base1X = cx + cosA * (r - strokeW * 0.4f) + perpCos * notchHalfW;
+                float base1Y = cy + sinA * (r - strokeW * 0.4f) + perpSin * notchHalfW;
+
+                float base2X = cx + cosA * (r - strokeW * 0.4f) - perpCos * notchHalfW;
+                float base2Y = cy + sinA * (r - strokeW * 0.4f) - perpSin * notchHalfW;
+
+                Path tabPath = new Path();
+                tabPath.moveTo(tipX, tipY);
+                tabPath.lineTo(base1X, base1Y);
+                tabPath.lineTo(base2X, base2Y);
+                tabPath.close();
+
+                canvas.drawPath(tabPath, tabPaint);
+            }
+
+            // 5. Contextual Bold White Labels
             String primaryLabel = isAttacking ? btn.labelOffense : btn.labelDefense;
-            String secondaryLabel = isAttacking ? btn.labelDefense : btn.labelOffense;
+            textPaint.setTextAlign(Paint.Align.CENTER);
+            textPaint.setColor(Color.WHITE);
+            textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
 
-            // Primary Command (Center)
-            textPaint.setTextSize(r * 0.35f);
-            textPaint.setColor(btn.isPressed ? Color.parseColor("#00F0FF") : Color.WHITE);
-            canvas.drawText(primaryLabel.toUpperCase(), btn.cx, btn.cy - r * 0.04f, textPaint);
-
-            // Secondary Context Subtitle (Top/Bottom)
-            if (!secondaryLabel.equalsIgnoreCase(primaryLabel)) {
-                subTextPaint.setTextSize(r * 0.20f);
-                subTextPaint.setColor(Color.argb(150, 0, 240, 255));
-                canvas.drawText(secondaryLabel.toUpperCase(), btn.cx, btn.cy + r * 0.34f, subTextPaint);
+            if (primaryLabel.contains("\n")) {
+                String[] lines = primaryLabel.split("\n");
+                float lineH = r * 0.30f;
+                float startY = cy - ((lines.length - 1) * lineH) * 0.5f + lineH * 0.28f;
+                textPaint.setTextSize(r * 0.24f);
+                for (int j = 0; j < lines.length; j++) {
+                    canvas.drawText(lines[j], cx, startY + j * lineH, textPaint);
+                }
+            } else {
+                textPaint.setTextSize(r * 0.30f);
+                canvas.drawText(primaryLabel, cx, cy + r * 0.10f, textPaint);
             }
         }
     }
 
     /**
-     * Draw sleek top-right circular pause button.
+     * Draw authentic EA Sports FC Mobile Top-Right HUD:
+     * Matches media_1791749694601_4dc03aae.png:
+     * - Tactics pill: "4-3-3 Attack" with orange crossed arrows & dropdown ▼
+     * - Camera button: square dark box with ⇄ switch arrows
+     * - Pause button: square dark box with ☰ 3 horizontal bars (hamburger)
      */
-    private void drawPauseButton(Canvas canvas) {
-        if (pauseButton == null) return;
+    private void drawTopRightHud(Canvas canvas) {
+        // 1. TACTICS PILL
+        cardPaint.setColor(Color.argb(220, 20, 24, 34));
+        canvas.drawRoundRect(tacticsRect, 6f, 6f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#2C3342"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRoundRect(tacticsRect, 6f, 6f, borderPaint);
 
-        float r = pauseButton.radius * (pauseButton.isPressed ? 0.90f : 1.0f);
-        float cx = pauseButton.cx;
-        float cy = pauseButton.cy;
+        // Orange tactics crossed arrows icon
+        float iconCx = tacticsRect.left + tacticsRect.height() * 0.48f;
+        float iconCy = tacticsRect.centerY();
+        float iconS = tacticsRect.height() * 0.20f;
+        Paint orangeP = new Paint(Paint.ANTI_ALIAS_FLAG);
+        orangeP.setColor(Color.parseColor("#FF6D00"));
+        orangeP.setStrokeWidth(2.5f);
+        orangeP.setStyle(Paint.Style.STROKE);
+        canvas.drawLine(iconCx - iconS, iconCy - iconS, iconCx + iconS, iconCy + iconS, orangeP);
+        canvas.drawLine(iconCx - iconS, iconCy + iconS, iconCx + iconS, iconCy - iconS, orangeP);
+        canvas.drawLine(iconCx + iconS, iconCy + iconS, iconCx + iconS - 4f, iconCy + iconS, orangeP);
+        canvas.drawLine(iconCx + iconS, iconCy + iconS, iconCx + iconS, iconCy + iconS - 4f, orangeP);
+        canvas.drawLine(iconCx + iconS, iconCy - iconS, iconCx + iconS - 4f, iconCy - iconS, orangeP);
+        canvas.drawLine(iconCx + iconS, iconCy - iconS, iconCx + iconS, iconCy - iconS + 4f, orangeP);
 
-        // Circular Frosted Background
-        cardPaint.setColor(Color.argb(pauseButton.isPressed ? 220 : 150, 16, 24, 40));
-        canvas.drawCircle(cx, cy, r, cardPaint);
+        // Tactics text
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(tacticsRect.height() * 0.38f);
+        canvas.drawText(tacticsList[currentTacticsIndex], tacticsRect.centerX() + tacticsRect.height() * 0.10f,
+                tacticsRect.centerY() + tacticsRect.height() * 0.13f, textPaint);
 
-        borderPaint.setColor(pauseButton.isPressed ? Color.parseColor("#00F0FF") : Color.argb(130, 0, 240, 255));
-        borderPaint.setStrokeWidth(pauseButton.isPressed ? 3.5f : 2.0f);
-        canvas.drawCircle(cx, cy, r, borderPaint);
+        // Dropdown chevron ▼
+        float dropCx = tacticsRect.right - tacticsRect.height() * 0.34f;
+        float dropCy = tacticsRect.centerY();
+        float dropS = tacticsRect.height() * 0.12f;
+        Path dropPath = new Path();
+        dropPath.moveTo(dropCx - dropS, dropCy - dropS * 0.6f);
+        dropPath.lineTo(dropCx + dropS, dropCy - dropS * 0.6f);
+        dropPath.lineTo(dropCx, dropCy + dropS * 0.7f);
+        dropPath.close();
+        Paint whiteFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        whiteFill.setColor(Color.WHITE);
+        whiteFill.setStyle(Paint.Style.FILL);
+        canvas.drawPath(dropPath, whiteFill);
 
-        // Dual Vertical Pause Bars
-        Paint barPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        barPaint.setColor(pauseButton.isPressed ? Color.parseColor("#00F0FF") : Color.WHITE);
-        float barW = r * 0.20f;
-        float barH = r * 0.70f;
-        float barSpacing = r * 0.16f;
+        // 2. CAMERA SWITCH BUTTON
+        cardPaint.setColor(Color.argb(220, 20, 24, 34));
+        canvas.drawRoundRect(cameraRect, 6f, 6f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#2C3342"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRoundRect(cameraRect, 6f, 6f, borderPaint);
 
-        canvas.drawRoundRect(new RectF(cx - barSpacing - barW, cy - barH / 2f,
-                cx - barSpacing, cy + barH / 2f), 3f, 3f, barPaint);
-        canvas.drawRoundRect(new RectF(cx + barSpacing, cy - barH / 2f,
-                cx + barSpacing + barW, cy + barH / 2f), 3f, 3f, barPaint);
+        // Camera switch ⇄ arrows icon
+        float camCx = cameraRect.centerX();
+        float camCy = cameraRect.centerY();
+        float arrowW = cameraRect.width() * 0.26f;
+        float dy = cameraRect.height() * 0.12f;
+        Paint camP = new Paint(Paint.ANTI_ALIAS_FLAG);
+        camP.setColor(Color.WHITE);
+        camP.setStrokeWidth(2.2f);
+        camP.setStyle(Paint.Style.STROKE);
+        // Top arrow ->
+        canvas.drawLine(camCx - arrowW, camCy - dy, camCx + arrowW, camCy - dy, camP);
+        canvas.drawLine(camCx + arrowW - 5f, camCy - dy - 4f, camCx + arrowW, camCy - dy, camP);
+        canvas.drawLine(camCx + arrowW - 5f, camCy - dy + 4f, camCx + arrowW, camCy - dy, camP);
+        // Bottom arrow <-
+        canvas.drawLine(camCx - arrowW, camCy + dy, camCx + arrowW, camCy + dy, camP);
+        canvas.drawLine(camCx - arrowW + 5f, camCy + dy - 4f, camCx - arrowW, camCy + dy, camP);
+        canvas.drawLine(camCx - arrowW + 5f, camCy + dy + 4f, camCx - arrowW, camCy + dy, camP);
+
+        // 3. PAUSE BUTTON (☰ 3 Horizontal Bars)
+        boolean pPressed = (pauseButton != null && pauseButton.isPressed);
+        cardPaint.setColor(pPressed ? Color.argb(240, 36, 44, 60) : Color.argb(220, 20, 24, 34));
+        canvas.drawRoundRect(pauseRect, 6f, 6f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#2C3342"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRoundRect(pauseRect, 6f, 6f, borderPaint);
+
+        float pCx = pauseRect.centerX();
+        float pCy = pauseRect.centerY();
+        float pBarW = pauseRect.width() * 0.46f;
+        float pBarH = pauseRect.height() * 0.08f;
+        float pBarGap = pauseRect.height() * 0.16f;
+        Paint barP = new Paint(Paint.ANTI_ALIAS_FLAG);
+        barP.setColor(Color.WHITE);
+        barP.setStyle(Paint.Style.FILL);
+        // Top bar
+        canvas.drawRoundRect(new RectF(pCx - pBarW * 0.5f, pCy - pBarGap - pBarH * 0.5f,
+                pCx + pBarW * 0.5f, pCy - pBarGap + pBarH * 0.5f), 2f, 2f, barP);
+        // Middle bar
+        canvas.drawRoundRect(new RectF(pCx - pBarW * 0.5f, pCy - pBarH * 0.5f,
+                pCx + pBarW * 0.5f, pCy + pBarH * 0.5f), 2f, 2f, barP);
+        // Bottom bar
+        canvas.drawRoundRect(new RectF(pCx - pBarW * 0.5f, pCy + pBarGap - pBarH * 0.5f,
+                pCx + pBarW * 0.5f, pCy + pBarGap + pBarH * 0.5f), 2f, 2f, barP);
     }
 
     /**
@@ -2544,21 +2809,31 @@ public class MobileControlsView extends View {
         switch (action) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN:
-                // Check Pause Button First
-                if (pauseButton != null) {
-                    float pdx = x - pauseButton.cx;
-                    float pdy = y - pauseButton.cy;
-                    if (pdx * pdx + pdy * pdy <= pauseButton.radius * pauseButton.radius * 2.5f) {
-                        isPaused = true;
-                        pauseSubView = PauseSubView.SETTINGS_GRID;
-                        try {
-                            SDLActivity.setMatchPaused(true);
-                        } catch (Throwable ignored) {}
-                        loadTeamData();
-                        refreshMatchStats();
-                        invalidate();
-                        return true;
-                    }
+                // Check Pause Button (Square ☰ button)
+                if (pauseRect.contains(x, y)) {
+                    isPaused = true;
+                    pauseSubView = PauseSubView.SETTINGS_GRID;
+                    try {
+                        SDLActivity.setMatchPaused(true);
+                    } catch (Throwable ignored) {}
+                    loadTeamData();
+                    refreshMatchStats();
+                    invalidate();
+                    return true;
+                }
+
+                // Check Camera Switch Button (Square ⇄ button)
+                if (cameraRect.contains(x, y)) {
+                    cycleCameraPreset();
+                    invalidate();
+                    return true;
+                }
+
+                // Check Tactics Pill
+                if (tacticsRect.contains(x, y)) {
+                    cycleTactics();
+                    invalidate();
+                    return true;
                 }
 
                 // Check Left Screen: Floating / Centered Virtual Joystick

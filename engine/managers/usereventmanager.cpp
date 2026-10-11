@@ -194,10 +194,10 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_randomizeSunLi
 extern "C" JNIEXPORT jobjectArray JNICALL Java_org_libsdl_app_SDLActivity_getTeamInfo(JNIEnv* env, jclass cls, jint teamId) {
     jclass stringClass = env->FindClass("java/lang/String");
     jobjectArray array = env->NewObjectArray(4, stringClass, nullptr);
-    std::string name = (teamId == 0) ? "FC BAYERN MÜNCHEN" : "CERSIPLA JAKARTA";
-    std::string shortName = (teamId == 0) ? "BAY" : "CPJ";
-    std::string logoUrl = (teamId == 0) ? "databases/default/images_teams/1bundesliga/bayernmunich_logo.png" : "";
-    std::string kitUrl = (teamId == 0) ? "databases/default/images_teams/1bundesliga/bayernmunich_kit_01.png" : "";
+    std::string name = (teamId == 0) ? "FC BAYERN MÜNCHEN" : "BORUSSIA DORTMUND";
+    std::string shortName = (teamId == 0) ? "BAY" : "BVB";
+    std::string logoUrl = (teamId == 0) ? "databases/default/images_teams/1bundesliga/bayernmunich_logo.png" : "databases/default/images_teams/1bundesliga/borussiadortmund_logo.png";
+    std::string kitUrl = (teamId == 0) ? "databases/default/images_teams/1bundesliga/bayernmunich_kit_01.png" : "databases/default/images_teams/1bundesliga/borussiadortmund_kit_01.png";
 
     boost::shared_ptr<GameTask> gTask = GetGameTask();
     if (gTask && gTask->GetMatch()) {
