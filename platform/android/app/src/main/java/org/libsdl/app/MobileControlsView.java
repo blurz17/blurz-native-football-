@@ -361,9 +361,9 @@ public class MobileControlsView extends View {
         if (w <= 0 || h <= 0) return;
 
         // Joystick dimensions & base position (Bottom-Left)
-        joyRadius = h * 0.20f;
+        joyRadius = h * 0.19f;
         joyHandleRadius = joyRadius * 0.38f;
-        defaultJoyBaseX = Math.max(w * 0.14f, safeInsetLeft + joyRadius + 20f);
+        defaultJoyBaseX = Math.max(w * 0.13f, safeInsetLeft + joyRadius + 18f);
         defaultJoyBaseY = h * 0.74f;
 
         if (joyPointerId == -1) {
@@ -376,24 +376,24 @@ public class MobileControlsView extends View {
         // Action Buttons (Bottom-Right Curved Ergonomic Diamond matching FC Mobile)
         buttons.clear();
 
-        float dashRad = h * 0.114f;
-        float normalRad = h * 0.082f;
+        float dashRad = h * 0.110f;
+        float normalRad = h * 0.080f;
 
         // Anchor SPRINT & SKILL at bottom-right
-        float sprintX = w - Math.max(w * 0.11f, safeInsetRight + dashRad + 18f);
-        float sprintY = h - Math.max(h * 0.18f, safeInsetBottom + dashRad + 18f);
+        float sprintX = w - Math.max(w * 0.095f, safeInsetRight + dashRad + 14f);
+        float sprintY = h - Math.max(h * 0.165f, safeInsetBottom + dashRad + 14f);
 
         // PASS (South-West: left of Sprint)
-        float passX = sprintX - dashRad - normalRad - w * 0.024f;
-        float passY = sprintY + h * 0.015f;
+        float passX = sprintX - dashRad - normalRad - w * 0.048f;
+        float passY = sprintY + h * 0.005f;
 
-        // THROUGH (North-West: diagonally above Pass)
-        float throughX = passX + normalRad * 0.65f;
-        float throughY = sprintY - h * 0.22f;
+        // SHOOT (North: above Sprint & Skill, slightly left of sprint center)
+        float shootX = sprintX - dashRad * 0.18f;
+        float shootY = sprintY - h * 0.275f;
 
-        // SHOOT (North: above Sprint & Skill, slightly left)
-        float shootX = sprintX - w * 0.018f;
-        float shootY = sprintY - h * 0.24f;
+        // THROUGH (North-West: diagonally above Pass, comfortably spaced from Shoot)
+        float throughX = passX + (shootX - passX) * 0.36f;
+        float throughY = sprintY - h * 0.170f;
 
         // 1. PASS / SWITCH (Cyan outer ring)
         buttons.add(new ActionButton(passX, passY, normalRad,
@@ -622,29 +622,21 @@ public class MobileControlsView extends View {
     private void drawVirtualJoystick(Canvas canvas) {
         // Outer Frosted Glass Base
         bgPaint.setShader(new RadialGradient(joyBaseX, joyBaseY, joyRadius,
-                Color.argb(85, 20, 26, 36), Color.argb(25, 12, 16, 24), Shader.TileMode.CLAMP));
+                Color.argb(70, 20, 26, 36), Color.argb(15, 10, 14, 20), Shader.TileMode.CLAMP));
         canvas.drawCircle(joyBaseX, joyBaseY, joyRadius, bgPaint);
 
         // Outer Glass Border
         boolean isActive = (joyPointerId != -1);
-        btnBorderPaint.setColor(Color.argb(isActive ? 90 : 45, 255, 255, 255));
-        btnBorderPaint.setStrokeWidth(isActive ? 3.0f : 2.0f);
+        btnBorderPaint.setColor(Color.argb(isActive ? 80 : 35, 255, 255, 255));
+        btnBorderPaint.setStrokeWidth(isActive ? 2.5f : 1.5f);
         canvas.drawCircle(joyBaseX, joyBaseY, joyRadius, btnBorderPaint);
-
-        // Active Vector Guide Line
-        if (isActive) {
-            Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            linePaint.setColor(Color.argb(50, 255, 255, 255));
-            linePaint.setStrokeWidth(2.5f);
-            canvas.drawLine(joyBaseX, joyBaseY, joyHandleX, joyHandleY, linePaint);
-        }
 
         float hR = joyHandleRadius;
 
         // 1. Knob Drop Shadow
         Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        shadowPaint.setColor(Color.argb(70, 0, 0, 0));
-        canvas.drawCircle(joyHandleX + 3f, joyHandleY + 4f, hR, shadowPaint);
+        shadowPaint.setColor(Color.argb(60, 0, 0, 0));
+        canvas.drawCircle(joyHandleX + 2f, joyHandleY + 3f, hR, shadowPaint);
 
         // 2. 3D Metallic Specular Gradient Handle
         handlePaint.setShader(new RadialGradient(
@@ -654,16 +646,16 @@ public class MobileControlsView extends View {
                 Shader.TileMode.CLAMP));
         canvas.drawCircle(joyHandleX, joyHandleY, hR, handlePaint);
 
-        // 3. Knob Specular Outer Rim
-        btnBorderPaint.setColor(Color.argb(170, 200, 215, 230));
-        btnBorderPaint.setStrokeWidth(2.5f);
+        // 3. Knob Outer Rim
+        btnBorderPaint.setColor(Color.argb(150, 200, 215, 230));
+        btnBorderPaint.setStrokeWidth(2.0f);
         canvas.drawCircle(joyHandleX, joyHandleY, hR, btnBorderPaint);
 
         // 4. Center Concentric Bevel
         Paint innerRim = new Paint(Paint.ANTI_ALIAS_FLAG);
-        innerRim.setColor(Color.argb(45, 100, 116, 139));
+        innerRim.setColor(Color.argb(35, 100, 116, 139));
         innerRim.setStyle(Paint.Style.STROKE);
-        innerRim.setStrokeWidth(1.8f);
+        innerRim.setStrokeWidth(1.5f);
         canvas.drawCircle(joyHandleX, joyHandleY, hR * 0.54f, innerRim);
 
         // 5. Embossed EA FC Triangle Logo Watermark
@@ -674,17 +666,17 @@ public class MobileControlsView extends View {
         fcPath.lineTo(joyHandleX - ts * 0.866f, joyHandleY + ts * 0.5f);
         fcPath.close();
         Paint fcPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        fcPaint.setColor(Color.argb(65, 255, 255, 255));
+        fcPaint.setColor(Color.argb(60, 255, 255, 255));
         fcPaint.setStyle(Paint.Style.FILL);
         canvas.drawPath(fcPath, fcPaint);
 
-        // 6. Directional 360° Analog Cursor Arrow (White Chevron Pointer)
+        // 6. Directional 360° Analog Cursor Arrow (Clean, compact white pointer - no connecting line)
         float dist = (float) Math.hypot(joyHandleX - joyBaseX, joyHandleY - joyBaseY);
         if (dist > 8f || isActive) {
             double angle = Math.atan2(joyHandleY - joyBaseY, joyHandleX - joyBaseX);
-            float arrowLen = hR * 0.52f;
-            float wingW = hR * 0.28f;
-            float baseDist = hR + 4f;
+            float arrowLen = hR * 0.28f; // Compact & smaller pointer
+            float wingW = hR * 0.16f;
+            float baseDist = hR + 2f;
 
             float tipX = joyHandleX + (float) Math.cos(angle) * (baseDist + arrowLen);
             float tipY = joyHandleY + (float) Math.sin(angle) * (baseDist + arrowLen);
@@ -695,26 +687,12 @@ public class MobileControlsView extends View {
             float rightX = joyHandleX + (float) Math.cos(angle) * baseDist + (float) Math.sin(angle) * wingW;
             float rightY = joyHandleY + (float) Math.sin(angle) * baseDist - (float) Math.cos(angle) * wingW;
 
-            float notchX = joyHandleX + (float) Math.cos(angle) * (baseDist + arrowLen * 0.28f);
-            float notchY = joyHandleY + (float) Math.sin(angle) * (baseDist + arrowLen * 0.28f);
-
             Path arrowPath = new Path();
             arrowPath.moveTo(tipX, tipY);
             arrowPath.lineTo(leftX, leftY);
-            arrowPath.lineTo(notchX, notchY);
             arrowPath.lineTo(rightX, rightY);
             arrowPath.close();
 
-            // Arrow Shadow
-            Paint arrowShadow = new Paint(Paint.ANTI_ALIAS_FLAG);
-            arrowShadow.setColor(Color.argb(90, 0, 0, 0));
-            arrowShadow.setStyle(Paint.Style.FILL);
-            canvas.save();
-            canvas.translate(2f, 3f);
-            canvas.drawPath(arrowPath, arrowShadow);
-            canvas.restore();
-
-            // Arrow Body
             Paint arrowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             arrowPaint.setColor(Color.WHITE);
             arrowPaint.setStyle(Paint.Style.FILL);
@@ -737,8 +715,8 @@ public class MobileControlsView extends View {
             float cx = btn.cx;
             float cy = btn.cy;
 
-            // 1. Dark semi-translucent circular base
-            btnBgPaint.setColor(btn.isPressed ? Color.argb(220, 24, 32, 44) : Color.argb(175, 16, 20, 28));
+            // 1. Dark semi-translucent circular base (pitch visible through)
+            btnBgPaint.setColor(btn.isPressed ? Color.argb(210, 24, 32, 42) : Color.argb(165, 18, 24, 30));
             canvas.drawCircle(cx, cy, r, btnBgPaint);
 
             // 2. Press Glow
@@ -751,19 +729,19 @@ public class MobileControlsView extends View {
             }
 
             // 3. Colored Outer Ring
-            float strokeW = Math.max(3.2f, r * 0.075f);
+            float strokeW = Math.max(2.8f, r * 0.065f);
             btnBorderPaint.setColor(btn.accentColor);
             btnBorderPaint.setStrokeWidth(strokeW);
             btnBorderPaint.setStyle(Paint.Style.STROKE);
             canvas.drawCircle(cx, cy, r, btnBorderPaint);
 
-            // 4. 4 Outward Triangular Notch Tabs (at 0°, 90°, 180°, 270°)
+            // 4. 4 Subtle Outward Diamond Tabs (at 0°, 90°, 180°, 270°)
             Paint tabPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             tabPaint.setColor(btn.accentColor);
             tabPaint.setStyle(Paint.Style.FILL);
 
-            float notchLen = r * 0.16f;
-            float notchHalfW = r * 0.12f;
+            float notchLen = r * 0.08f;
+            float notchHalfW = r * 0.08f;
 
             for (int i = 0; i < 4; i++) {
                 double a = i * Math.PI / 2.0;
@@ -775,11 +753,11 @@ public class MobileControlsView extends View {
                 float tipX = cx + cosA * (r + notchLen);
                 float tipY = cy + sinA * (r + notchLen);
 
-                float base1X = cx + cosA * (r - strokeW * 0.4f) + perpCos * notchHalfW;
-                float base1Y = cy + sinA * (r - strokeW * 0.4f) + perpSin * notchHalfW;
+                float base1X = cx + cosA * (r - strokeW * 0.3f) + perpCos * notchHalfW;
+                float base1Y = cy + sinA * (r - strokeW * 0.3f) + perpSin * notchHalfW;
 
-                float base2X = cx + cosA * (r - strokeW * 0.4f) - perpCos * notchHalfW;
-                float base2Y = cy + sinA * (r - strokeW * 0.4f) - perpSin * notchHalfW;
+                float base2X = cx + cosA * (r - strokeW * 0.3f) - perpCos * notchHalfW;
+                float base2Y = cy + sinA * (r - strokeW * 0.3f) - perpSin * notchHalfW;
 
                 Path tabPath = new Path();
                 tabPath.moveTo(tipX, tipY);
