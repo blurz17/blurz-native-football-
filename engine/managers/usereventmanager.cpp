@@ -88,6 +88,108 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_pauseMatch(JNI
     }
 }
 
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setMatchPaused(JNIEnv* env, jclass cls, jboolean paused) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask) {
+        Match* match = gTask->GetMatch();
+        if (match) {
+            match->Pause(paused == JNI_TRUE);
+        }
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setCameraSettings(JNIEnv* env, jclass cls, jfloat zoom, jfloat height, jfloat fov, jfloat angleFactor) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask) {
+        Match* match = gTask->GetMatch();
+        if (match) {
+            match->SetCameraSettings((float)zoom, (float)height, (float)fov, (float)angleFactor);
+        }
+    }
+}
+
+extern "C" JNIEXPORT jfloatArray JNICALL Java_org_libsdl_app_SDLActivity_getCameraSettings(JNIEnv* env, jclass cls) {
+    jfloatArray result = env->NewFloatArray(4);
+    if (!result) return nullptr;
+    jfloat values[4] = {0.75f, 0.40f, 0.50f, 0.70f};
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask) {
+        Match* match = gTask->GetMatch();
+        if (match) {
+            values[0] = match->GetCameraUserZoom();
+            values[1] = match->GetCameraUserHeight();
+            values[2] = match->GetCameraUserFOV();
+            values[3] = match->GetCameraUserAngleFactor();
+        }
+    }
+    env->SetFloatArrayRegion(result, 0, 4, values);
+    return result;
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setAudioVolume(JNIEnv* env, jclass cls, jfloat volume) {
+    if (GetConfiguration()) {
+        GetConfiguration()->Set("audio_volume", (float)volume);
+        GetConfiguration()->SaveFile(GetConfigFilename());
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_triggerReplay(JNIEnv* env, jclass cls, jint rewindSeconds) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask) {
+        Match* match = gTask->GetMatch();
+        if (match) {
+            match->TriggerHighlightReplay(rewindSeconds * 1000);
+        }
+    }
+}
+
+extern "C" JNIEXPORT jintArray JNICALL Java_org_libsdl_app_SDLActivity_getMatchStats(JNIEnv* env, jclass cls) {
+    jintArray result = env->NewIntArray(28);
+    if (!result) return nullptr;
+    jint values[28] = {0};
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask) {
+        Match* match = gTask->GetMatch();
+        if (match && match->GetMatchData()) {
+            MatchData* md = match->GetMatchData();
+            values[0] = md->GetGoalCount(0);
+            values[1] = md->GetGoalCount(1);
+            unsigned long p1 = md->GetPossessionTime_ms(0);
+            unsigned long p2 = md->GetPossessionTime_ms(1);
+            unsigned long totalP = p1 + p2;
+            int pct1 = (totalP > 0) ? (int)((p1 * 100) / totalP) : 50;
+            values[2] = pct1;
+            values[3] = 100 - pct1;
+            values[4] = md->GetShots(0);
+            values[5] = md->GetShots(1);
+            values[6] = md->GetShotsOnTarget(0);
+            values[7] = md->GetShotsOnTarget(1);
+            values[8] = md->GetFouls(0);
+            values[9] = md->GetFouls(1);
+            values[10] = md->GetOffsides(0);
+            values[11] = md->GetOffsides(1);
+            values[12] = md->GetCorners(0);
+            values[13] = md->GetCorners(1);
+            values[14] = md->GetFreeKicks(0);
+            values[15] = md->GetFreeKicks(1);
+            values[16] = md->GetPasses(0);
+            values[17] = md->GetPasses(1);
+            values[18] = md->GetPassesCompleted(0);
+            values[19] = md->GetPassesCompleted(1);
+            values[20] = md->GetCrosses(0);
+            values[21] = md->GetCrosses(1);
+            values[22] = md->GetInterceptions(0);
+            values[23] = md->GetInterceptions(1);
+            values[24] = md->GetTackles(0);
+            values[25] = md->GetTackles(1);
+            values[26] = md->GetSaves(0);
+            values[27] = md->GetSaves(1);
+        }
+    }
+    env->SetIntArrayRegion(result, 0, 28, values);
+    return result;
+}
+
 extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_pauseEngine(JNIEnv* env, jclass cls, jboolean paused) {
     // Old engine doesn't need to pause scheduler here, SDL pause handles it.
 }

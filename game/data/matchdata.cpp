@@ -16,6 +16,28 @@ MatchData::MatchData(int team1DatabaseID, int team2DatabaseID) {
 
   shots[0] = 0;
   shots[1] = 0;
+  shotsOnTarget[0] = 0;
+  shotsOnTarget[1] = 0;
+  fouls[0] = 0;
+  fouls[1] = 0;
+  offsides[0] = 0;
+  offsides[1] = 0;
+  corners[0] = 0;
+  corners[1] = 0;
+  freeKicks[0] = 0;
+  freeKicks[1] = 0;
+  passes[0] = 0;
+  passes[1] = 0;
+  passesCompleted[0] = 0;
+  passesCompleted[1] = 0;
+  crosses[0] = 0;
+  crosses[1] = 0;
+  interceptions[0] = 0;
+  interceptions[1] = 0;
+  tackles[0] = 0;
+  tackles[1] = 0;
+  saves[0] = 0;
+  saves[1] = 0;
 
   possession60seconds = 0.0f;
 }

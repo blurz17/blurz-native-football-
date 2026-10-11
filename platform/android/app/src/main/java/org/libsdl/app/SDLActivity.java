@@ -325,6 +325,12 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     public static native void setVirtualJoystickAxis(int axis, float value);
     public static native void setVirtualJoystickButton(int button, boolean state);
     public static native void pauseMatch();
+    public static native void setMatchPaused(boolean paused);
+    public static native void setCameraSettings(float zoom, float height, float fov, float angleFactor);
+    public static native float[] getCameraSettings();
+    public static native void setAudioVolume(float volume);
+    public static native void triggerReplay(int rewindSeconds);
+    public static native int[] getMatchStats();
     public static native void pauseEngine(boolean paused);
     public static native void forceQuitEngine();
     public static native void triggerInGamePause();

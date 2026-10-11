@@ -211,6 +211,13 @@ class Match {
 
     void ProcessReplayMessages();
     Lockable<ReplayState> replayState;
+
+    void SetCameraSettings(float zoom, float height, float fov, float angleFactor);
+    float GetCameraUserZoom() const { return cameraUserZoom; }
+    float GetCameraUserHeight() const { return cameraUserHeight; }
+    float GetCameraUserFOV() const { return cameraUserFOV; }
+    float GetCameraUserAngleFactor() const { return cameraUserAngleFactor; }
+    void TriggerHighlightReplay(int rewind_ms = 5000);
 #endif
 
     MatchData* GetMatchData() { return matchData; }

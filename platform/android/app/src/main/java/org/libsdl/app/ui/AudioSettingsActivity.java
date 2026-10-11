@@ -131,7 +131,11 @@ public class AudioSettingsActivity extends Activity {
     }
 
     private void saveAndFinish(SharedPreferences prefs) {
-        prefs.edit().putInt("audio_volume", volumeBar.getProgress()).apply();
+        int vol = volumeBar.getProgress();
+        prefs.edit().putInt("audio_volume", vol).apply();
+        try {
+            org.libsdl.app.SDLActivity.setAudioVolume(vol / 100f);
+        } catch (Throwable ignored) {}
         finish();
     }
 

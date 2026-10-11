@@ -148,6 +148,17 @@ public class CameraSettingsActivity extends Activity {
             editor.putInt(SLIDER_KEYS[i], sliders[i].getProgress());
         }
         editor.apply();
+
+        try {
+            int h = prefs.getInt("camera_height", 50);
+            int z = prefs.getInt("camera_zoom", 50);
+            int a = prefs.getInt("camera_angle", 50);
+            float camHeight = 0.1f + (h / 100f) * 1.4f;
+            float camZoom = 0.2f + (z / 100f) * 1.3f;
+            float camAngle = a / 100f;
+            org.libsdl.app.SDLActivity.setCameraSettings(camZoom, camHeight, 0.5f, camAngle);
+        } catch (Throwable ignored) {}
+
         finish();
     }
 

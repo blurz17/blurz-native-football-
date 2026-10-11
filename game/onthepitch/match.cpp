@@ -2316,6 +2316,35 @@ void Match::ProcessReplayMessages() {
   replayState.Unlock();
 
 }
+
+void Match::SetCameraSettings(float zoom, float height, float fov, float angleFactor) {
+  cameraUserZoom = zoom;
+  cameraUserHeight = height;
+  cameraUserFOV = fov;
+  cameraUserAngleFactor = angleFactor;
+  if (context && context->config) {
+    context->config->Set("camera_zoom", zoom);
+    context->config->Set("camera_height", height);
+    context->config->Set("camera_fov", fov);
+    context->config->Set("camera_anglefactor", angleFactor);
+    context->config->SaveFile(GetConfigFilename());
+  }
+}
+
+void Match::TriggerHighlightReplay(int rewind_ms) {
+  if (replay.empty()) return;
+  unsigned long now = GetActualTime_ms();
+  signed long start = (signed long)now - rewind_ms;
+  unsigned long viewTime = std::max((signed long)10, start);
+  replayState.Lock();
+  replayState->viewTime_ms = viewTime;
+  replayState->cam = 1;
+  replayState->modifierValue = 0.0f;
+  replayState->dirty = true;
+  replayState.Unlock();
+  SetAutoUpdateIngameCamera(false);
+  ProcessReplayMessages();
+}
 #endif
 
 #ifndef GPFB_HEADLESS
