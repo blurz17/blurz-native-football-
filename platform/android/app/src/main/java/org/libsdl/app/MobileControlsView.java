@@ -754,64 +754,70 @@ public class MobileControlsView extends View {
         subTextPaint.setTextSize(Math.min(h * 0.032f, 13.5f));
         canvas.drawText("Special Team", rightTeamCx, t2NameY + 16f, subTextPaint);
 
-        // ── 5 WHITE ROUNDED CARDS GRID (ALL EQUAL IN WIDTH & HEIGHT) ──
-        float gridTop = t1NameY + 28f;
-        float bottomBarH = 58f;
-        float gridBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - bottomBarH;
+        // ── 6 WHITE ROUNDED CARDS GRID (COMPACT, CENTERED ICONS, INCLUDES REPLAY) ──
+        padL = Math.max(w * 0.12f, safeInsetLeft + 36f);
+        padR = Math.max(w * 0.12f, safeInsetRight + 36f);
         float gridW = w - padL - padR;
-        float gridH = gridBottom - gridTop;
-
-        float gapX = gridW * 0.032f;
-        float gapY = gridH * 0.08f;
+        float gapX = gridW * 0.026f;
+        float gapY = 14f;
         float cardW = (gridW - 2f * gapX) / 3f;
-        float cardH = (gridH - gapY) / 2f;
+
+        float gridTop = t1NameY + 22f;
+        float bottomBarH = 56f;
+        float gridBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - bottomBarH;
+        float maxAvailableH = gridBottom - gridTop;
+        float cardH = Math.min((maxAvailableH - gapY) / 2f, 130f);
+        float actualGridH = 2f * cardH + gapY;
+        float startGridY = gridTop + (maxAvailableH - actualGridH) * 0.35f;
 
         String[] cardTitles = {
                 "Squad Management",
                 "Controls List",
                 "General Settings",
                 "Camera Settings",
-                "Sound Settings"
+                "Sound Settings",
+                "Replay"
         };
 
-        RectF[] cardRects = new RectF[5];
+        RectF[] cardRects = new RectF[6];
         // Row 1: 3 cards
-        cardRects[0] = new RectF(padL + 0 * (cardW + gapX), gridTop, padL + 0 * (cardW + gapX) + cardW, gridTop + cardH);
-        cardRects[1] = new RectF(padL + 1 * (cardW + gapX), gridTop, padL + 1 * (cardW + gapX) + cardW, gridTop + cardH);
-        cardRects[2] = new RectF(padL + 2 * (cardW + gapX), gridTop, padL + 2 * (cardW + gapX) + cardW, gridTop + cardH);
-        // Row 2: 2 cards (col 0 and col 1, col 2 empty matching PES screenshot)
-        cardRects[3] = new RectF(padL + 0 * (cardW + gapX), gridTop + cardH + gapY, padL + 0 * (cardW + gapX) + cardW, gridTop + 2 * cardH + gapY);
-        cardRects[4] = new RectF(padL + 1 * (cardW + gapX), gridTop + cardH + gapY, padL + 1 * (cardW + gapX) + cardW, gridTop + 2 * cardH + gapY);
+        cardRects[0] = new RectF(padL + 0 * (cardW + gapX), startGridY, padL + 0 * (cardW + gapX) + cardW, startGridY + cardH);
+        cardRects[1] = new RectF(padL + 1 * (cardW + gapX), startGridY, padL + 1 * (cardW + gapX) + cardW, startGridY + cardH);
+        cardRects[2] = new RectF(padL + 2 * (cardW + gapX), startGridY, padL + 2 * (cardW + gapX) + cardW, startGridY + cardH);
+        // Row 2: 3 cards (Camera, Sound, Replay)
+        cardRects[3] = new RectF(padL + 0 * (cardW + gapX), startGridY + cardH + gapY, padL + 0 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
+        cardRects[4] = new RectF(padL + 1 * (cardW + gapX), startGridY + cardH + gapY, padL + 1 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
+        cardRects[5] = new RectF(padL + 2 * (cardW + gapX), startGridY + cardH + gapY, padL + 2 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 6; i++) {
             RectF r = cardRects[i];
             boolean isPressed = (pressedSettingsCardIndex == i);
 
             // Pure White Card Fill with soft elevation
             cardPaint.setColor(isPressed ? Color.parseColor("#E4E7ED") : Color.parseColor("#FFFFFF"));
-            canvas.drawRoundRect(r, 22f, 22f, cardPaint);
+            canvas.drawRoundRect(r, 18f, 18f, cardPaint);
 
             // Subtle border
             borderPaint.setColor(Color.parseColor("#DFE3EC"));
             borderPaint.setStrokeWidth(1.5f);
-            canvas.drawRoundRect(r, 22f, 22f, borderPaint);
+            canvas.drawRoundRect(r, 18f, 18f, borderPaint);
 
-            // Icon on upper portion of card
-            float iconCx = r.left + 38f;
-            float iconCy = r.top + r.height() * 0.38f;
-            float iconR = r.height() * 0.22f;
+            // Icon resident in center of upper card
+            float iconCx = r.centerX();
+            float iconCy = r.top + r.height() * 0.40f;
+            float iconR = Math.min(r.height() * 0.22f, 26f);
             drawSettingsCardIcon(canvas, i, iconCx, iconCy, iconR);
 
-            // Single-line Royal Blue Title below icon
-            textPaint.setTextAlign(Paint.Align.LEFT);
+            // Single-line Royal Blue Title centered below icon
+            textPaint.setTextAlign(Paint.Align.CENTER);
             textPaint.setColor(Color.parseColor("#1565C0")); // PES Royal Blue
-            textPaint.setTextSize(Math.min(r.height() * 0.17f, 16.5f));
-            canvas.drawText(cardTitles[i], r.left + 22f, r.top + r.height() * 0.82f, textPaint);
+            textPaint.setTextSize(Math.min(r.height() * 0.155f, 14.5f));
+            canvas.drawText(cardTitles[i], r.centerX(), r.top + r.height() * 0.83f, textPaint);
         }
 
         // ── BOTTOM LEFT BLUE PILL RESUME BUTTON ──
         float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
-        RectF resumeBtn = new RectF(padL, btnY, padL + 160f, btnY + 48f);
+        RectF resumeBtn = new RectF(padL, btnY, padL + 150f, btnY + 48f);
         cardPaint.setColor(Color.parseColor("#007AFF")); // Vibrant Blue
         canvas.drawRoundRect(resumeBtn, 24f, 24f, cardPaint);
 
@@ -826,72 +832,57 @@ public class MobileControlsView extends View {
     }
 
     /**
-     * PES Mobile Match Records / Stats Comparison Screen:
-     * 10-Row Match Stats Comparison Table with authentic live data.
+     * PES Mobile Match Records / Stats Comparison Sheet.
      */
     private void drawPesPauseOverview(Canvas canvas, int w, int h) {
-        cardPaint.setColor(Color.argb(238, 10, 12, 24));
+        cardPaint.setColor(Color.argb(140, 6, 12, 10));
         canvas.drawRect(0, 0, w, h, cardPaint);
 
-        float padL = Math.max(w * 0.035f, safeInsetLeft + 20f);
-        float padR = Math.max(w * 0.035f, safeInsetRight + 20f);
-        float padT = Math.max(h * 0.035f, safeInsetTop + 10f);
-        float padB = Math.max(h * 0.035f, safeInsetBottom + 10f);
-        float areaW = w - padL - padR;
-        float areaH = h - padT - padB;
+        float sheetW = Math.min(w * 0.70f, 720f);
+        float sheetX = (w - sheetW) * 0.5f;
+        float sheetTop = Math.max(h * 0.03f, safeInsetTop + 6f);
+        float sheetBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 52f;
+        float sheetH = sheetBottom - sheetTop;
+        RectF sheetRect = new RectF(sheetX, sheetTop, sheetX + sheetW, sheetBottom);
 
-        // Header Card
-        float headerH = areaH * 0.16f;
-        RectF headerCard = new RectF(padL, padT, padL + areaW, padT + headerH);
-        cardPaint.setColor(Color.argb(160, 24, 22, 46));
-        canvas.drawRoundRect(headerCard, 14f, 14f, cardPaint);
-        borderPaint.setColor(Color.argb(80, 100, 100, 180));
+        cardPaint.setColor(Color.WHITE);
+        canvas.drawRoundRect(sheetRect, 16f, 16f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#DDE5ED"));
         borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(headerCard, 14f, 14f, borderPaint);
+        canvas.drawRoundRect(sheetRect, 16f, 16f, borderPaint);
 
-        // Subtitle "MATCH RECORDS & TELEMETRY"
-        subTextPaint.setTextAlign(Paint.Align.CENTER);
-        subTextPaint.setColor(Color.parseColor("#A8ABCF"));
-        subTextPaint.setTextSize(headerH * 0.20f);
-        canvas.drawText("MATCH RECORDS & TELEMETRY", padL + areaW * 0.5f, padT + headerH * 0.25f, subTextPaint);
+        // Header: Crests and Score
+        float headerH = sheetH * 0.18f;
+        float scoreCy = sheetTop + headerH * 0.50f;
 
         // Team 1 Crest & Name
-        float t1Cx = padL + areaW * 0.20f;
-        drawTeamCrest(canvas, t1Cx, padT + headerH * 0.56f, headerH * 0.26f, 0, team1Name, Color.parseColor("#E53935"), Color.parseColor("#1E88E5"));
+        float t1Cx = sheetX + sheetW * 0.18f;
+        drawTeamCrest(canvas, t1Cx, scoreCy, headerH * 0.28f, 0, team1Name, Color.parseColor("#E53935"), Color.parseColor("#1E88E5"));
         textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(headerH * 0.22f);
-        canvas.drawText(team1Name, t1Cx, padT + headerH * 0.93f, textPaint);
+        textPaint.setColor(Color.parseColor("#1B1B1B"));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(14f);
+        canvas.drawText(team1Name, t1Cx, scoreCy + headerH * 0.40f, textPaint);
 
         // Team 2 Crest & Name
-        float t2Cx = padL + areaW * 0.80f;
-        drawTeamCrest(canvas, t2Cx, padT + headerH * 0.56f, headerH * 0.26f, 1, team2Name, Color.parseColor("#3949AB"), Color.parseColor("#D81B60"));
-        canvas.drawText(team2Name, t2Cx, padT + headerH * 0.93f, textPaint);
+        float t2Cx = sheetX + sheetW * 0.82f;
+        drawTeamCrest(canvas, t2Cx, scoreCy, headerH * 0.28f, 1, team2Name, Color.parseColor("#3949AB"), Color.parseColor("#D81B60"));
+        canvas.drawText(team2Name, t2Cx, scoreCy + headerH * 0.40f, textPaint);
 
         // Score
-        float scoreCy = padT + headerH * 0.56f;
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(headerH * 0.38f);
-        canvas.drawText(score1 + "      " + score2, padL + areaW * 0.5f, scoreCy + headerH * 0.12f, textPaint);
+        textPaint.setTextSize(26f);
+        canvas.drawText(score1 + "   -   " + score2, sheetX + sheetW * 0.50f, scoreCy + 8f, textPaint);
 
-        // Match Time Pill
-        RectF timePill = new RectF(padL + areaW * 0.5f - 46f, scoreCy - headerH * 0.19f, padL + areaW * 0.5f + 46f, scoreCy + headerH * 0.06f);
-        cardPaint.setColor(Color.argb(210, 16, 14, 32));
-        canvas.drawRoundRect(timePill, 10f, 10f, cardPaint);
-        subTextPaint.setColor(Color.parseColor("#FFD54F"));
-        subTextPaint.setTextSize(headerH * 0.18f);
-        canvas.drawText(matchTime, padL + areaW * 0.5f, scoreCy - headerH * 0.02f, subTextPaint);
+        // Time Pill
+        subTextPaint.setTextAlign(Paint.Align.CENTER);
+        subTextPaint.setColor(Color.parseColor("#5A738E"));
+        subTextPaint.setTextSize(12f);
+        canvas.drawText(matchTime, sheetX + sheetW * 0.50f, scoreCy + 28f, subTextPaint);
 
-        // Stats Table Container (10 Rows)
-        float tableY = padT + headerH + 10f;
-        float bottomBarH = 50f;
-        float tableH = areaH - (tableY - padT) - bottomBarH;
-        RectF tableRect = new RectF(padL, tableY, padL + areaW, tableY + tableH);
-        cardPaint.setColor(Color.parseColor("#17152B"));
-        canvas.drawRoundRect(tableRect, 14f, 14f, cardPaint);
-        borderPaint.setColor(Color.argb(90, 0, 240, 255));
-        borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(tableRect, 14f, 14f, borderPaint);
+        // 10-Row Stats Table
+        float tableTop = sheetTop + headerH;
+        float tableH = sheetH - headerH;
+        float rowH = tableH / 10f;
 
         String[][] statsData = {
                 { liveStats.poss1 + "%", "Possession", liveStats.poss2 + "%" },
@@ -906,48 +897,35 @@ public class MobileControlsView extends View {
                 { String.valueOf(liveStats.saves1), "Saves", String.valueOf(liveStats.saves2) }
         };
 
-        float rowH = tableH / 10f;
         for (int r = 0; r < 10; r++) {
-            float ry = tableY + r * rowH;
-
-            // Subtle alternating stripe
-            if (r % 2 == 1) {
-                cardPaint.setColor(Color.argb(25, 255, 255, 255));
-                canvas.drawRect(padL, ry, padL + areaW, ry + rowH, cardPaint);
+            float ry = tableTop + r * rowH;
+            if (r % 2 == 0) {
+                cardPaint.setColor(Color.parseColor("#EAF1F8"));
+                canvas.drawRect(sheetX, ry, sheetX + sheetW, ry + rowH, cardPaint);
             }
 
-            if (r > 0) {
-                borderPaint.setColor(Color.argb(25, 255, 255, 255));
-                borderPaint.setStrokeWidth(1f);
-                canvas.drawLine(padL + 16f, ry, padL + areaW - 16f, ry, borderPaint);
-            }
-
-            float textRowY = ry + rowH * 0.66f;
-
-            // Col 1 (Home value)
+            float textRowY = ry + rowH * 0.65f;
             textPaint.setTextAlign(Paint.Align.CENTER);
-            textPaint.setColor(Color.WHITE);
-            textPaint.setTextSize(rowH * 0.42f);
-            canvas.drawText(statsData[r][0], padL + areaW * 0.20f, textRowY, textPaint);
+            textPaint.setColor(Color.parseColor("#1565C0"));
+            textPaint.setTextSize(rowH * 0.44f);
+            canvas.drawText(statsData[r][0], sheetX + sheetW * 0.20f, textRowY, textPaint);
 
-            // Col 2 (Stat Label)
             subTextPaint.setTextAlign(Paint.Align.CENTER);
-            subTextPaint.setColor(Color.parseColor("#9EA3C7"));
-            subTextPaint.setTextSize(rowH * 0.38f);
-            canvas.drawText(statsData[r][1], padL + areaW * 0.50f, textRowY, subTextPaint);
+            subTextPaint.setColor(Color.parseColor("#2C5282"));
+            subTextPaint.setTextSize(rowH * 0.40f);
+            canvas.drawText(statsData[r][1], sheetX + sheetW * 0.50f, textRowY, subTextPaint);
 
-            // Col 3 (Away value)
-            textPaint.setTextAlign(Paint.Align.CENTER);
-            textPaint.setColor(Color.WHITE);
-            textPaint.setTextSize(rowH * 0.42f);
-            canvas.drawText(statsData[r][2], padL + areaW * 0.80f, textRowY, textPaint);
+            textPaint.setColor(Color.parseColor("#1565C0"));
+            canvas.drawText(statsData[r][2], sheetX + sheetW * 0.80f, textRowY, textPaint);
         }
 
-        // Bottom Left Back Button to Settings Grid
-        float btnY = padT + areaH - 44f;
-        RectF backBtn = new RectF(padL, btnY, padL + 150f, btnY + 44f);
+        // Bottom-Left Floating Back Button
+        float padL = Math.max(w * 0.08f, safeInsetLeft + 24f);
+        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
+        RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
         cardPaint.setColor(Color.parseColor("#007AFF"));
-        canvas.drawRoundRect(backBtn, 22f, 22f, cardPaint);
+        canvas.drawRoundRect(backBtn, 24f, 24f, cardPaint);
+
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(17f);
@@ -955,602 +933,616 @@ public class MobileControlsView extends View {
     }
 
     /**
-     * In-Overlay Squad Management & 4-3-3 Tactics Formation View (Match Records Style).
+     * PES Mobile Authentic Squad Management & Tactics Sheet.
      */
     private void drawSquadManagementOverlay(Canvas canvas, int w, int h) {
-        cardPaint.setColor(Color.argb(245, 10, 12, 22));
+        cardPaint.setColor(Color.argb(140, 6, 12, 10));
         canvas.drawRect(0, 0, w, h, cardPaint);
 
-        float padX = Math.max(w * 0.05f, safeInsetLeft + 24f);
-        float topY = Math.max(h * 0.04f, safeInsetTop + 14f);
+        float sheetW = Math.min(w * 0.78f, 800f);
+        float sheetX = (w - sheetW) * 0.5f;
+        float sheetTop = Math.max(h * 0.03f, safeInsetTop + 6f);
+        float sheetBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 52f;
+        float sheetH = sheetBottom - sheetTop;
+        RectF sheetRect = new RectF(sheetX, sheetTop, sheetX + sheetW, sheetBottom);
 
-        // Back Button
-        RectF backBtn = new RectF(padX, topY, padX + 130f, topY + 42f);
-        cardPaint.setColor(Color.parseColor("#007AFF"));
-        canvas.drawRoundRect(backBtn, 21f, 21f, cardPaint);
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
+        cardPaint.setColor(Color.WHITE);
+        canvas.drawRoundRect(sheetRect, 16f, 16f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#DDE5ED"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRoundRect(sheetRect, 16f, 16f, borderPaint);
 
-        // Header Title
+        float headerH = sheetH * 0.13f;
         textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(22f);
-        canvas.drawText("SQUAD MANAGEMENT & FORMATION (4-3-3)", padX + 150f, topY + 30f, textPaint);
+        textPaint.setColor(Color.parseColor("#1B1B1B"));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(Math.min(headerH * 0.46f, 26f));
+        canvas.drawText("Squad Management (4-3-3)", sheetX + 28f, sheetTop + headerH * 0.65f, textPaint);
 
-        float bodyTop = topY + 54f;
-        float bodyH = h - bodyTop - Math.max(h * 0.04f, safeInsetBottom + 16f);
-        float colW = (w - padX * 2f - 20f) / 2f;
+        float bodyTop = sheetTop + headerH;
+        float bodyH = sheetH - headerH - 12f;
+        float colW = (sheetW - 48f) / 2f;
 
         // LEFT: Tactical Pitch Board
-        RectF pitchCard = new RectF(padX, bodyTop, padX + colW, bodyTop + bodyH);
+        RectF pitchCard = new RectF(sheetX + 16f, bodyTop, sheetX + 16f + colW, bodyTop + bodyH);
         cardPaint.setColor(Color.parseColor("#1B5E20"));
-        canvas.drawRoundRect(pitchCard, 14f, 14f, cardPaint);
-        borderPaint.setColor(Color.parseColor("#00F0FF"));
-        borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(pitchCard, 14f, 14f, borderPaint);
+        canvas.drawRoundRect(pitchCard, 12f, 12f, cardPaint);
 
-        // White Pitch Markings
         borderPaint.setColor(Color.argb(160, 255, 255, 255));
         borderPaint.setStrokeWidth(2f);
-        canvas.drawRoundRect(new RectF(pitchCard.left + 16f, pitchCard.top + 16f, pitchCard.right - 16f, pitchCard.bottom - 16f), 4f, 4f, borderPaint);
-        canvas.drawLine(pitchCard.left + 16f, pitchCard.centerY(), pitchCard.right - 16f, pitchCard.centerY(), borderPaint);
+        canvas.drawRoundRect(new RectF(pitchCard.left + 12f, pitchCard.top + 12f, pitchCard.right - 12f, pitchCard.bottom - 12f), 4f, 4f, borderPaint);
+        canvas.drawLine(pitchCard.left + 12f, pitchCard.centerY(), pitchCard.right - 12f, pitchCard.centerY(), borderPaint);
         canvas.drawCircle(pitchCard.centerX(), pitchCard.centerY(), pitchCard.height() * 0.14f, borderPaint);
 
-        // 11 Player Nodes in 4-3-3 formation
+        // 11 Player Nodes in 4-3-3
         float[][] pos433 = {
-                { 0.50f, 0.90f }, // GK
-                { 0.15f, 0.72f }, { 0.38f, 0.75f }, { 0.62f, 0.75f }, { 0.85f, 0.72f }, // LB, CB, CB, RB
-                { 0.50f, 0.56f }, { 0.28f, 0.45f }, { 0.72f, 0.45f }, // DM, CM, CM
-                { 0.20f, 0.24f }, { 0.50f, 0.18f }, { 0.80f, 0.24f }  // LW, CF, RW
+                { 0.50f, 0.90f },
+                { 0.15f, 0.72f }, { 0.38f, 0.75f }, { 0.62f, 0.75f }, { 0.85f, 0.72f },
+                { 0.50f, 0.56f }, { 0.28f, 0.45f }, { 0.72f, 0.45f },
+                { 0.20f, 0.24f }, { 0.50f, 0.18f }, { 0.80f, 0.24f }
         };
         String[] posNames = { "GK", "LB", "CB", "CB", "RB", "DM", "CM", "CM", "LW", "CF", "RW" };
 
         for (int p = 0; p < 11; p++) {
-            float px = pitchCard.left + 16f + pos433[p][0] * (pitchCard.width() - 32f);
-            float py = pitchCard.top + 16f + pos433[p][1] * (pitchCard.height() - 32f);
+            float px = pitchCard.left + 12f + pos433[p][0] * (pitchCard.width() - 24f);
+            float py = pitchCard.top + 12f + pos433[p][1] * (pitchCard.height() - 24f);
 
             cardPaint.setColor(Color.WHITE);
-            canvas.drawCircle(px, py, 14f, cardPaint);
+            canvas.drawCircle(px, py, 13f, cardPaint);
             borderPaint.setColor(Color.parseColor("#E53935"));
-            borderPaint.setStrokeWidth(3f);
-            canvas.drawCircle(px, py, 14f, borderPaint);
+            borderPaint.setStrokeWidth(2.5f);
+            canvas.drawCircle(px, py, 13f, borderPaint);
 
             textPaint.setTextAlign(Paint.Align.CENTER);
             textPaint.setColor(Color.parseColor("#1B1B1B"));
-            textPaint.setTextSize(10f);
+            textPaint.setTextSize(9.5f);
             canvas.drawText(posNames[p], px, py + 3.5f, textPaint);
         }
 
-        // RIGHT: Lineup Roster Card in Match Record Style
-        RectF rosterCard = new RectF(padX + colW + 20f, bodyTop, padX + colW * 2f + 20f, bodyTop + bodyH);
-        cardPaint.setColor(Color.parseColor("#16182B"));
-        canvas.drawRoundRect(rosterCard, 14f, 14f, cardPaint);
-        borderPaint.setColor(Color.parseColor("#00F0FF"));
-        borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(rosterCard, 14f, 14f, borderPaint);
-
+        // RIGHT: Lineup Roster Table (Light Blue / White alternating)
+        RectF rosterCard = new RectF(sheetX + 32f + colW, bodyTop, sheetX + sheetW - 16f, bodyTop + bodyH);
         String[] lineupPlayers = {
                 "1  M. NEUER (GK)", "19 A. DAVIES (LB)", "2  D. UPAMECANO (CB)", "4  M. DE LIGT (CB)",
                 "40 N. MAZRAOUI (RB)", "6  J. KIMMICH (DM)", "8  L. GORETZKA (CM)", "42 J. MUSIALA (CM)",
                 "11 K. COMAN (LW)", "9  H. KANE (CF)", "10 L. SANÉ (RW)"
         };
-        float rowH = (bodyH - 24f) / 11f;
+        float rRowH = bodyH / 11f;
         for (int r = 0; r < 11; r++) {
-            float ry = bodyTop + 12f + r * rowH;
-            if (r % 2 == 1) {
-                cardPaint.setColor(Color.argb(20, 255, 255, 255));
-                canvas.drawRect(rosterCard.left + 10f, ry, rosterCard.right - 10f, ry + rowH, cardPaint);
+            float ry = bodyTop + r * rRowH;
+            if (r % 2 == 0) {
+                cardPaint.setColor(Color.parseColor("#EAF1F8"));
+                canvas.drawRect(rosterCard.left, ry, rosterCard.right, ry + rRowH, cardPaint);
             }
             textPaint.setTextAlign(Paint.Align.LEFT);
-            textPaint.setColor(Color.WHITE);
-            textPaint.setTextSize(rowH * 0.45f);
-            canvas.drawText(lineupPlayers[r], rosterCard.left + 24f, ry + rowH * 0.65f, textPaint);
+            textPaint.setColor(Color.parseColor("#1E3A8A"));
+            textPaint.setTextSize(rRowH * 0.48f);
+            canvas.drawText(lineupPlayers[r], rosterCard.left + 14f, ry + rRowH * 0.65f, textPaint);
 
             textPaint.setTextAlign(Paint.Align.RIGHT);
-            textPaint.setColor(Color.parseColor("#00F0FF"));
-            canvas.drawText("OVR " + (84 + (r * 7) % 7), rosterCard.right - 24f, ry + rowH * 0.65f, textPaint);
+            textPaint.setColor(Color.parseColor("#007AFF"));
+            canvas.drawText("OVR " + (84 + (r * 7) % 7), rosterCard.right - 14f, ry + rRowH * 0.65f, textPaint);
         }
+
+        float padL = Math.max(w * 0.08f, safeInsetLeft + 24f);
+        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
+        RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+        cardPaint.setColor(Color.parseColor("#007AFF"));
+        canvas.drawRoundRect(backBtn, 24f, 24f, cardPaint);
+
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextSize(17f);
+        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
     }
 
     /**
-     * In-Overlay Touch Controls Guide (Match Records Style).
+     * PES Mobile Authentic Controls List Sheet.
      */
     private void drawControlsListOverlay(Canvas canvas, int w, int h) {
-        cardPaint.setColor(Color.argb(245, 10, 12, 22));
+        cardPaint.setColor(Color.argb(140, 6, 12, 10));
         canvas.drawRect(0, 0, w, h, cardPaint);
 
-        float padX = Math.max(w * 0.05f, safeInsetLeft + 24f);
-        float topY = Math.max(h * 0.04f, safeInsetTop + 14f);
+        float sheetW = Math.min(w * 0.68f, 680f);
+        float sheetX = (w - sheetW) * 0.5f;
+        float sheetTop = Math.max(h * 0.03f, safeInsetTop + 6f);
+        float sheetBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 52f;
+        float sheetH = sheetBottom - sheetTop;
+        RectF sheetRect = new RectF(sheetX, sheetTop, sheetX + sheetW, sheetBottom);
 
-        // Back Button
-        RectF backBtn = new RectF(padX, topY, padX + 130f, topY + 42f);
+        cardPaint.setColor(Color.WHITE);
+        canvas.drawRoundRect(sheetRect, 16f, 16f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#DDE5ED"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRoundRect(sheetRect, 16f, 16f, borderPaint);
+
+        float headerH = sheetH * 0.14f;
+        textPaint.setTextAlign(Paint.Align.LEFT);
+        textPaint.setColor(Color.parseColor("#1B1B1B"));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(Math.min(headerH * 0.44f, 26f));
+        canvas.drawText("Controls List", sheetX + 28f, sheetTop + headerH * 0.65f, textPaint);
+
+        float rowsTop = sheetTop + headerH;
+        float rowsH = sheetH - headerH;
+        float rowH = rowsH / 5f;
+
+        String[][] guides = {
+                { "Analog Stick", "360° Movement & Precision Dribbling" },
+                { "Pass Button", "Ground Pass towards targeted teammate" },
+                { "Through Button", "Through Ball sent into open space" },
+                { "Shoot Button", "Strike on goal (Hold down to charge power)" },
+                { "Dash / Sprint", "Burst of acceleration in movement direction" }
+        };
+
+        for (int r = 0; r < 5; r++) {
+            float ry = rowsTop + r * rowH;
+            if (r % 2 == 0) {
+                cardPaint.setColor(Color.parseColor("#EAF1F8"));
+                canvas.drawRect(sheetX, ry, sheetX + sheetW, ry + rowH, cardPaint);
+            }
+
+            textPaint.setTextAlign(Paint.Align.LEFT);
+            textPaint.setColor(Color.parseColor("#1565C0"));
+            textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+            textPaint.setTextSize(15f);
+            canvas.drawText(guides[r][0], sheetX + 28f, ry + rowH * 0.42f, textPaint);
+
+            subTextPaint.setTextAlign(Paint.Align.LEFT);
+            subTextPaint.setColor(Color.parseColor("#4B5563"));
+            subTextPaint.setTextSize(13f);
+            canvas.drawText(guides[r][1], sheetX + 28f, ry + rowH * 0.76f, subTextPaint);
+        }
+
+        float padL = Math.max(w * 0.08f, safeInsetLeft + 24f);
+        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
+        RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
         cardPaint.setColor(Color.parseColor("#007AFF"));
-        canvas.drawRoundRect(backBtn, 21f, 21f, cardPaint);
+        canvas.drawRoundRect(backBtn, 24f, 24f, cardPaint);
+
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(17f);
         canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
-
-        textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(22f);
-        canvas.drawText("TOUCH CONTROLS GUIDE", padX + 150f, topY + 30f, textPaint);
-
-        float bodyTop = topY + 54f;
-        float bodyH = h - bodyTop - Math.max(h * 0.04f, safeInsetBottom + 16f);
-        float colW = (w - padX * 2f - 20f) / 2f;
-
-        // Attacking Controls Card
-        RectF atkCard = new RectF(padX, bodyTop, padX + colW, bodyTop + bodyH);
-        cardPaint.setColor(Color.parseColor("#16182B"));
-        canvas.drawRoundRect(atkCard, 14f, 14f, cardPaint);
-        borderPaint.setColor(Color.parseColor("#00F0FF"));
-        borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(atkCard, 14f, 14f, borderPaint);
-
-        textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.parseColor("#00F0FF"));
-        textPaint.setTextSize(18f);
-        canvas.drawText("ATTACKING CONTROLS", atkCard.left + 24f, atkCard.top + 34f, textPaint);
-
-        String[][] atkHelp = {
-                { "Analog Stick", "360° Movement & Precision Dribbling" },
-                { "Pass Button", "Direct Ground Pass towards teammate" },
-                { "Through Button", "Through Ball into space" },
-                { "Shoot Button", "Strike on goal (Hold for power)" },
-                { "Dash Button", "Sprint burst in current direction" }
-        };
-        float rowH = (bodyH - 54f) / 5f;
-        for (int i = 0; i < 5; i++) {
-            float ry = atkCard.top + 48f + i * rowH;
-            textPaint.setColor(Color.WHITE);
-            textPaint.setTextSize(16f);
-            canvas.drawText(atkHelp[i][0], atkCard.left + 24f, ry + 22f, textPaint);
-            subTextPaint.setTextAlign(Paint.Align.LEFT);
-            subTextPaint.setColor(Color.parseColor("#9EA3C7"));
-            subTextPaint.setTextSize(13f);
-            canvas.drawText(atkHelp[i][1], atkCard.left + 24f, ry + 42f, subTextPaint);
-        }
-
-        // Defending Controls Card
-        RectF defCard = new RectF(padX + colW + 20f, bodyTop, padX + colW * 2f + 20f, bodyTop + bodyH);
-        cardPaint.setColor(Color.parseColor("#16182B"));
-        canvas.drawRoundRect(defCard, 14f, 14f, cardPaint);
-        borderPaint.setColor(Color.parseColor("#FF5252"));
-        borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(defCard, 14f, 14f, borderPaint);
-
-        textPaint.setColor(Color.parseColor("#FF5252"));
-        textPaint.setTextSize(18f);
-        canvas.drawText("DEFENDING CONTROLS", defCard.left + 24f, defCard.top + 34f, textPaint);
-
-        String[][] defHelp = {
-                { "Analog Stick", "Track opponent runner & jockey" },
-                { "Switch Button", "Switch active defender to ball" },
-                { "Pressure Button", "Close down and press opponent" },
-                { "Clear / Tackle", "Clear ball or execute standing tackle" },
-                { "Dash Button", "Defensive sprint recovery" }
-        };
-        for (int i = 0; i < 5; i++) {
-            float ry = defCard.top + 48f + i * rowH;
-            textPaint.setColor(Color.WHITE);
-            textPaint.setTextSize(16f);
-            canvas.drawText(defHelp[i][0], defCard.left + 24f, ry + 22f, textPaint);
-            subTextPaint.setTextAlign(Paint.Align.LEFT);
-            subTextPaint.setColor(Color.parseColor("#9EA3C7"));
-            subTextPaint.setTextSize(13f);
-            canvas.drawText(defHelp[i][1], defCard.left + 24f, ry + 42f, subTextPaint);
-        }
     }
 
     /**
-     * In-Overlay General & Visual Settings in Match Records Style:
-     * Structured rows with dividers, equal-width badge buttons, no text clipping!
+     * PES Mobile Authentic General & Visual Settings Sheet.
      */
     private void drawGeneralSettingsOverlay(Canvas canvas, int w, int h) {
-        cardPaint.setColor(Color.argb(245, 10, 12, 22));
+        cardPaint.setColor(Color.argb(140, 6, 12, 10));
         canvas.drawRect(0, 0, w, h, cardPaint);
 
-        float padX = Math.max(w * 0.05f, safeInsetLeft + 24f);
-        float topY = Math.max(h * 0.04f, safeInsetTop + 14f);
+        float sheetW = Math.min(w * 0.64f, 620f);
+        float sheetX = (w - sheetW) * 0.5f;
+        float sheetTop = Math.max(h * 0.03f, safeInsetTop + 6f);
+        float sheetBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 52f;
+        float sheetH = sheetBottom - sheetTop;
+        RectF sheetRect = new RectF(sheetX, sheetTop, sheetX + sheetW, sheetBottom);
 
-        // Back Button
-        RectF backBtn = new RectF(padX, topY, padX + 130f, topY + 42f);
-        cardPaint.setColor(Color.parseColor("#007AFF"));
-        canvas.drawRoundRect(backBtn, 21f, 21f, cardPaint);
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
-
-        textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(22f);
-        canvas.drawText("GENERAL & VISUAL SETTINGS", padX + 150f, topY + 30f, textPaint);
-
-        float bodyTop = topY + 54f;
-        float bodyH = h - bodyTop - Math.max(h * 0.04f, safeInsetBottom + 16f);
-        float bodyW = w - padX * 2f;
-
-        RectF card = new RectF(padX, bodyTop, padX + bodyW, bodyTop + bodyH);
-        cardPaint.setColor(Color.parseColor("#16182B"));
-        canvas.drawRoundRect(card, 16f, 16f, cardPaint);
-        borderPaint.setColor(Color.parseColor("#00F0FF"));
+        cardPaint.setColor(Color.WHITE);
+        canvas.drawRoundRect(sheetRect, 16f, 16f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#DDE5ED"));
         borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(card, 16f, 16f, borderPaint);
+        canvas.drawRoundRect(sheetRect, 16f, 16f, borderPaint);
 
-        // Column partitions inside the card
-        float colCtrlLeft = card.left + bodyW * 0.50f;
-        float colCtrlRight = card.right - 28f;
-        float colCtrlW = colCtrlRight - colCtrlLeft;
-
-        float rowH = (bodyH - 24f) / 6f;
-
-        // ── Row 0: Team 1 Kit ──
-        float r0Y = bodyTop + 12f;
+        // Header Title: "General Settings" in Bold Black
+        float headerH = sheetH * 0.14f;
         textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText(team1Name + " Kit", card.left + 28f, r0Y + rowH * 0.42f, textPaint);
-        subTextPaint.setTextAlign(Paint.Align.LEFT);
-        subTextPaint.setColor(Color.parseColor("#9EA3C7"));
-        subTextPaint.setTextSize(12.5f);
-        canvas.drawText("Select active home kit", card.left + 28f, r0Y + rowH * 0.76f, subTextPaint);
+        textPaint.setColor(Color.parseColor("#1B1B1B"));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(Math.min(headerH * 0.44f, 26f));
+        canvas.drawText("General Settings", sheetX + 28f, sheetTop + headerH * 0.65f, textPaint);
 
-        float kitBtnW = (colCtrlW - 14f) / 2f;
-        float btnH = rowH * 0.70f;
-        float btnPadY = r0Y + (rowH - btnH) * 0.5f;
-        RectF kit1_0 = new RectF(colCtrlLeft, btnPadY, colCtrlLeft + kitBtnW, btnPadY + btnH);
-        RectF kit1_1 = new RectF(colCtrlLeft + kitBtnW + 14f, btnPadY, colCtrlRight, btnPadY + btnH);
+        float rowsTop = sheetTop + headerH;
+        float rowsH = sheetH - headerH;
+        float rowH = rowsH / 6f;
 
-        cardPaint.setColor(selectedKit1 == 0 ? Color.parseColor("#00F0FF") : Color.parseColor("#262940"));
-        canvas.drawRoundRect(kit1_0, 10f, 10f, cardPaint);
-        cardPaint.setColor(selectedKit1 == 1 ? Color.parseColor("#00F0FF") : Color.parseColor("#262940"));
-        canvas.drawRoundRect(kit1_1, 10f, 10f, cardPaint);
-
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(selectedKit1 == 0 ? Color.BLACK : Color.WHITE);
-        textPaint.setTextSize(15f);
-        canvas.drawText("Kit 01", kit1_0.centerX(), kit1_0.centerY() + 5f, textPaint);
-        textPaint.setColor(selectedKit1 == 1 ? Color.BLACK : Color.WHITE);
-        canvas.drawText("Kit 02", kit1_1.centerX(), kit1_1.centerY() + 5f, textPaint);
-
-        // Divider
-        borderPaint.setColor(Color.argb(30, 255, 255, 255));
-        borderPaint.setStrokeWidth(1f);
-        canvas.drawLine(card.left + 20f, r0Y + rowH, card.right - 20f, r0Y + rowH, borderPaint);
-
-        // ── Row 1: Team 2 Kit ──
-        float r1Y = r0Y + rowH;
-        textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText(team2Name + " Kit", card.left + 28f, r1Y + rowH * 0.42f, textPaint);
-        subTextPaint.setTextAlign(Paint.Align.LEFT);
-        subTextPaint.setColor(Color.parseColor("#9EA3C7"));
-        subTextPaint.setTextSize(12.5f);
-        canvas.drawText("Select active away kit", card.left + 28f, r1Y + rowH * 0.76f, subTextPaint);
-
-        float btnPadY1 = r1Y + (rowH - btnH) * 0.5f;
-        RectF kit2_0 = new RectF(colCtrlLeft, btnPadY1, colCtrlLeft + kitBtnW, btnPadY1 + btnH);
-        RectF kit2_1 = new RectF(colCtrlLeft + kitBtnW + 14f, btnPadY1, colCtrlRight, btnPadY1 + btnH);
-
-        cardPaint.setColor(selectedKit2 == 0 ? Color.parseColor("#00F0FF") : Color.parseColor("#262940"));
-        canvas.drawRoundRect(kit2_0, 10f, 10f, cardPaint);
-        cardPaint.setColor(selectedKit2 == 1 ? Color.parseColor("#00F0FF") : Color.parseColor("#262940"));
-        canvas.drawRoundRect(kit2_1, 10f, 10f, cardPaint);
-
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(selectedKit2 == 0 ? Color.BLACK : Color.WHITE);
-        textPaint.setTextSize(15f);
-        canvas.drawText("Kit 01", kit2_0.centerX(), kit2_0.centerY() + 5f, textPaint);
-        textPaint.setColor(selectedKit2 == 1 ? Color.BLACK : Color.WHITE);
-        canvas.drawText("Kit 02", kit2_1.centerX(), kit2_1.centerY() + 5f, textPaint);
-
-        canvas.drawLine(card.left + 20f, r1Y + rowH, card.right - 20f, r1Y + rowH, borderPaint);
-
-        // ── Row 2: Pitch Lighting ──
-        float r2Y = r1Y + rowH;
-        textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("Pitch Lighting & Sun", card.left + 28f, r2Y + rowH * 0.42f, textPaint);
-        subTextPaint.setColor(Color.parseColor("#9EA3C7"));
-        canvas.drawText("Randomize sun angle and shadows", card.left + 28f, r2Y + rowH * 0.76f, subTextPaint);
-
-        float btnPadY2 = r2Y + (rowH - btnH) * 0.5f;
-        RectF sunBtn = new RectF(colCtrlLeft, btnPadY2, colCtrlRight, btnPadY2 + btnH);
-        cardPaint.setColor(Color.parseColor("#FFA800"));
-        canvas.drawRoundRect(sunBtn, 10f, 10f, cardPaint);
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.parseColor("#141200"));
-        textPaint.setTextSize(15f);
-        canvas.drawText("☀  Randomize Sun Position", sunBtn.centerX(), sunBtn.centerY() + 5f, textPaint);
-
-        canvas.drawLine(card.left + 20f, r2Y + rowH, card.right - 20f, r2Y + rowH, borderPaint);
-
-        // ── Row 3: Pitch Radar HUD ──
-        float r3Y = r2Y + rowH;
-        textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("Pitch Radar HUD", card.left + 28f, r3Y + rowH * 0.42f, textPaint);
-        subTextPaint.setColor(Color.parseColor("#9EA3C7"));
-        canvas.drawText("Toggle 2D minimap on pitch", card.left + 28f, r3Y + rowH * 0.76f, subTextPaint);
-
-        float btnPadY3 = r3Y + (rowH - btnH) * 0.5f;
-        RectF radarBtn = new RectF(colCtrlLeft, btnPadY3, colCtrlLeft + 120f, btnPadY3 + btnH);
-        cardPaint.setColor(settingRadarEnabled ? Color.parseColor("#00E676") : Color.parseColor("#424242"));
-        canvas.drawRoundRect(radarBtn, 10f, 10f, cardPaint);
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(15f);
-        canvas.drawText(settingRadarEnabled ? "ON" : "OFF", radarBtn.centerX(), radarBtn.centerY() + 5f, textPaint);
-
-        canvas.drawLine(card.left + 20f, r3Y + rowH, card.right - 20f, r3Y + rowH, borderPaint);
-
-        // ── Row 4: Overhead Player Names ──
-        float r4Y = r3Y + rowH;
-        textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("Overhead Indicators", card.left + 28f, r4Y + rowH * 0.42f, textPaint);
-        subTextPaint.setColor(Color.parseColor("#9EA3C7"));
-        canvas.drawText("Player name & cursor over active player", card.left + 28f, r4Y + rowH * 0.76f, subTextPaint);
-
-        float btnPadY4 = r4Y + (rowH - btnH) * 0.5f;
-        RectF namesBtn = new RectF(colCtrlLeft, btnPadY4, colCtrlLeft + 120f, btnPadY4 + btnH);
-        cardPaint.setColor(settingPlayerNames ? Color.parseColor("#00E676") : Color.parseColor("#424242"));
-        canvas.drawRoundRect(namesBtn, 10f, 10f, cardPaint);
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(15f);
-        canvas.drawText(settingPlayerNames ? "ON" : "OFF", namesBtn.centerX(), namesBtn.centerY() + 5f, textPaint);
-
-        canvas.drawLine(card.left + 20f, r4Y + rowH, card.right - 20f, r4Y + rowH, borderPaint);
-
-        // ── Row 5: Actions: Match Records & Forfeit ──
-        float r5Y = r4Y + rowH;
-        textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("Match Management", card.left + 28f, r5Y + rowH * 0.42f, textPaint);
-        subTextPaint.setColor(Color.parseColor("#9EA3C7"));
-        canvas.drawText("Live telemetry and match exit", card.left + 28f, r5Y + rowH * 0.76f, subTextPaint);
-
-        float btnPadY5 = r5Y + (rowH - btnH) * 0.5f;
-        float actBtnW = (colCtrlW - 14f) / 2f;
-        RectF recordsBtn = new RectF(colCtrlLeft, btnPadY5, colCtrlLeft + actBtnW, btnPadY5 + btnH);
-        RectF forfeitBtn = new RectF(colCtrlLeft + actBtnW + 14f, btnPadY5, colCtrlRight, btnPadY5 + btnH);
-
-        cardPaint.setColor(Color.parseColor("#1F2438"));
-        canvas.drawRoundRect(recordsBtn, 10f, 10f, cardPaint);
-        borderPaint.setColor(Color.parseColor("#00F0FF"));
-        borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(recordsBtn, 10f, 10f, borderPaint);
-
-        cardPaint.setColor(Color.parseColor("#D32F2F"));
-        canvas.drawRoundRect(forfeitBtn, 10f, 10f, cardPaint);
-
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.parseColor("#00F0FF"));
-        textPaint.setTextSize(14f);
-        canvas.drawText("Match Records", recordsBtn.centerX(), recordsBtn.centerY() + 5f, textPaint);
-
-        textPaint.setColor(Color.WHITE);
-        canvas.drawText("Forfeit Match", forfeitBtn.centerX(), forfeitBtn.centerY() + 5f, textPaint);
-    }
-
-    /**
-     * In-Overlay Camera Settings (Match Records Style).
-     */
-    private void drawCameraSettingsOverlay(Canvas canvas, int w, int h) {
-        cardPaint.setColor(Color.argb(245, 10, 12, 22));
-        canvas.drawRect(0, 0, w, h, cardPaint);
-
-        float padX = Math.max(w * 0.05f, safeInsetLeft + 24f);
-        float topY = Math.max(h * 0.04f, safeInsetTop + 14f);
-
-        // Back Button
-        RectF backBtn = new RectF(padX, topY, padX + 130f, topY + 42f);
-        cardPaint.setColor(Color.parseColor("#007AFF"));
-        canvas.drawRoundRect(backBtn, 21f, 21f, cardPaint);
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
-
-        textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(22f);
-        canvas.drawText("CAMERA SETTINGS", padX + 150f, topY + 30f, textPaint);
-
-        float bodyTop = topY + 54f;
-        float bodyH = h - bodyTop - Math.max(h * 0.04f, safeInsetBottom + 16f);
-        float bodyW = w - padX * 2f;
-
-        RectF card = new RectF(padX, bodyTop, padX + bodyW, bodyTop + bodyH);
-        cardPaint.setColor(Color.parseColor("#16182B"));
-        canvas.drawRoundRect(card, 16f, 16f, cardPaint);
-        borderPaint.setColor(Color.parseColor("#00F0FF"));
-        borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(card, 16f, 16f, borderPaint);
-
-        String[] sliderTitles = {
-                "CAMERA HEIGHT",
-                "CAMERA ZOOM / FOV",
-                "CAMERA ANGLE"
-        };
-        String[] displayVals = {
-                Math.round((settingCamHeight - 0.1f) / 1.4f * 100) + "%",
-                Math.round((settingCamZoom - 0.2f) / 1.3f * 100) + "%",
-                Math.round(settingCamAngle * 100) + "%"
+        String[] rowTitles = {
+                team1Name + " Kit",
+                team2Name + " Kit",
+                "Pitch Lighting & Sun",
+                "Pitch Radar Minimap",
+                "Overhead Player Indicators",
+                "Match Management"
         };
 
-        float trackLeft = card.left + bodyW * 0.42f;
-        float trackRight = card.right - 90f;
-        float trackW = trackRight - trackLeft;
-        float rowH = (bodyH - 24f) / 4f;
+        float btnH = rowH * 0.62f;
 
-        for (int i = 0; i < 3; i++) {
-            float ry = bodyTop + 12f + i * rowH;
-            float cy = ry + rowH * 0.5f;
+        for (int r = 0; r < 6; r++) {
+            float ry = rowsTop + r * rowH;
+
+            // Alternating soft light-blue / white row bands
+            if (r % 2 == 0) {
+                cardPaint.setColor(Color.parseColor("#EAF1F8"));
+                canvas.drawRect(sheetX, ry, sheetX + sheetW, ry + rowH, cardPaint);
+            }
 
             textPaint.setTextAlign(Paint.Align.LEFT);
-            textPaint.setColor(Color.WHITE);
-            textPaint.setTextSize(17f);
-            canvas.drawText(sliderTitles[i], card.left + 28f, cy + 6f, textPaint);
+            textPaint.setColor(Color.parseColor("#224A7A"));
+            textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
+            textPaint.setTextSize(15f);
+            canvas.drawText(rowTitles[r], sheetX + 28f, ry + rowH * 0.58f, textPaint);
 
-            // Track background
-            borderPaint.setColor(Color.parseColor("#2E334D"));
-            borderPaint.setStrokeWidth(8f);
-            canvas.drawLine(trackLeft, cy, trackRight, cy, borderPaint);
+            float btnY = ry + (rowH - btnH) * 0.5f;
 
-            // Active Track
-            float frac = 0.5f;
-            if (i == 0) frac = (settingCamHeight - 0.1f) / 1.4f;
-            else if (i == 1) frac = (settingCamZoom - 0.2f) / 1.3f;
-            else if (i == 2) frac = settingCamAngle;
-            frac = Math.max(0f, Math.min(1f, frac));
+            if (r == 0) { // Team 1 Kit
+                float kitW = 85f;
+                RectF kit1_0 = new RectF(sheetX + sheetW - 28f - 2f * kitW - 10f, btnY, sheetX + sheetW - 28f - kitW - 10f, btnY + btnH);
+                RectF kit1_1 = new RectF(sheetX + sheetW - 28f - kitW, btnY, sheetX + sheetW - 28f, btnY + btnH);
 
-            float thumbX = trackLeft + frac * trackW;
-            borderPaint.setColor(Color.parseColor("#00F0FF"));
-            borderPaint.setStrokeWidth(8f);
-            canvas.drawLine(trackLeft, cy, thumbX, cy, borderPaint);
+                cardPaint.setColor(selectedKit1 == 0 ? Color.parseColor("#007AFF") : Color.WHITE);
+                canvas.drawRoundRect(kit1_0, 10f, 10f, cardPaint);
+                borderPaint.setColor(Color.parseColor("#B0BEC5"));
+                borderPaint.setStrokeWidth(1.2f);
+                canvas.drawRoundRect(kit1_0, 10f, 10f, borderPaint);
 
-            // Thumb
-            cardPaint.setColor(Color.WHITE);
-            canvas.drawCircle(thumbX, cy, 14f, cardPaint);
-            borderPaint.setColor(Color.parseColor("#00F0FF"));
-            borderPaint.setStrokeWidth(3f);
-            canvas.drawCircle(thumbX, cy, 14f, borderPaint);
+                cardPaint.setColor(selectedKit1 == 1 ? Color.parseColor("#007AFF") : Color.WHITE);
+                canvas.drawRoundRect(kit1_1, 10f, 10f, cardPaint);
+                canvas.drawRoundRect(kit1_1, 10f, 10f, borderPaint);
 
-            // Value text
-            textPaint.setTextAlign(Paint.Align.LEFT);
-            textPaint.setColor(Color.parseColor("#00F0FF"));
-            textPaint.setTextSize(16f);
-            canvas.drawText(displayVals[i], trackRight + 16f, cy + 6f, textPaint);
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                textPaint.setTextSize(13.5f);
+                textPaint.setColor(selectedKit1 == 0 ? Color.WHITE : Color.parseColor("#224A7A"));
+                canvas.drawText("Kit 01", kit1_0.centerX(), kit1_0.centerY() + 4.5f, textPaint);
+                textPaint.setColor(selectedKit1 == 1 ? Color.WHITE : Color.parseColor("#224A7A"));
+                canvas.drawText("Kit 02", kit1_1.centerX(), kit1_1.centerY() + 4.5f, textPaint);
 
-            // Divider
-            borderPaint.setColor(Color.argb(30, 255, 255, 255));
-            borderPaint.setStrokeWidth(1f);
-            canvas.drawLine(card.left + 20f, ry + rowH, card.right - 20f, ry + rowH, borderPaint);
+            } else if (r == 1) { // Team 2 Kit
+                float kitW = 85f;
+                RectF kit2_0 = new RectF(sheetX + sheetW - 28f - 2f * kitW - 10f, btnY, sheetX + sheetW - 28f - kitW - 10f, btnY + btnH);
+                RectF kit2_1 = new RectF(sheetX + sheetW - 28f - kitW, btnY, sheetX + sheetW - 28f, btnY + btnH);
+
+                cardPaint.setColor(selectedKit2 == 0 ? Color.parseColor("#007AFF") : Color.WHITE);
+                canvas.drawRoundRect(kit2_0, 10f, 10f, cardPaint);
+                borderPaint.setColor(Color.parseColor("#B0BEC5"));
+                borderPaint.setStrokeWidth(1.2f);
+                canvas.drawRoundRect(kit2_0, 10f, 10f, borderPaint);
+
+                cardPaint.setColor(selectedKit2 == 1 ? Color.parseColor("#007AFF") : Color.WHITE);
+                canvas.drawRoundRect(kit2_1, 10f, 10f, cardPaint);
+                canvas.drawRoundRect(kit2_1, 10f, 10f, borderPaint);
+
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                textPaint.setTextSize(13.5f);
+                textPaint.setColor(selectedKit2 == 0 ? Color.WHITE : Color.parseColor("#224A7A"));
+                canvas.drawText("Kit 01", kit2_0.centerX(), kit2_0.centerY() + 4.5f, textPaint);
+                textPaint.setColor(selectedKit2 == 1 ? Color.WHITE : Color.parseColor("#224A7A"));
+                canvas.drawText("Kit 02", kit2_1.centerX(), kit2_1.centerY() + 4.5f, textPaint);
+
+            } else if (r == 2) { // Sun position
+                RectF sunBtn = new RectF(sheetX + sheetW - 28f - 180f, btnY, sheetX + sheetW - 28f, btnY + btnH);
+                cardPaint.setColor(Color.parseColor("#007AFF"));
+                canvas.drawRoundRect(sunBtn, 10f, 10f, cardPaint);
+
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                textPaint.setColor(Color.WHITE);
+                textPaint.setTextSize(13.5f);
+                canvas.drawText("☀  Randomize Sun", sunBtn.centerX(), sunBtn.centerY() + 4.5f, textPaint);
+
+            } else if (r == 3) { // Radar
+                RectF radarBtn = new RectF(sheetX + sheetW - 28f - 85f, btnY, sheetX + sheetW - 28f, btnY + btnH);
+                cardPaint.setColor(settingRadarEnabled ? Color.parseColor("#00C853") : Color.parseColor("#9E9E9E"));
+                canvas.drawRoundRect(radarBtn, 10f, 10f, cardPaint);
+
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                textPaint.setColor(Color.WHITE);
+                textPaint.setTextSize(13.5f);
+                canvas.drawText(settingRadarEnabled ? "ON" : "OFF", radarBtn.centerX(), radarBtn.centerY() + 4.5f, textPaint);
+
+            } else if (r == 4) { // Overhead Indicators
+                RectF namesBtn = new RectF(sheetX + sheetW - 28f - 85f, btnY, sheetX + sheetW - 28f, btnY + btnH);
+                cardPaint.setColor(settingPlayerNames ? Color.parseColor("#00C853") : Color.parseColor("#9E9E9E"));
+                canvas.drawRoundRect(namesBtn, 10f, 10f, cardPaint);
+
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                textPaint.setColor(Color.WHITE);
+                textPaint.setTextSize(13.5f);
+                canvas.drawText(settingPlayerNames ? "ON" : "OFF", namesBtn.centerX(), namesBtn.centerY() + 4.5f, textPaint);
+
+            } else if (r == 5) { // Match Actions
+                float actW = 125f;
+                RectF recordsBtn = new RectF(sheetX + sheetW - 28f - 2f * actW - 10f, btnY, sheetX + sheetW - 28f - actW - 10f, btnY + btnH);
+                RectF forfeitBtn = new RectF(sheetX + sheetW - 28f - actW, btnY, sheetX + sheetW - 28f, btnY + btnH);
+
+                cardPaint.setColor(Color.WHITE);
+                canvas.drawRoundRect(recordsBtn, 10f, 10f, cardPaint);
+                borderPaint.setColor(Color.parseColor("#007AFF"));
+                borderPaint.setStrokeWidth(1.5f);
+                canvas.drawRoundRect(recordsBtn, 10f, 10f, borderPaint);
+
+                cardPaint.setColor(Color.parseColor("#D32F2F"));
+                canvas.drawRoundRect(forfeitBtn, 10f, 10f, cardPaint);
+
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                textPaint.setTextSize(13f);
+                textPaint.setColor(Color.parseColor("#007AFF"));
+                canvas.drawText("Match Records", recordsBtn.centerX(), recordsBtn.centerY() + 4.5f, textPaint);
+                textPaint.setColor(Color.WHITE);
+                canvas.drawText("Forfeit Match", forfeitBtn.centerX(), forfeitBtn.centerY() + 4.5f, textPaint);
+            }
         }
 
-        // Reset to Defaults Button
-        float r3Y = bodyTop + 12f + 3f * rowH;
-        float resetBtnW = 200f;
-        RectF resetBtn = new RectF(trackLeft, r3Y + rowH * 0.20f, trackLeft + resetBtnW, r3Y + rowH * 0.80f);
-        cardPaint.setColor(Color.parseColor("#262940"));
-        canvas.drawRoundRect(resetBtn, 10f, 10f, cardPaint);
-        borderPaint.setColor(Color.parseColor("#00F0FF"));
-        borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(resetBtn, 10f, 10f, borderPaint);
-
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(15f);
-        canvas.drawText("Reset Defaults", resetBtn.centerX(), resetBtn.centerY() + 5f, textPaint);
-    }
-
-    /**
-     * In-Overlay Sound Settings (Match Records Style).
-     */
-    private void drawSoundSettingsOverlay(Canvas canvas, int w, int h) {
-        cardPaint.setColor(Color.argb(245, 10, 12, 22));
-        canvas.drawRect(0, 0, w, h, cardPaint);
-
-        float padX = Math.max(w * 0.05f, safeInsetLeft + 24f);
-        float topY = Math.max(h * 0.04f, safeInsetTop + 14f);
-
-        // Back Button
-        RectF backBtn = new RectF(padX, topY, padX + 130f, topY + 42f);
+        // Bottom-Left Floating Back Button
+        float padL = Math.max(w * 0.08f, safeInsetLeft + 24f);
+        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
+        RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
         cardPaint.setColor(Color.parseColor("#007AFF"));
-        canvas.drawRoundRect(backBtn, 21f, 21f, cardPaint);
+        canvas.drawRoundRect(backBtn, 24f, 24f, cardPaint);
+
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(17f);
         canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
+    }
 
-        textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(22f);
-        canvas.drawText("SOUND SETTINGS", padX + 150f, topY + 30f, textPaint);
+    /**
+     * PES Mobile Authentic Camera Settings Sheet.
+     */
+    private void drawCameraSettingsOverlay(Canvas canvas, int w, int h) {
+        cardPaint.setColor(Color.argb(140, 6, 12, 10));
+        canvas.drawRect(0, 0, w, h, cardPaint);
 
-        float bodyTop = topY + 54f;
-        float bodyH = h - bodyTop - Math.max(h * 0.04f, safeInsetBottom + 16f);
-        float bodyW = w - padX * 2f;
+        float sheetW = Math.min(w * 0.64f, 620f);
+        float sheetX = (w - sheetW) * 0.5f;
+        float sheetTop = Math.max(h * 0.03f, safeInsetTop + 6f);
+        float sheetBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 52f;
+        float sheetH = sheetBottom - sheetTop;
+        RectF sheetRect = new RectF(sheetX, sheetTop, sheetX + sheetW, sheetBottom);
 
-        RectF card = new RectF(padX, bodyTop, padX + bodyW, bodyTop + bodyH);
-        cardPaint.setColor(Color.parseColor("#16182B"));
-        canvas.drawRoundRect(card, 16f, 16f, cardPaint);
-        borderPaint.setColor(Color.parseColor("#00F0FF"));
-        borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(card, 16f, 16f, borderPaint);
-
-        float trackLeft = card.left + bodyW * 0.42f;
-        float trackRight = card.right - 90f;
-        float trackW = trackRight - trackLeft;
-        float rowH = (bodyH - 24f) / 3f;
-
-        // Row 0: Volume Slider
-        float r0Y = bodyTop + 12f;
-        float cy = r0Y + rowH * 0.5f;
-
-        textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("AUDIO & CROWD SFX", card.left + 28f, cy + 6f, textPaint);
-
-        // Track background
-        borderPaint.setColor(Color.parseColor("#2E334D"));
-        borderPaint.setStrokeWidth(8f);
-        canvas.drawLine(trackLeft, cy, trackRight, cy, borderPaint);
-
-        // Active Track
-        float frac = Math.max(0f, Math.min(1f, settingAudioVolume));
-        float thumbX = trackLeft + frac * trackW;
-        borderPaint.setColor(Color.parseColor("#00F0FF"));
-        borderPaint.setStrokeWidth(8f);
-        canvas.drawLine(trackLeft, cy, thumbX, cy, borderPaint);
-
-        // Thumb
         cardPaint.setColor(Color.WHITE);
-        canvas.drawCircle(thumbX, cy, 14f, cardPaint);
-        borderPaint.setColor(Color.parseColor("#00F0FF"));
-        borderPaint.setStrokeWidth(3f);
-        canvas.drawCircle(thumbX, cy, 14f, borderPaint);
-
-        // Display Value
-        textPaint.setColor(Color.parseColor("#00F0FF"));
-        textPaint.setTextSize(16f);
-        canvas.drawText(Math.round(frac * 100) + "%", trackRight + 16f, cy + 6f, textPaint);
-
-        // Divider
-        borderPaint.setColor(Color.argb(30, 255, 255, 255));
-        borderPaint.setStrokeWidth(1f);
-        canvas.drawLine(card.left + 20f, r0Y + rowH, card.right - 20f, r0Y + rowH, borderPaint);
-
-        // Row 1: Mute Toggle Button
-        float r1Y = r0Y + rowH;
-        textPaint.setTextAlign(Paint.Align.LEFT);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(17f);
-        canvas.drawText("MASTER MUTE", card.left + 28f, r1Y + rowH * 0.5f + 6f, textPaint);
-
-        RectF muteBtn = new RectF(trackLeft, r1Y + rowH * 0.22f, trackLeft + 160f, r1Y + rowH * 0.78f);
-        cardPaint.setColor((settingAudioVolume < 0.01f) ? Color.parseColor("#E53935") : Color.parseColor("#262940"));
-        canvas.drawRoundRect(muteBtn, 10f, 10f, cardPaint);
-        borderPaint.setColor(Color.parseColor("#00F0FF"));
+        canvas.drawRoundRect(sheetRect, 16f, 16f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#DDE5ED"));
         borderPaint.setStrokeWidth(1.5f);
-        canvas.drawRoundRect(muteBtn, 10f, 10f, borderPaint);
+        canvas.drawRoundRect(sheetRect, 16f, 16f, borderPaint);
+
+        // Header Title: "Camera Settings" in Bold Black
+        float headerH = sheetH * 0.16f;
+        textPaint.setTextAlign(Paint.Align.LEFT);
+        textPaint.setColor(Color.parseColor("#1B1B1B"));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(Math.min(headerH * 0.44f, 26f));
+        canvas.drawText("Camera Settings", sheetX + 28f, sheetTop + headerH * 0.65f, textPaint);
+
+        float rowsTop = sheetTop + headerH;
+        float rowsH = sheetH - headerH;
+        float rowH = rowsH / 4f;
+
+        String[] rowTitles = {
+                "Camera Height",
+                "Camera Zoom / FOV",
+                "Camera Angle",
+                "Reset Camera Settings"
+        };
+        float[] fracs = {
+                Math.max(0f, Math.min(1f, (settingCamHeight - 0.1f) / 1.4f)),
+                Math.max(0f, Math.min(1f, (settingCamZoom - 0.2f) / 1.3f)),
+                Math.max(0f, Math.min(1f, settingCamAngle))
+        };
+
+        float trackLeft = sheetX + 54f;
+        float trackRight = sheetX + sheetW - 60f;
+        float trackW = trackRight - trackLeft;
+
+        for (int r = 0; r < 4; r++) {
+            float ry = rowsTop + r * rowH;
+
+            // Alternating soft light-blue / white row bands
+            if (r % 2 == 0) {
+                cardPaint.setColor(Color.parseColor("#EAF1F8"));
+                canvas.drawRect(sheetX, ry, sheetX + sheetW, ry + rowH, cardPaint);
+            }
+
+            textPaint.setTextAlign(Paint.Align.LEFT);
+            textPaint.setColor(Color.parseColor("#224A7A"));
+            textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
+            textPaint.setTextSize(15f);
+            canvas.drawText(rowTitles[r], sheetX + 28f, ry + rowH * 0.32f, textPaint);
+
+            if (r < 3) {
+                float frac = fracs[r];
+                float cy = ry + rowH * 0.70f;
+
+                // Left min icon
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                textPaint.setColor(Color.parseColor("#5A738E"));
+                textPaint.setTextSize(16f);
+                canvas.drawText("−", sheetX + 32f, cy + 5f, textPaint);
+
+                // Right max icon
+                canvas.drawText("+", sheetX + sheetW - 32f, cy + 5f, textPaint);
+
+                // Track Background
+                borderPaint.setColor(Color.parseColor("#C2D9EE"));
+                borderPaint.setStrokeWidth(4.5f);
+                borderPaint.setStrokeCap(Paint.Cap.ROUND);
+                canvas.drawLine(trackLeft, cy, trackRight, cy, borderPaint);
+
+                // Active Track
+                float thumbX = trackLeft + frac * trackW;
+                borderPaint.setColor(Color.parseColor("#007AFF"));
+                canvas.drawLine(trackLeft, cy, thumbX, cy, borderPaint);
+
+                // Blue Circular Thumb
+                cardPaint.setColor(Color.parseColor("#007AFF"));
+                canvas.drawCircle(thumbX, cy, 12f, cardPaint);
+                borderPaint.setColor(Color.WHITE);
+                borderPaint.setStrokeWidth(2.5f);
+                canvas.drawCircle(thumbX, cy, 12f, borderPaint);
+
+                // Percentage text
+                textPaint.setTextAlign(Paint.Align.RIGHT);
+                textPaint.setColor(Color.parseColor("#007AFF"));
+                textPaint.setTextSize(14f);
+                canvas.drawText(Math.round(frac * 100) + "%", sheetX + sheetW - 28f, ry + rowH * 0.32f, textPaint);
+            } else {
+                // Reset to Defaults Button
+                float btnH = rowH * 0.50f;
+                float btnY = ry + (rowH - btnH) * 0.5f;
+                RectF resetBtn = new RectF(sheetX + 28f, btnY, sheetX + 28f + 180f, btnY + btnH);
+                cardPaint.setColor(Color.parseColor("#007AFF"));
+                canvas.drawRoundRect(resetBtn, 12f, 12f, cardPaint);
+
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                textPaint.setColor(Color.WHITE);
+                textPaint.setTextSize(14.5f);
+                canvas.drawText("RESET DEFAULTS", resetBtn.centerX(), resetBtn.centerY() + 5f, textPaint);
+            }
+        }
+
+        // Bottom-Left Floating Back Button (Vibrant Blue Pill)
+        float padL = Math.max(w * 0.08f, safeInsetLeft + 24f);
+        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
+        RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+        cardPaint.setColor(Color.parseColor("#007AFF"));
+        canvas.drawRoundRect(backBtn, 24f, 24f, cardPaint);
 
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(15f);
-        canvas.drawText((settingAudioVolume < 0.01f) ? "Muted" : "Mute Sound", muteBtn.centerX(), muteBtn.centerY() + 5f, textPaint);
+        textPaint.setTextSize(17f);
+        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
+    }
+
+    /**
+     * PES Mobile Authentic Sound Settings Sheet (Matching media_1791746389812_468ae7d4.png).
+     */
+    private void drawSoundSettingsOverlay(Canvas canvas, int w, int h) {
+        cardPaint.setColor(Color.argb(140, 6, 12, 10));
+        canvas.drawRect(0, 0, w, h, cardPaint);
+
+        float sheetW = Math.min(w * 0.64f, 620f);
+        float sheetX = (w - sheetW) * 0.5f;
+        float sheetTop = Math.max(h * 0.03f, safeInsetTop + 6f);
+        float sheetBottom = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 52f;
+        float sheetH = sheetBottom - sheetTop;
+        RectF sheetRect = new RectF(sheetX, sheetTop, sheetX + sheetW, sheetBottom);
+
+        cardPaint.setColor(Color.WHITE);
+        canvas.drawRoundRect(sheetRect, 16f, 16f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#DDE5ED"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRoundRect(sheetRect, 16f, 16f, borderPaint);
+
+        // Header Title: "Sound Settings" in Bold Black
+        float headerH = sheetH * 0.16f;
+        textPaint.setTextAlign(Paint.Align.LEFT);
+        textPaint.setColor(Color.parseColor("#1B1B1B"));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(Math.min(headerH * 0.44f, 26f));
+        canvas.drawText("Sound Settings", sheetX + 28f, sheetTop + headerH * 0.65f, textPaint);
+
+        float rowsTop = sheetTop + headerH;
+        float rowsH = sheetH - headerH;
+        float rowH = rowsH / 3f;
+
+        String[] rowTitles = {
+                "In-Match Audio & Crowd SFX",
+                "Music & Menu SFX Volume",
+                "Master Audio Mute"
+        };
+
+        float trackLeft = sheetX + 54f;
+        float trackRight = sheetX + sheetW - 60f;
+        float trackW = trackRight - trackLeft;
+
+        for (int r = 0; r < 3; r++) {
+            float ry = rowsTop + r * rowH;
+
+            // Alternating soft light-blue / white row bands
+            if (r % 2 == 0) {
+                cardPaint.setColor(Color.parseColor("#EAF1F8"));
+                canvas.drawRect(sheetX, ry, sheetX + sheetW, ry + rowH, cardPaint);
+            }
+
+            textPaint.setTextAlign(Paint.Align.LEFT);
+            textPaint.setColor(Color.parseColor("#224A7A"));
+            textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
+            textPaint.setTextSize(15f);
+            canvas.drawText(rowTitles[r], sheetX + 28f, ry + rowH * 0.32f, textPaint);
+
+            if (r < 2) {
+                float frac = (r == 0) ? settingAudioVolume : Math.min(1.0f, settingAudioVolume * 1.1f);
+                frac = Math.max(0f, Math.min(1f, frac));
+
+                float cy = ry + rowH * 0.70f;
+
+                // Left min speaker icon
+                drawSmallSpeakerIcon(canvas, sheetX + 32f, cy, 10f, false);
+
+                // Right max speaker icon
+                drawSmallSpeakerIcon(canvas, sheetX + sheetW - 32f, cy, 10f, true);
+
+                // Track Background
+                borderPaint.setColor(Color.parseColor("#C2D9EE"));
+                borderPaint.setStrokeWidth(4.5f);
+                borderPaint.setStrokeCap(Paint.Cap.ROUND);
+                canvas.drawLine(trackLeft, cy, trackRight, cy, borderPaint);
+
+                // Active Track
+                float thumbX = trackLeft + frac * trackW;
+                borderPaint.setColor(Color.parseColor("#007AFF"));
+                canvas.drawLine(trackLeft, cy, thumbX, cy, borderPaint);
+
+                // Blue Circular Thumb
+                cardPaint.setColor(Color.parseColor("#007AFF"));
+                canvas.drawCircle(thumbX, cy, 12f, cardPaint);
+                borderPaint.setColor(Color.WHITE);
+                borderPaint.setStrokeWidth(2.5f);
+                canvas.drawCircle(thumbX, cy, 12f, borderPaint);
+
+                // Percentage text
+                textPaint.setTextAlign(Paint.Align.RIGHT);
+                textPaint.setColor(Color.parseColor("#007AFF"));
+                textPaint.setTextSize(14f);
+                canvas.drawText(Math.round(frac * 100) + "%", sheetX + sheetW - 28f, ry + rowH * 0.32f, textPaint);
+            } else {
+                // Mute toggle button
+                float btnH = rowH * 0.50f;
+                float btnY = ry + (rowH - btnH) * 0.5f;
+                RectF muteBtn = new RectF(sheetX + 28f, btnY, sheetX + 28f + 160f, btnY + btnH);
+                boolean isMuted = (settingAudioVolume < 0.01f);
+                cardPaint.setColor(isMuted ? Color.parseColor("#E53935") : Color.parseColor("#007AFF"));
+                canvas.drawRoundRect(muteBtn, 12f, 12f, cardPaint);
+
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                textPaint.setColor(Color.WHITE);
+                textPaint.setTextSize(14.5f);
+                canvas.drawText(isMuted ? "UNMUTE AUDIO" : "MUTE AUDIO", muteBtn.centerX(), muteBtn.centerY() + 5f, textPaint);
+            }
+        }
+
+        // Bottom-Left Floating Back Button (Vibrant Blue Pill)
+        float padL = Math.max(w * 0.08f, safeInsetLeft + 24f);
+        float btnY = h - Math.max(h * 0.04f, safeInsetBottom + 12f) - 48f;
+        RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+        cardPaint.setColor(Color.parseColor("#007AFF"));
+        canvas.drawRoundRect(backBtn, 24f, 24f, cardPaint);
+
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextSize(17f);
+        canvas.drawText("❮  Back", backBtn.centerX(), backBtn.centerY() + 6f, textPaint);
+    }
+
+    private void drawSmallSpeakerIcon(Canvas canvas, float cx, float cy, float r, boolean withWaves) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setColor(Color.parseColor("#5A738E"));
+        p.setStyle(Paint.Style.FILL);
+        Path path = new Path();
+        path.moveTo(cx - r * 0.6f, cy - r * 0.28f);
+        path.lineTo(cx - r * 0.2f, cy - r * 0.28f);
+        path.lineTo(cx + r * 0.2f, cy - r * 0.65f);
+        path.lineTo(cx + r * 0.2f, cy + r * 0.65f);
+        path.lineTo(cx - r * 0.2f, cy + r * 0.28f);
+        path.lineTo(cx - r * 0.6f, cy + r * 0.28f);
+        path.close();
+        canvas.drawPath(path, p);
+        if (withWaves) {
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(2.0f);
+            p.setStrokeCap(Paint.Cap.ROUND);
+            canvas.drawArc(new RectF(cx + r * 0.15f, cy - r * 0.40f, cx + r * 0.65f, cy + r * 0.40f), -45f, 90f, false, p);
+            canvas.drawArc(new RectF(cx + r * 0.35f, cy - r * 0.65f, cx + r * 0.95f, cy + r * 0.65f), -45f, 90f, false, p);
+        }
     }
 
     /**
@@ -1713,91 +1705,111 @@ public class MobileControlsView extends View {
         Paint pBlue = new Paint(Paint.ANTI_ALIAS_FLAG);
         pBlue.setColor(Color.parseColor("#1976D2"));
         pBlue.setStyle(Paint.Style.STROKE);
-        pBlue.setStrokeWidth(2.8f);
+        pBlue.setStrokeWidth(2.6f);
 
         Paint pGreen = new Paint(Paint.ANTI_ALIAS_FLAG);
         pGreen.setColor(Color.parseColor("#00C853"));
         pGreen.setStyle(Paint.Style.FILL);
 
         if (index == 0) { // Squad Management: Pitch board with green map pin
-            RectF pitch = new RectF(cx - radius * 0.9f, cy - radius * 0.7f, cx + radius * 0.9f, cy + radius * 0.7f);
+            RectF pitch = new RectF(cx - radius * 0.80f, cy - radius * 0.60f, cx + radius * 0.80f, cy + radius * 0.60f);
             canvas.drawRoundRect(pitch, 4f, 4f, pBlue);
             canvas.drawLine(cx, pitch.top, cx, pitch.bottom, pBlue);
-            canvas.drawCircle(cx, cy, radius * 0.32f, pBlue);
+            canvas.drawCircle(cx, cy, radius * 0.28f, pBlue);
 
             // Green Pin marker at bottom right
-            float pinX = pitch.right - 4f;
-            float pinY = pitch.bottom;
-            canvas.drawCircle(pinX, pinY - radius * 0.22f, radius * 0.22f, pGreen);
-            Path pinTip = new Path();
-            pinTip.moveTo(pinX - radius * 0.18f, pinY - radius * 0.16f);
-            pinTip.lineTo(pinX + radius * 0.18f, pinY - radius * 0.16f);
-            pinTip.lineTo(pinX, pinY + radius * 0.16f);
-            pinTip.close();
-            canvas.drawPath(pinTip, pGreen);
+            float pinX = pitch.right - 2f;
+            float pinY = pitch.bottom - 2f;
+            canvas.drawCircle(pinX, pinY - radius * 0.18f, radius * 0.18f, pGreen);
             pGreen.setColor(Color.WHITE);
-            canvas.drawCircle(pinX, pinY - radius * 0.22f, radius * 0.08f, pGreen);
+            canvas.drawCircle(pinX, pinY - radius * 0.18f, radius * 0.07f, pGreen);
 
         } else if (index == 1) { // Controls List: Device with [?] badge
-            RectF tab = new RectF(cx - radius * 0.95f, cy - radius * 0.7f, cx + radius * 0.95f, cy + radius * 0.7f);
-            canvas.drawRoundRect(tab, 6f, 6f, pBlue);
+            RectF tab = new RectF(cx - radius * 0.85f, cy - radius * 0.60f, cx + radius * 0.85f, cy + radius * 0.60f);
+            canvas.drawRoundRect(tab, 5f, 5f, pBlue);
 
             pBlue.setStyle(Paint.Style.FILL);
-            RectF badge = new RectF(cx - radius * 0.38f, cy - radius * 0.55f, cx + radius * 0.38f, cy + radius * 0.25f);
+            RectF badge = new RectF(cx - radius * 0.35f, cy - radius * 0.40f, cx + radius * 0.35f, cy + radius * 0.30f);
             canvas.drawRoundRect(badge, 4f, 4f, pBlue);
 
             Paint textP = new Paint(Paint.ANTI_ALIAS_FLAG);
             textP.setTextAlign(Paint.Align.CENTER);
             textP.setColor(Color.WHITE);
             textP.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-            textP.setTextSize(radius * 0.55f);
-            canvas.drawText("?", cx, cy + radius * 0.06f, textP);
+            textP.setTextSize(radius * 0.52f);
+            canvas.drawText("?", cx, cy + radius * 0.15f, textP);
 
         } else if (index == 2) { // General Settings: Mechanical Gear / Cog
             pBlue.setStyle(Paint.Style.STROKE);
-            pBlue.setStrokeWidth(3.5f);
-            canvas.drawCircle(cx, cy, radius * 0.48f, pBlue);
+            pBlue.setStrokeWidth(3.0f);
+            canvas.drawCircle(cx, cy, radius * 0.42f, pBlue);
 
             pBlue.setStyle(Paint.Style.FILL);
             for (int i = 0; i < 8; i++) {
                 double a = Math.toRadians(i * 45);
-                float tx = cx + (float)(Math.cos(a) * radius * 0.68f);
-                float ty = cy + (float)(Math.sin(a) * radius * 0.68f);
-                canvas.drawCircle(tx, ty, radius * 0.16f, pBlue);
+                float tx = cx + (float)(Math.cos(a) * radius * 0.58f);
+                float ty = cy + (float)(Math.sin(a) * radius * 0.58f);
+                canvas.drawCircle(tx, ty, radius * 0.14f, pBlue);
             }
             pBlue.setColor(Color.WHITE);
-            canvas.drawCircle(cx, cy, radius * 0.24f, pBlue);
+            canvas.drawCircle(cx, cy, radius * 0.20f, pBlue);
 
         } else if (index == 3) { // Camera Settings: Video Camera
             pBlue.setStyle(Paint.Style.FILL);
-            RectF body = new RectF(cx - radius * 0.9f, cy - radius * 0.55f, cx + radius * 0.35f, cy + radius * 0.55f);
-            canvas.drawRoundRect(body, 6f, 6f, pBlue);
+            RectF body = new RectF(cx - radius * 0.70f, cy - radius * 0.40f, cx + radius * 0.20f, cy + radius * 0.40f);
+            canvas.drawRoundRect(body, 5f, 5f, pBlue);
 
             Path lens = new Path();
-            lens.moveTo(cx + radius * 0.40f, cy - radius * 0.26f);
-            lens.lineTo(cx + radius * 0.95f, cy - radius * 0.60f);
-            lens.lineTo(cx + radius * 0.95f, cy + radius * 0.60f);
-            lens.lineTo(cx + radius * 0.40f, cy + radius * 0.26f);
+            lens.moveTo(cx + radius * 0.25f, cy - radius * 0.20f);
+            lens.lineTo(cx + radius * 0.75f, cy - radius * 0.48f);
+            lens.lineTo(cx + radius * 0.75f, cy + radius * 0.48f);
+            lens.lineTo(cx + radius * 0.25f, cy + radius * 0.20f);
             lens.close();
             canvas.drawPath(lens, pBlue);
 
-        } else if (index == 4) { // Sound Settings: Speaker with green sound waves
+        } else if (index == 4) { // Sound Settings: Speaker with sound waves
             pBlue.setStyle(Paint.Style.FILL);
             Path spk = new Path();
-            spk.moveTo(cx - radius * 0.85f, cy - radius * 0.28f);
-            spk.lineTo(cx - radius * 0.40f, cy - radius * 0.28f);
-            spk.lineTo(cx + radius * 0.05f, cy - radius * 0.68f);
-            spk.lineTo(cx + radius * 0.05f, cy + radius * 0.68f);
-            spk.lineTo(cx - radius * 0.40f, cy + radius * 0.28f);
-            spk.lineTo(cx - radius * 0.85f, cy + radius * 0.28f);
+            spk.moveTo(cx - radius * 0.65f, cy - radius * 0.25f);
+            spk.lineTo(cx - radius * 0.28f, cy - radius * 0.25f);
+            spk.lineTo(cx + radius * 0.08f, cy - radius * 0.60f);
+            spk.lineTo(cx + radius * 0.08f, cy + radius * 0.60f);
+            spk.lineTo(cx - radius * 0.28f, cy + radius * 0.25f);
+            spk.lineTo(cx - radius * 0.65f, cy + radius * 0.25f);
             spk.close();
             canvas.drawPath(spk, pBlue);
 
             pGreen.setStyle(Paint.Style.STROKE);
-            pGreen.setStrokeWidth(3.0f);
+            pGreen.setStrokeWidth(2.6f);
             pGreen.setStrokeCap(Paint.Cap.ROUND);
-            canvas.drawArc(new RectF(cx - radius * 0.1f, cy - radius * 0.45f, cx + radius * 0.55f, cy + radius * 0.45f), -45f, 90f, false, pGreen);
-            canvas.drawArc(new RectF(cx + radius * 0.1f, cy - radius * 0.72f, cx + radius * 0.85f, cy + radius * 0.72f), -45f, 90f, false, pGreen);
+            canvas.drawArc(new RectF(cx - radius * 0.05f, cy - radius * 0.38f, cx + radius * 0.50f, cy + radius * 0.38f), -45f, 90f, false, pGreen);
+            canvas.drawArc(new RectF(cx + radius * 0.12f, cy - radius * 0.62f, cx + radius * 0.78f, cy + radius * 0.62f), -45f, 90f, false, pGreen);
+
+        } else if (index == 5) { // Replay: Circular Rewind Arrow + Play Triangle
+            pBlue.setStyle(Paint.Style.STROKE);
+            pBlue.setStrokeWidth(2.8f);
+            pBlue.setStrokeCap(Paint.Cap.ROUND);
+            RectF arcRect = new RectF(cx - radius * 0.62f, cy - radius * 0.62f, cx + radius * 0.62f, cy + radius * 0.62f);
+            canvas.drawArc(arcRect, 45f, 275f, false, pBlue);
+
+            // Arrow head at 45 deg
+            float ax = cx + (float)(Math.cos(Math.toRadians(45)) * radius * 0.62f);
+            float ay = cy + (float)(Math.sin(Math.toRadians(45)) * radius * 0.62f);
+            Path arrow = new Path();
+            arrow.moveTo(ax - radius * 0.18f, ay - radius * 0.22f);
+            arrow.lineTo(ax + radius * 0.12f, ay);
+            arrow.lineTo(ax - radius * 0.22f, ay + radius * 0.12f);
+            arrow.close();
+            pBlue.setStyle(Paint.Style.FILL);
+            canvas.drawPath(arrow, pBlue);
+
+            // Play Triangle in center
+            Path play = new Path();
+            play.moveTo(cx - radius * 0.18f, cy - radius * 0.24f);
+            play.lineTo(cx + radius * 0.24f, cy);
+            play.lineTo(cx - radius * 0.18f, cy + radius * 0.24f);
+            play.close();
+            canvas.drawPath(play, pBlue);
         }
     }
 
@@ -1987,10 +1999,10 @@ public class MobileControlsView extends View {
 
         // 2. PAUSE MENU TOUCHES
         if (isPaused) {
-            // 2.A: SETTINGS_GRID TOUCHES (PES Mobile 5-Card Grid)
+            // 2.A: SETTINGS_GRID TOUCHES (PES Mobile 6-Card Grid)
             if (pauseSubView == PauseSubView.SETTINGS_GRID) {
-                float padL = Math.max(getWidth() * 0.08f, safeInsetLeft + 28f);
-                float padR = Math.max(getWidth() * 0.08f, safeInsetRight + 28f);
+                float padL = Math.max(getWidth() * 0.12f, safeInsetLeft + 36f);
+                float padR = Math.max(getWidth() * 0.12f, safeInsetRight + 36f);
                 float topY = Math.max(getHeight() * 0.04f, safeInsetTop + 10f);
 
                 float scoreCx = getWidth() * 0.50f;
@@ -1998,29 +2010,32 @@ public class MobileControlsView extends View {
                 float crestCy = topY + crestR + 2f;
                 float t1NameY = crestCy + crestR + 18f;
 
-                float gridTop = t1NameY + 28f;
-                float bottomBarH = 58f;
-                float gridBottom = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - bottomBarH;
                 float gridW = getWidth() - padL - padR;
-                float gridH = gridBottom - gridTop;
-
-                float gapX = gridW * 0.032f;
-                float gapY = gridH * 0.08f;
+                float gapX = gridW * 0.026f;
+                float gapY = 14f;
                 float cardW = (gridW - 2f * gapX) / 3f;
-                float cardH = (gridH - gapY) / 2f;
+
+                float gridTop = t1NameY + 22f;
+                float bottomBarH = 56f;
+                float gridBottom = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - bottomBarH;
+                float maxAvailableH = gridBottom - gridTop;
+                float cardH = Math.min((maxAvailableH - gapY) / 2f, 130f);
+                float actualGridH = 2f * cardH + gapY;
+                float startGridY = gridTop + (maxAvailableH - actualGridH) * 0.35f;
 
                 // Resume button at bottom left
                 float btnY = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 48f;
-                RectF resumeBtn = new RectF(padL, btnY, padL + 160f, btnY + 48f);
+                RectF resumeBtn = new RectF(padL, btnY, padL + 150f, btnY + 48f);
 
                 // Center score area (tap to open Match Records)
                 RectF scoreArea = new RectF(scoreCx - 140f, topY, scoreCx + 140f, gridTop);
 
-                RectF card0 = new RectF(padL + 0 * (cardW + gapX), gridTop, padL + 0 * (cardW + gapX) + cardW, gridTop + cardH);
-                RectF card1 = new RectF(padL + 1 * (cardW + gapX), gridTop, padL + 1 * (cardW + gapX) + cardW, gridTop + cardH);
-                RectF card2 = new RectF(padL + 2 * (cardW + gapX), gridTop, padL + 2 * (cardW + gapX) + cardW, gridTop + cardH);
-                RectF card3 = new RectF(padL + 0 * (cardW + gapX), gridTop + cardH + gapY, padL + 0 * (cardW + gapX) + cardW, gridTop + 2 * cardH + gapY);
-                RectF card4 = new RectF(padL + 1 * (cardW + gapX), gridTop + cardH + gapY, padL + 1 * (cardW + gapX) + cardW, gridTop + 2 * cardH + gapY);
+                RectF card0 = new RectF(padL + 0 * (cardW + gapX), startGridY, padL + 0 * (cardW + gapX) + cardW, startGridY + cardH);
+                RectF card1 = new RectF(padL + 1 * (cardW + gapX), startGridY, padL + 1 * (cardW + gapX) + cardW, startGridY + cardH);
+                RectF card2 = new RectF(padL + 2 * (cardW + gapX), startGridY, padL + 2 * (cardW + gapX) + cardW, startGridY + cardH);
+                RectF card3 = new RectF(padL + 0 * (cardW + gapX), startGridY + cardH + gapY, padL + 0 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
+                RectF card4 = new RectF(padL + 1 * (cardW + gapX), startGridY + cardH + gapY, padL + 1 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
+                RectF card5 = new RectF(padL + 2 * (cardW + gapX), startGridY + cardH + gapY, padL + 2 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
 
                 switch (action) {
                     case MotionEvent.ACTION_DOWN:
@@ -2045,6 +2060,7 @@ public class MobileControlsView extends View {
                         else if (card2.contains(x, y)) pressedSettingsCardIndex = 2;
                         else if (card3.contains(x, y)) pressedSettingsCardIndex = 3;
                         else if (card4.contains(x, y)) pressedSettingsCardIndex = 4;
+                        else if (card5.contains(x, y)) pressedSettingsCardIndex = 5;
                         invalidate();
                         return true;
 
@@ -2058,6 +2074,16 @@ public class MobileControlsView extends View {
                             else if (idx == 2) pauseSubView = PauseSubView.GENERAL_SETTINGS;
                             else if (idx == 3) pauseSubView = PauseSubView.CAMERA_SETTINGS;
                             else if (idx == 4) pauseSubView = PauseSubView.SOUND_SETTINGS;
+                            else if (idx == 5) {
+                                // Instant Replay
+                                try {
+                                    SDLActivity.triggerReplay(6);
+                                } catch (Throwable ignored) {}
+                                pauseSubView = PauseSubView.REPLAY_PLAYBACK;
+                                isReplayPlaying = true;
+                                removeCallbacks(replayStepper);
+                                post(replayStepper);
+                            }
                             invalidate();
                             return true;
                         }
@@ -2072,9 +2098,9 @@ public class MobileControlsView extends View {
 
             // 2.B: SQUAD_MANAGEMENT & CONTROLS_LIST TOUCHES (Back button)
             if (pauseSubView == PauseSubView.SQUAD_MANAGEMENT || pauseSubView == PauseSubView.CONTROLS_LIST) {
-                float sPadX = Math.max(getWidth() * 0.05f, safeInsetLeft + 24f);
-                float sTopY = Math.max(getHeight() * 0.04f, safeInsetTop + 14f);
-                RectF backBtn = new RectF(sPadX, sTopY, sPadX + 130f, sTopY + 42f);
+                float padL = Math.max(getWidth() * 0.08f, safeInsetLeft + 24f);
+                float btnY = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 48f;
+                RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
                 if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
                     if (backBtn.contains(x, y)) {
                         pauseSubView = PauseSubView.SETTINGS_GRID;
@@ -2087,54 +2113,44 @@ public class MobileControlsView extends View {
 
             // 2.C: GENERAL_SETTINGS TOUCHES
             if (pauseSubView == PauseSubView.GENERAL_SETTINGS) {
-                float gPadX = Math.max(getWidth() * 0.05f, safeInsetLeft + 24f);
-                float gTopY = Math.max(getHeight() * 0.04f, safeInsetTop + 14f);
-                RectF backBtn = new RectF(gPadX, gTopY, gPadX + 130f, gTopY + 42f);
+                float sheetW = Math.min(getWidth() * 0.64f, 620f);
+                float sheetX = (getWidth() - sheetW) * 0.5f;
+                float sheetTop = Math.max(getHeight() * 0.03f, safeInsetTop + 6f);
+                float sheetBottom = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 52f;
+                float sheetH = sheetBottom - sheetTop;
 
-                float bodyTop = gTopY + 54f;
-                float bodyH = getHeight() - bodyTop - Math.max(getHeight() * 0.04f, safeInsetBottom + 16f);
-                float bodyW = getWidth() - gPadX * 2f;
-                float colCtrlLeft = gPadX + bodyW * 0.50f;
-                float colCtrlRight = (gPadX + bodyW) - 28f;
-                float colCtrlW = colCtrlRight - colCtrlLeft;
+                float padL = Math.max(getWidth() * 0.08f, safeInsetLeft + 24f);
+                float btnY = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 48f;
+                RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
 
-                float rowH = (bodyH - 24f) / 6f;
-                float kitBtnW = (colCtrlW - 14f) / 2f;
-                float btnH = rowH * 0.70f;
+                float headerH = sheetH * 0.14f;
+                float rowsTop = sheetTop + headerH;
+                float rowsH = sheetH - headerH;
+                float rowH = rowsH / 6f;
+                float btnH = rowH * 0.62f;
 
-                // Row 0: Team 1 Kit
-                float r0Y = bodyTop + 12f;
-                float btnPadY0 = r0Y + (rowH - btnH) * 0.5f;
-                RectF kit1_0 = new RectF(colCtrlLeft, btnPadY0, colCtrlLeft + kitBtnW, btnPadY0 + btnH);
-                RectF kit1_1 = new RectF(colCtrlLeft + kitBtnW + 14f, btnPadY0, colCtrlRight, btnPadY0 + btnH);
+                float kitW = 85f;
+                float btnY0 = rowsTop + 0 * rowH + (rowH - btnH) * 0.5f;
+                RectF kit1_0 = new RectF(sheetX + sheetW - 28f - 2f * kitW - 10f, btnY0, sheetX + sheetW - 28f - kitW - 10f, btnY0 + btnH);
+                RectF kit1_1 = new RectF(sheetX + sheetW - 28f - kitW, btnY0, sheetX + sheetW - 28f, btnY0 + btnH);
 
-                // Row 1: Team 2 Kit
-                float r1Y = r0Y + rowH;
-                float btnPadY1 = r1Y + (rowH - btnH) * 0.5f;
-                RectF kit2_0 = new RectF(colCtrlLeft, btnPadY1, colCtrlLeft + kitBtnW, btnPadY1 + btnH);
-                RectF kit2_1 = new RectF(colCtrlLeft + kitBtnW + 14f, btnPadY1, colCtrlRight, btnPadY1 + btnH);
+                float btnY1 = rowsTop + 1 * rowH + (rowH - btnH) * 0.5f;
+                RectF kit2_0 = new RectF(sheetX + sheetW - 28f - 2f * kitW - 10f, btnY1, sheetX + sheetW - 28f - kitW - 10f, btnY1 + btnH);
+                RectF kit2_1 = new RectF(sheetX + sheetW - 28f - kitW, btnY1, sheetX + sheetW - 28f, btnY1 + btnH);
 
-                // Row 2: Sun / Lighting
-                float r2Y = r1Y + rowH;
-                float btnPadY2 = r2Y + (rowH - btnH) * 0.5f;
-                RectF sunBtn = new RectF(colCtrlLeft, btnPadY2, colCtrlRight, btnPadY2 + btnH);
+                float btnY2 = rowsTop + 2 * rowH + (rowH - btnH) * 0.5f;
+                RectF sunBtn = new RectF(sheetX + sheetW - 28f - 180f, btnY2, sheetX + sheetW - 28f, btnY2 + btnH);
 
-                // Row 3: Radar
-                float r3Y = r2Y + rowH;
-                float btnPadY3 = r3Y + (rowH - btnH) * 0.5f;
-                RectF radarBtn = new RectF(colCtrlLeft, btnPadY3, colCtrlLeft + 120f, btnPadY3 + btnH);
+                float btnY3 = rowsTop + 3 * rowH + (rowH - btnH) * 0.5f;
+                RectF radarBtn = new RectF(sheetX + sheetW - 28f - 85f, btnY3, sheetX + sheetW - 28f, btnY3 + btnH);
 
-                // Row 4: Overhead Names
-                float r4Y = r3Y + rowH;
-                float btnPadY4 = r4Y + (rowH - btnH) * 0.5f;
-                RectF namesBtn = new RectF(colCtrlLeft, btnPadY4, colCtrlLeft + 120f, btnPadY4 + btnH);
+                float btnY4 = rowsTop + 4 * rowH + (rowH - btnH) * 0.5f;
+                RectF namesBtn = new RectF(sheetX + sheetW - 28f - 85f, btnY4, sheetX + sheetW - 28f, btnY4 + btnH);
 
-                // Row 5: Actions: Match Records & Forfeit Match
-                float r5Y = r4Y + rowH;
-                float btnPadY5 = r5Y + (rowH - btnH) * 0.5f;
-                float actBtnW = (colCtrlW - 14f) / 2f;
-                RectF recordsBtn = new RectF(colCtrlLeft, btnPadY5, colCtrlLeft + actBtnW, btnPadY5 + btnH);
-                RectF forfeitBtn = new RectF(colCtrlLeft + actBtnW + 14f, btnPadY5, colCtrlRight, btnPadY5 + btnH);
+                float actW = 125f;
+                float btnY5 = rowsTop + 5 * rowH + (rowH - btnH) * 0.5f;
+                RectF recordsBtn = new RectF(sheetX + sheetW - 28f - 2f * actW - 10f, btnY5, sheetX + sheetW - 28f - actW - 10f, btnY5 + btnH);
+                RectF forfeitBtn = new RectF(sheetX + sheetW - 28f - actW, btnY5, sheetX + sheetW - 28f, btnY5 + btnH);
 
                 if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
                     if (backBtn.contains(x, y)) {
@@ -2192,21 +2208,28 @@ public class MobileControlsView extends View {
 
             // 2.D: CAMERA_SETTINGS TOUCHES
             if (pauseSubView == PauseSubView.CAMERA_SETTINGS) {
-                float cPadX = Math.max(getWidth() * 0.05f, safeInsetLeft + 24f);
-                float cTopY = Math.max(getHeight() * 0.04f, safeInsetTop + 14f);
-                RectF backBtn = new RectF(cPadX, cTopY, cPadX + 130f, cTopY + 42f);
+                float sheetW = Math.min(getWidth() * 0.64f, 620f);
+                float sheetX = (getWidth() - sheetW) * 0.5f;
+                float sheetTop = Math.max(getHeight() * 0.03f, safeInsetTop + 6f);
+                float sheetBottom = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 52f;
+                float sheetH = sheetBottom - sheetTop;
 
-                float bodyTop = cTopY + 54f;
-                float bodyH = getHeight() - bodyTop - Math.max(getHeight() * 0.04f, safeInsetBottom + 16f);
-                float bodyW = getWidth() - cPadX * 2f;
-                float trackLeft = cPadX + bodyW * 0.42f;
-                float trackRight = cPadX + bodyW - 90f;
+                float padL = Math.max(getWidth() * 0.08f, safeInsetLeft + 24f);
+                float btnY = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 48f;
+                RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+
+                float headerH = sheetH * 0.16f;
+                float rowsTop = sheetTop + headerH;
+                float rowsH = sheetH - headerH;
+                float rowH = rowsH / 4f;
+
+                float trackLeft = sheetX + 54f;
+                float trackRight = sheetX + sheetW - 60f;
                 float trackW = trackRight - trackLeft;
-                float rowH = (bodyH - 24f) / 4f;
 
-                float r3Y = bodyTop + 12f + 3f * rowH;
-                float resetBtnW = 200f;
-                RectF resetBtn = new RectF(trackLeft, r3Y + rowH * 0.20f, trackLeft + resetBtnW, r3Y + rowH * 0.80f);
+                float btnH = rowH * 0.50f;
+                float rBtnY = rowsTop + 3 * rowH + (rowH - btnH) * 0.5f;
+                RectF resetBtn = new RectF(sheetX + 28f, rBtnY, sheetX + 28f + 180f, rBtnY + btnH);
 
                 switch (action) {
                     case MotionEvent.ACTION_DOWN:
@@ -2227,8 +2250,8 @@ public class MobileControlsView extends View {
                             return true;
                         }
                         for (int s = 0; s < 3; s++) {
-                            float ry = bodyTop + 12f + s * rowH;
-                            float cy = ry + rowH * 0.5f;
+                            float ry = rowsTop + s * rowH;
+                            float cy = ry + rowH * 0.70f;
                             if (y >= cy - 25f && y <= cy + 25f && x >= trackLeft - 30f && x <= trackRight + 30f) {
                                 draggingSlider = s;
                                 updateSliderValue(s, (x - trackLeft) / trackW);
@@ -2263,22 +2286,28 @@ public class MobileControlsView extends View {
 
             // 2.E: SOUND_SETTINGS TOUCHES
             if (pauseSubView == PauseSubView.SOUND_SETTINGS) {
-                float sndPadX = Math.max(getWidth() * 0.05f, safeInsetLeft + 24f);
-                float sndTopY = Math.max(getHeight() * 0.04f, safeInsetTop + 14f);
-                RectF backBtn = new RectF(sndPadX, sndTopY, sndPadX + 130f, sndTopY + 42f);
+                float sheetW = Math.min(getWidth() * 0.64f, 620f);
+                float sheetX = (getWidth() - sheetW) * 0.5f;
+                float sheetTop = Math.max(getHeight() * 0.03f, safeInsetTop + 6f);
+                float sheetBottom = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 52f;
+                float sheetH = sheetBottom - sheetTop;
 
-                float bodyTop = sndTopY + 54f;
-                float bodyH = getHeight() - bodyTop - Math.max(getHeight() * 0.04f, safeInsetBottom + 16f);
-                float bodyW = getWidth() - sndPadX * 2f;
-                float trackLeft = sndPadX + bodyW * 0.42f;
-                float trackRight = sndPadX + bodyW - 90f;
+                float padL = Math.max(getWidth() * 0.08f, safeInsetLeft + 24f);
+                float btnY = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 48f;
+                RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
+
+                float headerH = sheetH * 0.16f;
+                float rowsTop = sheetTop + headerH;
+                float rowsH = sheetH - headerH;
+                float rowH = rowsH / 3f;
+
+                float trackLeft = sheetX + 54f;
+                float trackRight = sheetX + sheetW - 60f;
                 float trackW = trackRight - trackLeft;
-                float rowH = (bodyH - 24f) / 3f;
 
-                float r0Y = bodyTop + 12f;
-                float cy = r0Y + rowH * 0.5f;
-                float r1Y = r0Y + rowH;
-                RectF muteBtn = new RectF(trackLeft, r1Y + rowH * 0.22f, trackLeft + 160f, r1Y + rowH * 0.78f);
+                float btnH = rowH * 0.50f;
+                float mBtnY = rowsTop + 2 * rowH + (rowH - btnH) * 0.5f;
+                RectF muteBtn = new RectF(sheetX + 28f, mBtnY, sheetX + 28f + 160f, mBtnY + btnH);
 
                 switch (action) {
                     case MotionEvent.ACTION_DOWN:
@@ -2300,7 +2329,10 @@ public class MobileControlsView extends View {
                             invalidate();
                             return true;
                         }
-                        if (y >= cy - 25f && y <= cy + 25f && x >= trackLeft - 30f && x <= trackRight + 30f) {
+                        float cy0 = rowsTop + 0 * rowH + rowH * 0.70f;
+                        float cy1 = rowsTop + 1 * rowH + rowH * 0.70f;
+                        if ((y >= cy0 - 25f && y <= cy0 + 25f || y >= cy1 - 25f && y <= cy1 + 25f)
+                                && x >= trackLeft - 30f && x <= trackRight + 30f) {
                             draggingSlider = 3;
                             updateSliderValue(3, (x - trackLeft) / trackW);
                             invalidate();
@@ -2404,15 +2436,9 @@ public class MobileControlsView extends View {
 
             // 2.H: OVERVIEW (PES MATCH RECORDS / TELEMETRY) TOUCHES
             if (pauseSubView == PauseSubView.OVERVIEW) {
-                float padL = Math.max(getWidth() * 0.035f, safeInsetLeft + 20f);
-                float padR = Math.max(getWidth() * 0.035f, safeInsetRight + 20f);
-                float padT = Math.max(getHeight() * 0.035f, safeInsetTop + 10f);
-                float padB = Math.max(getHeight() * 0.035f, safeInsetBottom + 10f);
-                float areaW = getWidth() - padL - padR;
-                float areaH = getHeight() - padT - padB;
-
-                float btnY = padT + areaH - 44f;
-                RectF backBtn = new RectF(padL, btnY, padL + 150f, btnY + 44f);
+                float padL = Math.max(getWidth() * 0.08f, safeInsetLeft + 24f);
+                float btnY = getHeight() - Math.max(getHeight() * 0.04f, safeInsetBottom + 12f) - 48f;
+                RectF backBtn = new RectF(padL, btnY, padL + 140f, btnY + 48f);
 
                 if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
                     if (backBtn.contains(x, y)) {
