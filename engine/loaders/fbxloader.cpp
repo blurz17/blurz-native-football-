@@ -55,7 +55,7 @@ namespace blunted {
 
     ufbx_load_opts opts;
     memset(&opts, 0, sizeof(opts));
-    opts.target_axes = ufbx_axes_right_handed_y_up;
+    opts.target_axes = ufbx_axes_right_handed_z_up;
     opts.target_unit_meters = 1.0f;
     opts.generate_missing_normals = true;
 
@@ -200,12 +200,30 @@ namespace blunted {
         material.shininess = 0.1f;
 
         if (fbxMat) {
+          // Detect dynamic player material roles (kit, skin, shoe)
+          std::string lowerMatName = fbxMat->name.data ? std::string(fbxMat->name.data) : "";
+          std::transform(lowerMatName.begin(), lowerMatName.end(), lowerMatName.begin(), ::tolower);
+
           // Diffuse / Base color
           const ufbx_texture *diffTex = fbxMat->fbx.diffuse_color.texture ? fbxMat->fbx.diffuse_color.texture : fbxMat->pbr.base_color.texture;
           if (diffTex) {
+            std::string lowerTexName = diffTex->name.data ? std::string(diffTex->name.data) : "";
+            std::transform(lowerTexName.begin(), lowerTexName.end(), lowerTexName.begin(), ::tolower);
+            std::string lowerFileName = diffTex->filename.data ? std::string(diffTex->filename.data) : "";
+            std::transform(lowerFileName.begin(), lowerFileName.end(), lowerFileName.begin(), ::tolower);
+
+            std::string dynamicIdent = "";
+            if (lowerMatName.find("kit") != std::string::npos || lowerTexName.find("kit") != std::string::npos || lowerFileName.find("kit") != std::string::npos) {
+              dynamicIdent = "kit_template.png";
+            } else if (lowerMatName.find("skin") != std::string::npos || lowerTexName.find("skin") != std::string::npos || lowerFileName.find("skin") != std::string::npos) {
+              dynamicIdent = "skin.jpg";
+            } else if (lowerMatName.find("shoe") != std::string::npos || lowerTexName.find("shoe") != std::string::npos || lowerFileName.find("shoe") != std::string::npos) {
+              dynamicIdent = "shoe.jpg";
+            }
+
             if (diffTex->content.size > 0 && diffTex->content.data) {
               // Embedded texture in FBX
-              std::string texIdent = filename + "#fbx_tex_" + int_to_str(diffTex->element.element_id);
+              std::string texIdent = !dynamicIdent.empty() ? dynamicIdent : (filename + "#fbx_tex_" + int_to_str(diffTex->element.element_id));
               bool alreadyThere = false;
               boost::intrusive_ptr<Resource<Surface>> texRes = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texIdent, false, alreadyThere, true);
               if (!alreadyThere) {
@@ -218,9 +236,9 @@ namespace blunted {
                 }
               }
               material.diffuseTexture = texRes;
-            } else if (diffTex->filename.length > 0) {
-              std::string texPath = diffTex->filename.data;
-              if (diffTex->relative_filename.length > 0) {
+            } else if (diffTex->filename.length > 0 || !dynamicIdent.empty()) {
+              std::string texPath = !dynamicIdent.empty() ? ("media/objects/players/textures/" + dynamicIdent) : diffTex->filename.data;
+              if (dynamicIdent.empty() && diffTex->relative_filename.length > 0) {
                 texPath = baseDir.empty() ? std::string(diffTex->relative_filename.data) : (baseDir + "/" + diffTex->relative_filename.data);
               }
               material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texPath, true, true);

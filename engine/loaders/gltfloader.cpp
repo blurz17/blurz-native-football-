@@ -168,14 +168,16 @@ namespace blunted {
 
         auto addTriangle = [&](int i0, int i1, int i2) {
           Triangle *tri = new Triangle();
-          tri->SetVertex(0, Vector3(positions[i0 * 3], positions[i0 * 3 + 1], positions[i0 * 3 + 2]));
-          tri->SetVertex(1, Vector3(positions[i1 * 3], positions[i1 * 3 + 1], positions[i1 * 3 + 2]));
-          tri->SetVertex(2, Vector3(positions[i2 * 3], positions[i2 * 3 + 1], positions[i2 * 3 + 2]));
+          // Convert glTF Y-up (+Y up, +Z fwd, +X right) to Engine right-handed Z-up (+Z up, +Y fwd, +X right)
+          // engine_x = gltf_x, engine_y = -gltf_z, engine_z = gltf_y (pure 90 deg rotation around X, det=+1)
+          tri->SetVertex(0, Vector3(positions[i0 * 3], -positions[i0 * 3 + 2], positions[i0 * 3 + 1]));
+          tri->SetVertex(1, Vector3(positions[i1 * 3], -positions[i1 * 3 + 2], positions[i1 * 3 + 1]));
+          tri->SetVertex(2, Vector3(positions[i2 * 3], -positions[i2 * 3 + 2], positions[i2 * 3 + 1]));
 
           if (normals) {
-            tri->SetNormal(0, normals[i0 * 3], normals[i0 * 3 + 1], normals[i0 * 3 + 2]);
-            tri->SetNormal(1, normals[i1 * 3], normals[i1 * 3 + 1], normals[i1 * 3 + 2]);
-            tri->SetNormal(2, normals[i2 * 3], normals[i2 * 3 + 1], normals[i2 * 3 + 2]);
+            tri->SetNormal(0, normals[i0 * 3], -normals[i0 * 3 + 2], normals[i0 * 3 + 1]);
+            tri->SetNormal(1, normals[i1 * 3], -normals[i1 * 3 + 2], normals[i1 * 3 + 1]);
+            tri->SetNormal(2, normals[i2 * 3], -normals[i2 * 3 + 2], normals[i2 * 3 + 1]);
           }
 
           if (uvs) {
@@ -268,9 +270,26 @@ namespace blunted {
               if (imgIdx >= 0 && imgIdx < (int)model.images.size()) {
                 const auto &img = model.images[imgIdx];
 
+                // Detect dynamic player material roles (kit, skin, shoe)
+                std::string lowerImgName = img.name;
+                std::transform(lowerImgName.begin(), lowerImgName.end(), lowerImgName.begin(), ::tolower);
+                std::string lowerMatName = gltfMat.name;
+                std::transform(lowerMatName.begin(), lowerMatName.end(), lowerMatName.begin(), ::tolower);
+                std::string lowerUri = img.uri;
+                std::transform(lowerUri.begin(), lowerUri.end(), lowerUri.begin(), ::tolower);
+
+                std::string dynamicIdent = "";
+                if (lowerImgName.find("kit") != std::string::npos || lowerMatName.find("kit") != std::string::npos || lowerUri.find("kit") != std::string::npos) {
+                  dynamicIdent = "kit_template.png";
+                } else if (lowerImgName.find("skin") != std::string::npos || lowerMatName.find("skin") != std::string::npos || lowerUri.find("skin") != std::string::npos) {
+                  dynamicIdent = "skin.jpg";
+                } else if (lowerImgName.find("shoe") != std::string::npos || lowerMatName.find("shoe") != std::string::npos || lowerUri.find("shoe") != std::string::npos) {
+                  dynamicIdent = "shoe.jpg";
+                }
+
                 if (!img.image.empty() && img.width > 0 && img.height > 0) {
                   // Embedded binary image in GLB
-                  std::string texIdent = filename + "#img_" + int_to_str(imgIdx);
+                  std::string texIdent = !dynamicIdent.empty() ? dynamicIdent : (filename + "#img_" + int_to_str(imgIdx));
                   bool alreadyThere = false;
                   boost::intrusive_ptr<Resource<Surface>> texRes = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texIdent, false, alreadyThere, true);
                   if (!alreadyThere) {
@@ -285,7 +304,7 @@ namespace blunted {
                   material.diffuseTexture = texRes;
                 } else if (!img.uri.empty()) {
                   // External texture URI
-                  std::string texPath = baseDir.empty() ? img.uri : (baseDir + "/" + img.uri);
+                  std::string texPath = !dynamicIdent.empty() ? ("media/objects/players/textures/" + dynamicIdent) : (baseDir.empty() ? img.uri : (baseDir + "/" + img.uri));
                   material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texPath, true, true);
                 }
               }

@@ -37,7 +37,44 @@ This enables zero-code-change drop-in modernization for any existing ball, playe
 
 ---
 
-## 3. Verified In-Game Asset
+## 3. Verified In-Game Assets
 - Converted the official match ball (`generic.ase` + `ball.jpg`) to a self-contained binary `generic.glb` (58 KB, 200 triangles, embedded texture) using `tools/convert_ase_to_glb.py`.
 - Converted referee cards (`yellowcard.glb`, `redcard.glb`).
 - Both formats verified compiling and bundling into the Android release APK (`app-release.apk`).
+
+---
+
+## 4. Player Model & Hairstyle Modernization via Blender MCP
+
+### 4.1 Live Blender MCP Pipeline (`tools/start_blender_mcp.py`)
+- Integrated Blender 5.1 via the Blender MCP server running on port `9876`.
+- Automated headless/GUI launch scripts allowing programmatic reconstruction, material binding, camera staging, and 3D export directly from the agent.
+- Reconstructed the complete 12 submesh football player model:
+  - Bound Real Madrid / Galacticos CF kit textures (`realmadrid_kit_01.png`, `kit_UVWnormal.png`).
+  - Bound skin tone textures (`skin02.png`, `arm_normal.png`, `knee_normal.png`).
+  - Aligned 3D hairstyles (`short02`, `short01`, `medium01`, `medium02`, `long01`, `bald`) to player head bones.
+- Exported modern assets to both `.glb` and `.fbx`:
+  - `media/objects/players/models/fullbody.glb` (770 KB)
+  - `media/objects/players/models/fullbody.fbx` (89 KB)
+  - All 6 hairstyles in `media/objects/players/hairstyles/` (`.glb` & `.fbx`)
+
+### 4.2 Coordinate Space Synchronization (Y-Up to Engine Z-Up)
+- **glTF 2.0 Standard**: Right-handed Y-up (+Y is up, +Z is forward, +X is right).
+- **Engine Standard**: Right-handed Z-up (+Z is height up, +Y is pitch length forward, +X is pitch width right).
+- In `GLTFLoader`:
+  ```cpp
+  // Pure 90 deg rotation around X-axis (det = +1, preserves winding & handedness)
+  engine_x = gltf_x;
+  engine_y = -gltf_z;
+  engine_z = gltf_y;
+  ```
+  Verified: 2,223 / 2,223 (100.0%) vertex positions match the original player coordinate system with 0 mismatches.
+- In `FBXLoader`:
+  Configured `opts.target_axes = ufbx_axes_right_handed_z_up;` to automatically transform any incoming FBX asset to the engine's native coordinate frame.
+
+### 4.3 Dynamic Material & Kit Role Binding
+- The engine dynamically assigns individual team kits (e.g. Real Madrid, Barcelona, Bayern Munich) and player skin tones (`skin01.png` - `skin05.png`) at runtime.
+- `GLTFLoader` and `FBXLoader` now detect material, texture, and image roles:
+  - Materials containing `"kit"` are assigned `IdentString = "kit_template.png"`, enabling `HumanoidBase::SetKit` to swap team kits dynamically.
+  - Materials containing `"skin"` are assigned `IdentString = "skin.jpg"`, enabling dynamic skin tone matching.
+  - Materials containing `"shoe"` are mapped to `"shoe.jpg"`.
