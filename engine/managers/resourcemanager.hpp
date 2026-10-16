@@ -14,6 +14,7 @@
 #include "types/loader.hpp"
 
 #include "managers/environmentmanager.hpp"
+#include <SDL2/SDL.h>
 
 namespace blunted {
 
@@ -44,7 +45,31 @@ namespace blunted {
       }
 
       boost::intrusive_ptr < Resource<T> > Fetch(const std::string &filename, bool load, bool &alreadyThere, bool useExisting) {
-        std::string adaptedFilename = get_file_name(filename);
+        std::string targetFilename = filename;
+        std::string extension = get_file_extension(filename);
+        std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+
+        // Modern 3D format auto-discovery: if an .ase file is requested, check if modern .glb or .fbx counterpart exists
+        if (load && extension == "ase") {
+          size_t dotPos = filename.find_last_of('.');
+          if (dotPos != std::string::npos) {
+            std::string glbPath = filename.substr(0, dotPos) + ".glb";
+            SDL_RWops *testGlb = SDL_RWFromFile(glbPath.c_str(), "rb");
+            if (testGlb) {
+              SDL_RWclose(testGlb);
+              targetFilename = glbPath;
+            } else {
+              std::string fbxPath = filename.substr(0, dotPos) + ".fbx";
+              SDL_RWops *testFbx = SDL_RWFromFile(fbxPath.c_str(), "rb");
+              if (testFbx) {
+                SDL_RWclose(testFbx);
+                targetFilename = fbxPath;
+              }
+            }
+          }
+        }
+
+        std::string adaptedFilename = get_file_name(targetFilename);
 
         // resource already loaded?
 
@@ -74,13 +99,13 @@ namespace blunted {
           // try to load
 
           if (load) {
-            std::string extension = get_file_extension(filename);
-            std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-            typename std::map < std::string, Loader<T>* >::iterator iter = loaders.find(extension);
+            std::string ext = get_file_extension(targetFilename);
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+            typename std::map < std::string, Loader<T>* >::iterator iter = loaders.find(ext);
             if (iter != loaders.end()) {
-              (*iter).second->Load(filename, resource);
+              (*iter).second->Load(targetFilename, resource);
             } else {
-              Log(e_FatalError, "ResourceManager<>", "Load", "There is no loader for " + filename);
+              Log(e_FatalError, "ResourceManager<>", "Load", "There is no loader for " + targetFilename);
             }
           }
           Register(resource);

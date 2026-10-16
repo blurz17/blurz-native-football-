@@ -23,6 +23,7 @@ file(GLOB_RECURSE ALL_SOURCES
     "${PLATFORM_DIR}/android/android_assets.hpp"
     "${ENGINE_DIR}/base/profiler.cpp"
     "${ENGINE_DIR}/base/profiler.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/ufbx/ufbx.c"
 )
 
 # Third party libraries
@@ -42,6 +43,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/SDL2_image_android
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/SDL2_ttf
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/SDL2_gfx
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/ufbx
 )
 
 if(ANDROID)
