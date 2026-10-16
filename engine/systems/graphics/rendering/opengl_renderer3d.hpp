@@ -124,6 +124,7 @@ namespace blunted {
       virtual void SetUniformFloat3(const std::string &shaderName, const std::string &varName, float value1, float value2, float value3);
       virtual void SetUniformFloat3Array(const std::string &shaderName, const std::string &varName, int count, float *values);
       virtual void SetUniformMatrix4(const std::string &shaderName, const std::string &varName, const Matrix4 &mat);
+      virtual void SetUniformMatrix4Array(const std::string &shaderName, const std::string &varName, int count, const Matrix4 *mats);
 
       virtual void HDRCaptureOverallBrightness();
       virtual float HDRGetOverallBrightness();

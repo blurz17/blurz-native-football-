@@ -33,12 +33,16 @@ namespace blunted {
       virtual void SetRotation(const Quaternion &newRotation);
       Quaternion GetRotation() const;
 
+      virtual void SetBoneMatrices(const std::vector<Matrix4> &newBoneMatrices) { boneMatrices = newBoneMatrices; }
+      const std::vector<Matrix4> &GetBoneMatrices() const { return boneMatrices; }
+
       std::list<VertexBufferIndex> vertexBufferIndices;
       boost::intrusive_ptr < Resource<VertexBuffer> > vertexBuffer;
 
     protected:
       Vector3 position;
       Quaternion rotation;
+      std::vector<Matrix4> boneMatrices;
 
   };
 
@@ -53,6 +57,7 @@ namespace blunted {
       virtual void OnUnload();
       inline virtual void OnMove(const Vector3 &position);
       inline virtual void OnRotate(const Quaternion &rotation);
+      virtual void OnSetBoneMatrices(const std::vector<Matrix4> &boneMatrices) { caller->SetBoneMatrices(boneMatrices); }
       virtual void OnSynchronize();
 
       virtual void GetVertexBufferQueue(std::deque<VertexBufferQueueEntry> &queue);

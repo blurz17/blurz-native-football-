@@ -624,6 +624,17 @@ struct GLfunctions {
     view.gBuffer_DepthTexID = CreateTexture(e_InternalPixelFormat_DepthComponent16, e_PixelFormat_DepthComponent, gBufWidth, gBufHeight, false, false, false, false, false);
     SetFrameBufferTexture2D(e_TargetAttachment_Depth, view.gBuffer_DepthTexID);
 
+#ifdef __ANDROID__
+    // Mobile optimization: Use RGBA8 to cut memory bandwidth in half at native 1080p
+    view.gBuffer_AlbedoTexID = CreateTexture(e_InternalPixelFormat_RGBA8, e_PixelFormat_RGBA, gBufWidth, gBufHeight, false, false, false, false, false);
+    SetFrameBufferTexture2D(e_TargetAttachment_Color0, view.gBuffer_AlbedoTexID);
+
+    view.gBuffer_NormalTexID = CreateTexture(e_InternalPixelFormat_RGBA8, e_PixelFormat_RGBA, gBufWidth, gBufHeight, false, false, false, false, false);
+    SetFrameBufferTexture2D(e_TargetAttachment_Color1, view.gBuffer_NormalTexID);
+
+    view.gBuffer_AuxTexID = CreateTexture(e_InternalPixelFormat_RGBA8, e_PixelFormat_RGBA, gBufWidth, gBufHeight, false, false, false, false, false);
+    SetFrameBufferTexture2D(e_TargetAttachment_Color2, view.gBuffer_AuxTexID);
+#else
     //view.gBuffer_AlbedoTexID = CreateTexture(e_InternalPixelFormat_RGBA8, e_PixelFormat_RGBA, gBufWidth, gBufHeight, false, false, false, false, false);
     view.gBuffer_AlbedoTexID = CreateTexture(e_InternalPixelFormat_RGBA16F, e_PixelFormat_RGBA, gBufWidth, gBufHeight, false, false, false, false, false);
     //view.gBuffer_AlbedoTexID = CreateTexture(e_InternalPixelFormat_RGBA32F, e_PixelFormat_RGBA, gBufWidth, gBufHeight, false, false, false, false, false);
@@ -638,6 +649,7 @@ struct GLfunctions {
     view.gBuffer_AuxTexID = CreateTexture(e_InternalPixelFormat_RGBA16F, e_PixelFormat_RGBA, gBufWidth, gBufHeight, false, false, false, false, false);
     //view.gBuffer_AuxTexID = CreateTexture(e_InternalPixelFormat_RGBA32F, e_PixelFormat_RGBA, gBufWidth, gBufHeight, false, false, false, false, false);
     SetFrameBufferTexture2D(e_TargetAttachment_Color2, view.gBuffer_AuxTexID);
+#endif
 
     std::vector<e_TargetAttachment> targets;
     targets.push_back(e_TargetAttachment_Color0);
@@ -671,10 +683,14 @@ struct GLfunctions {
     //view.accumBuffer_AccumTexID = CreateTexture(e_InternalPixelFormat_RGBA32F, e_PixelFormat_RGBA, accumBufWidth, accumBufHeight, false, false, false, false, false);
     SetFrameBufferTexture2D(e_TargetAttachment_Color0, view.accumBuffer_AccumTexID);
 
+#ifdef __ANDROID__
+    view.accumBuffer_ModifierTexID = CreateTexture(e_InternalPixelFormat_RGBA8, e_PixelFormat_RGBA, accumBufWidth, accumBufHeight, false, false, false, false, false);
+#else
     // Geforce GT 230 doesn't seem to be too happy about e_InternalPixelFormat_RGBA16 for some reason. Very slow framerates ensue
     //view.accumBuffer_ModifierTexID = CreateTexture(e_InternalPixelFormat_RGBA8, e_PixelFormat_RGB, accumBufWidth, accumBufHeight, false, false, false, false, false);
     view.accumBuffer_ModifierTexID = CreateTexture(e_InternalPixelFormat_RGBA16F, e_PixelFormat_RGBA, accumBufWidth, accumBufHeight, false, false, false, false, false);
     //view.accumBuffer_ModifierTexID = CreateTexture(e_InternalPixelFormat_RGBA32F, e_PixelFormat_RGBA, accumBufWidth, accumBufHeight, false, false, false, false, false);
+#endif
     SetFrameBufferTexture2D(e_TargetAttachment_Color1, view.accumBuffer_ModifierTexID);
 
     targets.push_back(e_TargetAttachment_Color0);
@@ -1218,10 +1234,7 @@ struct GLfunctions {
 
       //glPushMatrix();
 
-      // slow, why?
       transform.Construct(queueEntry->position, Vector3(1, 1, 1), queueEntry->rotation);
-      //transform.Transpose();
-      //glMultMatrixf((float*)transform.elements);
       SetMatrix("modelMatrix", transform);
 
       bool sequential = true; // buffer vertexbuffer chunks until a change happens (in texture or index, for example)
@@ -2135,7 +2148,11 @@ struct GLfunctions {
       SetUniformFloat("ambient", "contextWidth", (float)context_width);
       SetUniformFloat("ambient", "contextHeight", (float)context_height);
 
+#ifdef __ANDROID__
+      unsigned int kernelSize = 8; // Match mobile ambient.frag SSAO_kernelSize
+#else
       unsigned int kernelSize = 16; // Match ambient.frag SSAO_kernelSize
+#endif
       //SetUniformInt("ambient", "SSAO_kernelSize", kernelSize);
       float SSAO_kernel[kernelSize * 3];
       GeneratePoissonKernel(&SSAO_kernel[0], kernelSize);
@@ -2310,6 +2327,26 @@ struct GLfunctions {
     }
     //mapping.glUniformMatrix4fv(location, 1, false, (float*)mat.GetTransposed().elements);
     mapping.glUniformMatrix4fv(location, 1, true, (float*)mat.elements); // true == transposed
+  }
+
+  void OpenGLRenderer3D::SetUniformMatrix4Array(const std::string &shaderName, const std::string &varName, int count, const Matrix4 *mats) {
+    if (count <= 0 || !mats) return;
+    std::map<std::string, Shader>::iterator shaderIter = shaders.find(shaderName);
+    if (shaderIter == shaders.end()) return;
+
+    std::map<std::string, GLint>::iterator iter = uniformCache.find(shaderName + "_var_" + varName);
+    GLint location;
+    if (iter != uniformCache.end()) {
+      location = iter->second;
+    } else {
+      location = mapping.glGetUniformLocation((*shaderIter).second.programID, varName.c_str());
+      if (location == -1) {
+        // Uniform may be optimized out if inactive
+        return;
+      }
+      uniformCache.insert(std::pair<std::string, GLint>(shaderName + "_var_" + varName, location));
+    }
+    mapping.glUniformMatrix4fv(location, count, true, (float*)mats);
   }
 
   void OpenGLRenderer3D::HDRCaptureOverallBrightness() {

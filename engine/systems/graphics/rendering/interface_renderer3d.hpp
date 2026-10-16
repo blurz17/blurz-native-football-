@@ -51,6 +51,7 @@ namespace blunted {
     AABB aabb;
     Vector3 position;
     Quaternion rotation;
+    std::vector<Matrix4> boneMatrices;
     // todo: think about this: int id_cache; // for quick access - getting resource's id needs mutexing and all
   };
 
@@ -297,6 +298,7 @@ namespace blunted {
       virtual void SetUniformFloat3(const std::string &shaderName, const std::string &varName, float value1, float value2, float value3) = 0;
       virtual void SetUniformFloat3Array(const std::string &shaderName, const std::string &varName, int count, float *values) = 0;
       virtual void SetUniformMatrix4(const std::string &shaderName, const std::string &varName, const Matrix4 &mat) = 0;
+      virtual void SetUniformMatrix4Array(const std::string &shaderName, const std::string &varName, int count, const Matrix4 *mats) = 0;
 
       virtual void HDRCaptureOverallBrightness() = 0;
       virtual float HDRGetOverallBrightness() = 0;

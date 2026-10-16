@@ -85,9 +85,12 @@ namespace blunted {
 
             // Basic attribute accessors
             int posAccIdx = -1, normAccIdx = -1, uvAccIdx = -1;
+            int jointsAccIdx = -1, weightsAccIdx = -1;
             if (primitive.attributes.count("POSITION")) posAccIdx = primitive.attributes.at("POSITION");
             if (primitive.attributes.count("NORMAL")) normAccIdx = primitive.attributes.at("NORMAL");
             if (primitive.attributes.count("TEXCOORD_0")) uvAccIdx = primitive.attributes.at("TEXCOORD_0");
+            if (primitive.attributes.count("JOINTS_0")) jointsAccIdx = primitive.attributes.at("JOINTS_0");
+            if (primitive.attributes.count("WEIGHTS_0")) weightsAccIdx = primitive.attributes.at("WEIGHTS_0");
 
             if (posAccIdx < 0) continue;
 
@@ -112,6 +115,52 @@ namespace blunted {
                 uvs = reinterpret_cast<const float*>(&uvBuffer.data[uvView.byteOffset + uvAcc.byteOffset]);
             }
 
+            auto getJoints = [&](int vertIdx) -> Vector3 {
+              if (jointsAccIdx < 0) return Vector3(0, 0, 0);
+              const tinygltf::Accessor& acc = model.accessors[jointsAccIdx];
+              const tinygltf::BufferView& view = model.bufferViews[acc.bufferView];
+              const tinygltf::Buffer& buf = model.buffers[view.buffer];
+              size_t stride = view.byteStride ? view.byteStride : (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE ? 4 : (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT ? 8 : 16));
+              const unsigned char* ptr = &buf.data[view.byteOffset + acc.byteOffset + vertIdx * stride];
+              float j0 = 0, j1 = 0, j2 = 0;
+              if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
+                j0 = ptr[0]; j1 = ptr[1]; j2 = ptr[2];
+              } else if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+                const uint16_t* u16 = reinterpret_cast<const uint16_t*>(ptr);
+                j0 = u16[0]; j1 = u16[1]; j2 = u16[2];
+              } else if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
+                const uint32_t* u32 = reinterpret_cast<const uint32_t*>(ptr);
+                j0 = (float)u32[0]; j1 = (float)u32[1]; j2 = (float)u32[2];
+              }
+              return Vector3(j0, j1, j2);
+            };
+
+            auto getWeights = [&](int vertIdx) -> Vector3 {
+              if (weightsAccIdx < 0) return Vector3(1.0f, 0, 0);
+              const tinygltf::Accessor& acc = model.accessors[weightsAccIdx];
+              const tinygltf::BufferView& view = model.bufferViews[acc.bufferView];
+              const tinygltf::Buffer& buf = model.buffers[view.buffer];
+              size_t stride = view.byteStride ? view.byteStride : (acc.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT ? 16 : (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT ? 8 : 4));
+              const unsigned char* ptr = &buf.data[view.byteOffset + acc.byteOffset + vertIdx * stride];
+              float w0 = 1.0f, w1 = 0, w2 = 0;
+              if (acc.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) {
+                const float* f = reinterpret_cast<const float*>(ptr);
+                w0 = f[0]; w1 = f[1]; w2 = f[2];
+              } else if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
+                w0 = ptr[0] / 255.0f; w1 = ptr[1] / 255.0f; w2 = ptr[2] / 255.0f;
+              } else if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+                const uint16_t* u16 = reinterpret_cast<const uint16_t*>(ptr);
+                w0 = u16[0] / 65535.0f; w1 = u16[1] / 65535.0f; w2 = u16[2] / 65535.0f;
+              }
+              float sum = w0 + w1 + w2;
+              if (sum > 0.0001f) {
+                w0 /= sum; w1 /= sum; w2 /= sum;
+              } else {
+                w0 = 1.0f; w1 = 0.0f; w2 = 0.0f;
+              }
+              return Vector3(w0, w1, w2);
+            };
+
             auto addTriangle = [&](int i0, int i1, int i2) {
                 Triangle* tri = new Triangle();
                 tri->SetVertex(0, Vector3(positions[i0*3], positions[i0*3+1], positions[i0*3+2]));
@@ -129,6 +178,18 @@ namespace blunted {
                     tri->SetTextureVertex(0, 0, uvs[i0*2], 1.0f - uvs[i0*2+1], 0);
                     tri->SetTextureVertex(0, 1, uvs[i1*2], 1.0f - uvs[i1*2+1], 0);
                     tri->SetTextureVertex(0, 2, uvs[i2*2], 1.0f - uvs[i2*2+1], 0);
+                }
+
+                if (jointsAccIdx >= 0) {
+                    tri->SetTextureVertex(1, 0, getJoints(i0));
+                    tri->SetTextureVertex(1, 1, getJoints(i1));
+                    tri->SetTextureVertex(1, 2, getJoints(i2));
+                }
+
+                if (weightsAccIdx >= 0) {
+                    tri->SetTextureVertex(2, 0, getWeights(i0));
+                    tri->SetTextureVertex(2, 1, getWeights(i1));
+                    tri->SetTextureVertex(2, 2, getWeights(i2));
                 }
                 
                 triangles.push_back(tri);
@@ -160,6 +221,7 @@ namespace blunted {
 
     int rawSize = triangles.size() * 3 * 3 * GetTriangleMeshElementCount();
     float *rawTriangleMesh = new float[rawSize];
+    memset(rawTriangleMesh, 0, rawSize * sizeof(float));
 
     for (unsigned int t = 0; t < triangles.size(); t++) {
       triangles[t]->CalculateTangents();
@@ -169,6 +231,10 @@ namespace blunted {
         memcpy(&rawTriangleMesh[2 * triangles.size() * 9 + t * 9 + v * 3], triangles[t]->GetTextureVertex(0, v).coords, sizeof(float) * 3);
         memcpy(&rawTriangleMesh[3 * triangles.size() * 9 + t * 9 + v * 3], triangles[t]->GetTangent(v).coords, sizeof(float) * 3);
         memcpy(&rawTriangleMesh[4 * triangles.size() * 9 + t * 9 + v * 3], triangles[t]->GetBiTangent(v).coords, sizeof(float) * 3);
+        if (GetTriangleMeshElementCount() >= 7) {
+          memcpy(&rawTriangleMesh[5 * triangles.size() * 9 + t * 9 + v * 3], triangles[t]->GetTextureVertex(1, v).coords, sizeof(float) * 3);
+          memcpy(&rawTriangleMesh[6 * triangles.size() * 9 + t * 9 + v * 3], triangles[t]->GetTextureVertex(2, v).coords, sizeof(float) * 3);
+        }
       }
     }
 

@@ -5,6 +5,7 @@
 #include "r3d_messages.hpp"
 
 #include "../resources/texture.hpp"
+#include "base/profiler.hpp"
 
 namespace blunted {
 
@@ -13,6 +14,12 @@ namespace blunted {
   }
 
   bool Renderer3DMessage_RenderView::Execute(void *caller) {
+
+    auto renderStart = std::chrono::steady_clock::now();
+    float geomMs = 0.0f;
+    float ambMs = 0.0f;
+    float lightMs = 0.0f;
+    float postMs = 0.0f;
 
     Renderer3D *renderer = static_cast<Renderer3D*>(caller);
 
@@ -110,6 +117,7 @@ namespace blunted {
 
 
     // geometry phase
+    auto geomStart = std::chrono::steady_clock::now();
 
     renderer->UseShader("simple");
 
@@ -146,6 +154,7 @@ namespace blunted {
     }
 
     renderer->RenderVertexBuffer(buffer.visibleGeometry, e_RenderMode_Full);
+    geomMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - geomStart).count();
 
 
 
@@ -171,6 +180,7 @@ namespace blunted {
     //renderer->ClearBuffer(Vector3(0, 0, 0), false, true);
 
     // ambient
+    auto ambStart = std::chrono::steady_clock::now();
     renderer->UseShader("ambient");
 
     renderer->SetUniformFloat("ambient", "contextWidth", (float)view.width);
@@ -187,10 +197,12 @@ namespace blunted {
     renderer->SetDepthMask(false);
 
     renderer->RenderOverlay2D();
+    ambMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - ambStart).count();
 
     // lights
     //renderer->SetMatrixMode(e_MatrixMode_ModelView);
 
+    auto lightStart = std::chrono::steady_clock::now();
     renderer->UseShader("lighting");
 
     renderer->SetBlendingMode(e_BlendingMode_On);
@@ -210,6 +222,7 @@ namespace blunted {
     renderer->SetDepthMask(false);
 
     renderer->RenderLights(buffer.visibleLights, projectionMatrix, viewMatrix);
+    lightMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - lightStart).count();
 
     renderer->SetBlendingMode(e_BlendingMode_Off);
     renderer->SetDepthMask(true);
@@ -228,6 +241,7 @@ namespace blunted {
 
     // render accumulation buffer with some nice postprocessing effects
 
+    auto postStart = std::chrono::steady_clock::now();
     renderer->BindFrameBuffer(0);
 
     targets.push_back(e_TargetAttachment_Back);
@@ -260,6 +274,7 @@ namespace blunted {
     renderer->SetFramebufferGammaCorrection(true);
     renderer->RenderOverlay2D();
     renderer->SetFramebufferGammaCorrection(false);
+    postMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - postStart).count();
 
     renderer->SetTextureUnit(2);
     renderer->BindTexture(0);
@@ -284,6 +299,9 @@ namespace blunted {
     buffer.visibleGeometry.clear();
     buffer.visibleLights.clear();
     buffer.skyboxes.clear();
+
+    float totalRenderMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - renderStart).count();
+    PerformanceProfiler::GetInstance().RecordRenderTimes(totalRenderMs, geomMs, ambMs, lightMs, postMs, 0.0f);
 
     return true;
   }

@@ -5,6 +5,7 @@
 #include "match.hpp"
 
 #include "base/gamecontext.hpp"
+#include "base/profiler.hpp"
 
 #include "gametask.hpp"
 #include "menu/menutask.hpp"
@@ -63,6 +64,8 @@ Match::Match(MatchData *matchData, GameContext *context) : matchData(matchData),
   goalScoredTimer = 0;
 
 #ifndef GPFB_HEADLESS
+  perfCaption = 0;
+  lastPerfUpdateTime_ms = 0;
   replayState->dirty = false;
 #endif
 
@@ -391,6 +394,14 @@ Match::Match(MatchData *matchData, GameContext *context) : matchData(matchData),
   messageCaption->SetTransparency(0.3f);
   root->AddView(messageCaption);
   messageCaptionRemoveTime_ms = actualTime_ms + 5000;
+
+  perfCaption = new Gui2Caption(menuTask->GetWindowManager(), "game_perf_overlay", 1.0f, 1.0f, 50.0f, 3.5f, "FPS: --");
+  perfCaption->SetColor(Vector3(50, 255, 50));
+  perfCaption->SetOutlineColor(Vector3(0, 0, 0));
+  perfCaption->SetTransparency(0.1f);
+  root->AddView(perfCaption);
+  perfCaption->Show();
+  lastPerfUpdateTime_ms = 0;
 #endif
 
   // for usage in destructor
@@ -567,6 +578,13 @@ void Match::Exit() {
 
   scoreboard->Exit();
   delete scoreboard;
+
+  if (perfCaption) {
+    perfCaption->Exit();
+    delete perfCaption;
+    perfCaption = 0;
+  }
+  PerformanceProfiler::GetInstance().DumpBenchmarkReport();
 #endif
 
   animPositionCache.clear();
@@ -1455,6 +1473,15 @@ void Match::Put() {
     //}
 
     if (messageCaptionRemoveTime_ms <= fetchedbuf_actualTime_ms) messageCaption->Hide();
+
+    if (perfCaption && fetchedbuf_actualTime_ms > lastPerfUpdateTime_ms + 250) {
+      lastPerfUpdateTime_ms = fetchedbuf_actualTime_ms;
+      perfCaption->SetCaption(PerformanceProfiler::GetInstance().GetHudString());
+      int colorType = PerformanceProfiler::GetInstance().GetHudColorType();
+      if (colorType == 0) perfCaption->SetColor(Vector3(50, 255, 50));
+      else if (colorType == 1) perfCaption->SetColor(Vector3(255, 230, 50));
+      else perfCaption->SetColor(Vector3(255, 50, 50));
+    }
 
 
     // radar

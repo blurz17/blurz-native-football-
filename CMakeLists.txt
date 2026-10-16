@@ -21,6 +21,8 @@ file(GLOB_RECURSE ALL_SOURCES
     "${GAME_DIR}/*.h"
     "${PLATFORM_DIR}/android/android_assets.cpp"
     "${PLATFORM_DIR}/android/android_assets.hpp"
+    "${ENGINE_DIR}/base/profiler.cpp"
+    "${ENGINE_DIR}/base/profiler.hpp"
 )
 
 # Third party libraries

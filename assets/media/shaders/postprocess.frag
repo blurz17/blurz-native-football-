@@ -81,19 +81,14 @@ void main(void) {
 
   // SSAO blur
 
-  int SSAO_blurSize = 4;
-
-  float SSAO = 0.0; // texture(map_modifier, texCoord).g;
-
-  vec2 texelSize = 1.0 / vec2(textureSize(map_modifier, 0));
-  vec2 hlim = vec2(float(-SSAO_blurSize) * 0.5 + 0.5);
-  for (int x = 0; x < SSAO_blurSize; ++x) {
-    for (int y = 0; y < SSAO_blurSize; ++y) {
-      vec2 offset = (hlim + vec2(float(x), float(y))) * texelSize;
-      SSAO += texture(map_modifier, texCoord + offset).g;
-    }
-  }
-  SSAO = SSAO / float(SSAO_blurSize * SSAO_blurSize);
+  // SSAO blur: optimized 4-tap filter with hardware bilinear sampling
+  vec2 texelSize = 1.0 / vec2(contextWidth, contextHeight);
+  float SSAO = (
+    texture(map_modifier, texCoord + vec2(-0.75, -0.75) * texelSize).g +
+    texture(map_modifier, texCoord + vec2( 0.75, -0.75) * texelSize).g +
+    texture(map_modifier, texCoord + vec2(-0.75,  0.75) * texelSize).g +
+    texture(map_modifier, texCoord + vec2( 0.75,  0.75) * texelSize).g
+  ) * 0.25;
   //SSAO = clamp(SSAO * 3.0 - 2.0, 0.0, 1.0);
 
   //vec3 fragColor = vec3(SSAO);

@@ -30,6 +30,11 @@ class PlayerData {
     std::string GetHairStyle() { return hairStyle; }
     std::string GetHairColor() { return hairColor; }
     float GetHeight() { return height; }
+    std::string GetBootStyle() { return bootStyle; }
+    std::string GetFaceTexture() { return faceTexture; }
+
+    void SetBootStyle(const std::string &style) { bootStyle = style; }
+    void SetFaceTexture(const std::string &face) { faceTexture = face; }
 
   protected:
     int databaseID;
@@ -43,6 +48,8 @@ class PlayerData {
     std::string hairStyle;
     std::string hairColor;
     float height;
+    std::string bootStyle;
+    std::string faceTexture;
 
 };
 

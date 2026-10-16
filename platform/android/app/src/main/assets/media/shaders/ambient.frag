@@ -23,7 +23,7 @@ uniform float contextY;
 
 uniform vec2 cameraClip;
 
-const int SSAO_kernelSize = 16; // Increased from 8 for better quality (PC uses 32)
+const int SSAO_kernelSize = 8; // Reduced to 8 for mobile performance
 //uniform int SSAO_kernelSize; // won't work until glsl 4.3 or so.
 uniform vec3 SSAO_kernel[SSAO_kernelSize];
 
@@ -49,58 +49,8 @@ vec3 ContrastSaturationBrightness(vec3 color, float brt, float con, float sat) {
 }
 
 float GetEdge(vec2 pos) {
-  vec2 offsets[9];
-  offsets[0] = vec2(0.0, 0.0);
-  offsets[1] = vec2(-1.0 / (contextWidth * 0.001), -1.0 / (contextHeight * 0.001)); // round the clock ;)
-  offsets[2] = vec2(0.0, -1.0 / (contextHeight * 0.001));
-  offsets[3] = vec2(1.0 / (contextWidth * 0.001), -1.0 / (contextHeight * 0.001));
-  offsets[4] = vec2(1.0 / (contextWidth * 0.001), 0.0);
-  offsets[5] = vec2(1.0 / (contextWidth * 0.001), 1.0 / (contextHeight * 0.001));
-  offsets[6] = vec2(0.0, 1.0 / (contextHeight * 0.001));
-  offsets[7] = vec2(-1.0 / (contextWidth * 0.001), 1.0 / (contextHeight * 0.001));
-  offsets[8] = vec2(-1.0 / (contextWidth * 0.001), 0.0);
-
-  float depths[9];
-  vec3 normals[9];
-  for (int i = 0; i < 9; i++) {
-    float depth = texture(map_depth, pos + offsets[i] * 0.001).x;
-    depths[i] = cameraClip.y / (depth - cameraClip.x);
-    normals[i] = texture(map_normal, pos + offsets[i] * 0.001).xyz * 2.0 - 1.0;
-  }
-
-  vec4 deltas1;
-  vec4 deltas2;
-  deltas1.x = depths[1];
-  deltas1.y = depths[2];
-  deltas1.z = depths[3];
-  deltas1.w = depths[4];
-  deltas2.x = depths[5];
-  deltas2.y = depths[6];
-  deltas2.z = depths[7];
-  deltas2.w = depths[8];
-
-  deltas1 = abs(deltas1 - depths[0]);
-  deltas2 = abs(depths[0] - deltas2);
-
-  vec4 minDeltas = max(min(deltas1, deltas2), 0.00001);
-  vec4 maxDeltas = max(deltas1, deltas2);
-
-  vec4 depthResults = step(minDeltas * 35.0, maxDeltas);
-
-  deltas1.x = dot(normals[1], normals[0]);
-  deltas1.y = dot(normals[2], normals[0]);
-  deltas1.z = dot(normals[3], normals[0]);
-  deltas1.w = dot(normals[4], normals[0]);
-  deltas2.x = dot(normals[5], normals[0]);
-  deltas2.y = dot(normals[6], normals[0]);
-  deltas2.z = dot(normals[7], normals[0]);
-  deltas2.w = dot(normals[8], normals[0]);
-  deltas1 = abs(deltas1 - deltas2);
-
-  vec4 normalResults = step(0.5, deltas1);
-  vec4 results = max(normalResults, depthResults);
-
-  return (results.x + results.y + results.z + results.w) * 0.25;
+  // Mobile optimization: bypass 18 texture fetches per pixel for smooth 60 FPS and crisp native geometry
+  return 0.0;
 }
 
 vec3 GetWorldPosition(vec2 texCoord, float depth) {

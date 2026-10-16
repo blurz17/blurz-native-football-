@@ -7,6 +7,7 @@
 
 #include "defines.hpp"
 #include "base/math/vector3.hpp"
+#include "base/math/matrix4.hpp"
 #include "scene/object.hpp"
 #include "scene/resources/geometrydata.hpp"
 #include "types/interpreter.hpp"
@@ -27,6 +28,7 @@ namespace blunted {
       boost::intrusive_ptr < Resource<GeometryData> > GetGeometryData();
 
       virtual void OnUpdateGeometryData(bool updateMaterials = true);
+      virtual void SetBoneMatrices(const std::vector<Matrix4> &boneMatrices);
 
       virtual void Poke(e_SystemType targetSystemType);
 
@@ -49,6 +51,7 @@ namespace blunted {
       virtual void OnUnload() = 0;
       virtual void OnMove(const Vector3 &position) = 0;
       virtual void OnRotate(const Quaternion &rotation) = 0;
+      virtual void OnSetBoneMatrices(const std::vector<Matrix4> &boneMatrices) {}
 
       virtual void OnPoke() = 0;
 

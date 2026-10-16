@@ -37,6 +37,7 @@ out vec3 frag_tangent;
 out vec3 frag_bitangent;
 
 void main(void) {
+
   mat4 modelViewMatrix = viewMatrix * modelMatrix;
   frag_position = modelViewMatrix * position;
 

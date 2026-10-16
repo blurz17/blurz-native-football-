@@ -410,6 +410,7 @@ namespace blunted {
     queueEntry.vertexBuffer = caller->vertexBuffer;
     queueEntry.position = caller->GetPosition();
     queueEntry.rotation = caller->GetRotation();
+    queueEntry.boneMatrices = caller->GetBoneMatrices();
     queue.push_back(queueEntry);
   }
 

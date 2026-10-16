@@ -81,6 +81,18 @@ namespace blunted {
     InvalidateBoundingVolume();
   }
 
+  void Geometry::SetBoneMatrices(const std::vector<Matrix4> &boneMatrices) {
+    subjectMutex.lock();
+
+    int observersSize = observers.size();
+    for (int i = 0; i < observersSize; i++) {
+      IGeometryInterpreter *geometryInterpreter = static_cast<IGeometryInterpreter*>(observers.at(i).get());
+      geometryInterpreter->OnSetBoneMatrices(boneMatrices);
+    }
+
+    subjectMutex.unlock();
+  }
+
   boost::intrusive_ptr < Resource<GeometryData> > Geometry::GetGeometryData() {
     return geometryData;
   }

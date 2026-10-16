@@ -6,6 +6,7 @@
 #define _HPP_HUMANOIDBASE
 
 #include "base/math/vector3.hpp"
+#include "base/math/matrix4.hpp"
 #include "scene/scene3d/node.hpp"
 
 #include "../../../gamedefines.hpp"
@@ -389,6 +390,11 @@ class HumanoidBase {
     std::vector<radian> preferredDirectionAngles;
 
     MovementHistory movementHistory;
+    bool gpuSkinningActive;
+
+  public:
+    void SetGpuSkinningActive(bool active) { gpuSkinningActive = active; }
+    bool IsGpuSkinningActive() const { return gpuSkinningActive; }
 
 };
 

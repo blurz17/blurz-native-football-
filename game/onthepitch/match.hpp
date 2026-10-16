@@ -318,6 +318,8 @@ class Match {
     Gui2TacticsDebug *tacticsDebug;
     Gui2Caption *messageCaption;
     unsigned long messageCaptionRemoveTime_ms;
+    Gui2Caption *perfCaption;
+    unsigned long lastPerfUpdateTime_ms;
 #endif
 #endif
 

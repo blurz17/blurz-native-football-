@@ -12,6 +12,7 @@
 
 #include "blunted.hpp"
 #include "systems/graphics/graphics_system.hpp"
+#include "base/profiler.hpp"
 
 void UploadFullbodyModel::Update() {
   for (unsigned int i = 0; i < geometryToUpload.size(); i++) {
@@ -131,7 +132,10 @@ void GameTask::ProcessPhase() {
   }
 
   if (match) {
+    auto physStart = std::chrono::steady_clock::now();
     match->Process();
+    float physMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - physStart).count();
+    PerformanceProfiler::GetInstance().RecordPhysics(physMs);
 
     matchPutBufferMutex.lock();
     match->PreparePutBuffers();
@@ -151,6 +155,8 @@ void GameTask::PutPhase() {
   std::vector<PlayerBase*> playersToProcess;
 
   matchLifetimeMutex.lock();
+
+  auto skinStart = std::chrono::steady_clock::now();
 
   if (match) {
 
@@ -198,6 +204,10 @@ void GameTask::PutPhase() {
 
   for (unsigned int t = 0; t < updateFullbodyModels.size(); t++) {
     updateFullbodyModels.at(t)->Wait();
+  }
+  float skinMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - skinStart).count();
+  if (match) {
+    PerformanceProfiler::GetInstance().RecordCpuSkinning(skinMs, (int)playersToProcess.size(), 22);
   }
 
   if (match) {

@@ -36,6 +36,8 @@ PlayerData::PlayerData(int playerDatabaseID) : databaseID(playerDatabaseID) {
   hairStyle = "short01";
   hairColor = "darkblonde";
   height = 1.8f;
+  bootStyle = "classic";
+  faceTexture = "";
 
   for (unsigned int c = 0; c < result->data.at(0).size(); c++) {
     if (result->header.at(c).compare("firstname") == 0) firstName = result->data.at(0).at(c);
@@ -48,6 +50,8 @@ PlayerData::PlayerData(int playerDatabaseID) : databaseID(playerDatabaseID) {
     if (result->header.at(c).compare("hairstyle") == 0) hairStyle = result->data.at(0).at(c);
     if (result->header.at(c).compare("haircolor") == 0) hairColor = result->data.at(0).at(c);
     if (result->header.at(c).compare("height") == 0) height = atof(result->data.at(0).at(c).c_str());
+    if (result->header.at(c).compare("bootstyle") == 0) bootStyle = result->data.at(0).at(c);
+    if (result->header.at(c).compare("facetexture") == 0) faceTexture = result->data.at(0).at(c);
   }
 
   delete result;
@@ -85,6 +89,8 @@ PlayerData::PlayerData() {
   hairStyle = "short01";
   hairColor = "darkblonde";
   height = 1.8f;
+  bootStyle = "classic";
+  faceTexture = "";
 
   stats.Set("physical_balance", 0.6);
   stats.Set("physical_reaction", 0.6);

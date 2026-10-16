@@ -55,6 +55,7 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
   reQueueDelayFrames = 0;
 
   buf_LowDetailMode = false;
+  fetchedbuf_LowDetailMode = false;
   fetchedbuf_previousSnapshotTime_ms = 0;
 
   currentAnim = new Anim();
@@ -104,6 +105,8 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
 
   assert(match);
 
+  gpuSkinningActive = false;
+
   float playerHeight = player->GetPlayerData()->GetHeight();
   zMultiplier = (1.0f / defaultPlayerHeight) * playerHeight;
 
@@ -113,7 +116,19 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
   humanoidNode->SetLocalMode(e_LocalMode_Absolute);
 
   boost::intrusive_ptr < Resource<Surface> > skin;
-  skin = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch("media/objects/players/textures/skin0" + int_to_str(player->GetPlayerData()->GetSkinColor()) + ".png", true, true);
+  std::string faceTex = player->GetPlayerData()->GetFaceTexture();
+  if (!faceTex.empty()) {
+    skin = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch("media/objects/players/textures/faces/" + faceTex, true, true);
+  }
+  if (!skin) {
+    skin = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch("media/objects/players/textures/skin0" + int_to_str(player->GetPlayerData()->GetSkinColor()) + ".png", true, true);
+  }
+
+  boost::intrusive_ptr < Resource<Surface> > boots;
+  std::string bootStyle = player->GetPlayerData()->GetBootStyle();
+  if (!bootStyle.empty() && bootStyle != "classic") {
+    boots = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch("media/objects/players/textures/shoes/" + bootStyle + ".png", true, true);
+  }
 
   boost::intrusive_ptr<Node> bla2(new Node(*fullbodySourceNode.get(), int_to_str(player->GetID()), GetContext()->scene3D));
   fullbodyNode = bla2;
@@ -123,7 +138,7 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
   humanoidNode->SetLocalMode(e_LocalMode_Absolute);
 
   boost::intrusive_ptr < Resource<Surface> > skin;
-  skin = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch("media/objects/players/textures/skin0" + int_to_str(player->GetPlayerData()->GetSkinColor()) + ".png", true, true);
+  boost::intrusive_ptr < Resource<Surface> > boots;
 
   boost::intrusive_ptr<Node> bla2(new Node(*fullbodySourceNode.get(), int_to_str(player->GetID()), boost::shared_ptr<Scene3D>()));
   fullbodyNode = bla2;
@@ -138,10 +153,13 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
   std::vector < MaterializedTriangleMesh > &tmesh = bodyGeom->GetResource()->GetTriangleMeshesRef();
   for (unsigned int i = 0; i < tmesh.size(); i++) {
     if (tmesh.at(i).material.diffuseTexture != boost::intrusive_ptr< Resource<Surface> >()) {
-      if (tmesh.at(i).material.diffuseTexture->GetIdentString() == "skin.jpg") {
+      std::string texIdent = tmesh.at(i).material.diffuseTexture->GetIdentString();
+      if (texIdent == "skin.jpg" || texIdent.find("skin.jpg") != std::string::npos) {
         tmesh.at(i).material.diffuseTexture = skin;
         tmesh.at(i).material.specular_amount = 0.002f;
         tmesh.at(i).material.shininess = 0.2f;
+      } else if (boots && (texIdent == "shoe.jpg" || texIdent.find("shoe.jpg") != std::string::npos)) {
+        tmesh.at(i).material.diffuseTexture = boots;
       }
     }
   }
@@ -439,6 +457,9 @@ void HumanoidBase::UpdateFullbodyNodes() {
     joints[i].position = joints[i].node->GetDerivedPosition() - fullbodyOffset;
   }
 
+#ifndef GPFB_HEADLESS
+#endif
+
   // todo: something is wrong with the hairdo update logic, so just always update now
   /*
   if (NeedsModelUpdate()) {
@@ -459,19 +480,31 @@ void HumanoidBase::UpdateFullbodyNodes() {
 }
 
 bool HumanoidBase::NeedsModelUpdate() {
-  if (buf_LowDetailMode && buf_bodyUpdatePhase != 1 - buf_bodyUpdatePhaseOffset) return false; else return true;
+  if (fetchedbuf_LowDetailMode && fetchedbuf_bodyUpdatePhase != 1 - fetchedbuf_bodyUpdatePhaseOffset) return false; else return true;
 }
 
 void HumanoidBase::UpdateFullbodyModel(bool updateSrc) {
 #ifndef GPFB_HEADLESS
   int uploadVertices = true;
   int uploadNormals = true;
-  int uploadTangents = true;
-  int uploadBitangents = true;
+  // Tangents and bitangents are only used if the material has a normal map.
+  // Football players use diffuse + specular only, so rotating tangents and bitangents
+  // on every frame wastefully consumed ~50% of CPU skinning time.
+  // Only upload them when initial model geometry is created (updateSrc == true).
+  int uploadTangents = updateSrc ? true : false;
+  int uploadBitangents = updateSrc ? true : false;
 
   boost::intrusive_ptr < Resource<GeometryData> > fullbodyGeometryData = boost::static_pointer_cast<Geometry>(fullbodyNode->GetObject("fullbody"))->GetGeometryData();
   fullbodyGeometryData->resourceMutex.lock();
   std::vector < MaterializedTriangleMesh > &materializedTriangleMeshes = fullbodyGeometryData->GetResource()->GetTriangleMeshesRef();
+
+  // Pre-scale joint positions once per frame instead of repeating in the 11,000-vertex loop
+  std::vector<Vector3> jointOrigPosScaled(joints.size());
+  std::vector<Vector3> jointPosScaled(joints.size());
+  for (size_t j = 0; j < joints.size(); j++) {
+    jointOrigPosScaled[j] = joints[j].origPos * zMultiplier;
+    jointPosScaled[j] = joints[j].position * zMultiplier;
+  }
 
   for (unsigned int subgeom = 0; subgeom < fullbodySubgeomCount; subgeom++) {
 
@@ -497,33 +530,46 @@ void HumanoidBase::UpdateFullbodyModel(bool updateSrc) {
     Vector3 adaptedBitangent;
 
     for (int v = 0; v < uniqueVertexCount; v++) {
-      if (uploadVertices)   memcpy(origVertex.coords,    &uniqueMesh.data[weightedVertices[v].vertexID * 3],                           3 * sizeof(float)); // was: uniqueFullbodyMeshSrc
-      if (uploadNormals)    memcpy(origNormal.coords,    &uniqueMesh.data[weightedVertices[v].vertexID * 3 + uniqueElementOffset],     3 * sizeof(float));
-      if (uploadTangents)   memcpy(origTangent.coords,   &uniqueMesh.data[weightedVertices[v].vertexID * 3 + uniqueElementOffset * 3], 3 * sizeof(float));
-      if (uploadBitangents) memcpy(origBitangent.coords, &uniqueMesh.data[weightedVertices[v].vertexID * 3 + uniqueElementOffset * 4], 3 * sizeof(float));
+      if (uploadVertices) {
+        const float *src = &uniqueMesh.data[weightedVertices[v].vertexID * 3];
+        origVertex.coords[0] = src[0]; origVertex.coords[1] = src[1]; origVertex.coords[2] = src[2];
+      }
+      if (uploadNormals) {
+        const float *src = &uniqueMesh.data[weightedVertices[v].vertexID * 3 + uniqueElementOffset];
+        origNormal.coords[0] = src[0]; origNormal.coords[1] = src[1]; origNormal.coords[2] = src[2];
+      }
+      if (uploadTangents) {
+        const float *src = &uniqueMesh.data[weightedVertices[v].vertexID * 3 + uniqueElementOffset * 3];
+        origTangent.coords[0] = src[0]; origTangent.coords[1] = src[1]; origTangent.coords[2] = src[2];
+      }
+      if (uploadBitangents) {
+        const float *src = &uniqueMesh.data[weightedVertices[v].vertexID * 3 + uniqueElementOffset * 4];
+        origBitangent.coords[0] = src[0]; origBitangent.coords[1] = src[1]; origBitangent.coords[2] = src[2];
+      }
 
       if (weightedVertices[v].bones.size() == 1) {
+        int jId = weightedVertices[v].bones[0].jointID;
 
         if (uploadVertices) {
           resultVertex = origVertex;
-          resultVertex -= joints[weightedVertices[v].bones[0].jointID].origPos * zMultiplier;
-          resultVertex.Rotate(joints[weightedVertices[v].bones[0].jointID].orientation);
-          resultVertex += joints[weightedVertices[v].bones[0].jointID].position * zMultiplier;
+          resultVertex -= jointOrigPosScaled[jId];
+          resultVertex.Rotate(joints[jId].orientation);
+          resultVertex += jointPosScaled[jId];
         }
 
         if (uploadNormals) {
           resultNormal = origNormal;
-          resultNormal.Rotate(joints[weightedVertices[v].bones[0].jointID].orientation);
+          resultNormal.Rotate(joints[jId].orientation);
         }
 
         if (uploadTangents) {
           resultTangent = origTangent;
-          resultTangent.Rotate(joints[weightedVertices[v].bones[0].jointID].orientation);
+          resultTangent.Rotate(joints[jId].orientation);
         }
 
         if (uploadBitangents) {
           resultBitangent = origBitangent;
-          resultBitangent.Rotate(joints[weightedVertices[v].bones[0].jointID].orientation);
+          resultBitangent.Rotate(joints[jId].orientation);
         }
 
       } else {
@@ -534,30 +580,31 @@ void HumanoidBase::UpdateFullbodyModel(bool updateSrc) {
         if (uploadBitangents) resultBitangent.Set(0);
 
         for (unsigned int b = 0; b < weightedVertices[v].bones.size(); b++) {
+          int jId = weightedVertices[v].bones[b].jointID;
 
           if (uploadVertices) {
             adaptedVertex = origVertex;
-            adaptedVertex -= joints[weightedVertices[v].bones[b].jointID].origPos * zMultiplier;
-            adaptedVertex.Rotate(joints[weightedVertices[v].bones[b].jointID].orientation);
-            adaptedVertex += joints[weightedVertices[v].bones[b].jointID].position * zMultiplier;
+            adaptedVertex -= jointOrigPosScaled[jId];
+            adaptedVertex.Rotate(joints[jId].orientation);
+            adaptedVertex += jointPosScaled[jId];
             resultVertex += adaptedVertex * weightedVertices[v].bones[b].weight;
           }
 
           if (uploadNormals) {
             adaptedNormal = origNormal;
-            adaptedNormal.Rotate(joints[weightedVertices[v].bones[b].jointID].orientation);
+            adaptedNormal.Rotate(joints[jId].orientation);
             resultNormal += adaptedNormal * weightedVertices[v].bones[b].weight;
           }
 
           if (uploadTangents) {
             adaptedTangent = origTangent;
-            adaptedTangent.Rotate(joints[weightedVertices[v].bones[b].jointID].orientation);
+            adaptedTangent.Rotate(joints[jId].orientation);
             resultTangent += adaptedTangent * weightedVertices[v].bones[b].weight;
           }
 
           if (uploadBitangents) {
             adaptedBitangent = origBitangent;
-            adaptedBitangent.Rotate(joints[weightedVertices[v].bones[b].jointID].orientation);
+            adaptedBitangent.Rotate(joints[jId].orientation);
             resultBitangent += adaptedBitangent * weightedVertices[v].bones[b].weight;
           }
 
@@ -570,16 +617,40 @@ void HumanoidBase::UpdateFullbodyModel(bool updateSrc) {
       }
 
       if (updateSrc) {
-        if (uploadVertices)   memcpy(&uniqueMesh.data[weightedVertices[v].vertexID * 3],                           resultVertex.coords,    3 * sizeof(float));
-        if (uploadNormals)    memcpy(&uniqueMesh.data[weightedVertices[v].vertexID * 3 + uniqueElementOffset],     resultNormal.coords,    3 * sizeof(float));
-        if (uploadTangents)   memcpy(&uniqueMesh.data[weightedVertices[v].vertexID * 3 + uniqueElementOffset * 3], resultTangent.coords,   3 * sizeof(float));
-        if (uploadBitangents) memcpy(&uniqueMesh.data[weightedVertices[v].vertexID * 3 + uniqueElementOffset * 4], resultBitangent.coords, 3 * sizeof(float));
+        if (uploadVertices) {
+          float *dst = &uniqueMesh.data[weightedVertices[v].vertexID * 3];
+          dst[0] = resultVertex.coords[0]; dst[1] = resultVertex.coords[1]; dst[2] = resultVertex.coords[2];
+        }
+        if (uploadNormals) {
+          float *dst = &uniqueMesh.data[weightedVertices[v].vertexID * 3 + uniqueElementOffset];
+          dst[0] = resultNormal.coords[0]; dst[1] = resultNormal.coords[1]; dst[2] = resultNormal.coords[2];
+        }
+        if (uploadTangents) {
+          float *dst = &uniqueMesh.data[weightedVertices[v].vertexID * 3 + uniqueElementOffset * 3];
+          dst[0] = resultTangent.coords[0]; dst[1] = resultTangent.coords[1]; dst[2] = resultTangent.coords[2];
+        }
+        if (uploadBitangents) {
+          float *dst = &uniqueMesh.data[weightedVertices[v].vertexID * 3 + uniqueElementOffset * 4];
+          dst[0] = resultBitangent.coords[0]; dst[1] = resultBitangent.coords[1]; dst[2] = resultBitangent.coords[2];
+        }
       }
 
-      if (uploadVertices)   memcpy(&materializedTriangleMeshes[subgeom].vertices[weightedVertices[v].vertexID * 3],                           resultVertex.coords,    3 * sizeof(float));
-      if (uploadNormals)    memcpy(&materializedTriangleMeshes[subgeom].vertices[weightedVertices[v].vertexID * 3 + uniqueElementOffset],     resultNormal.coords,    3 * sizeof(float));
-      if (uploadTangents)   memcpy(&materializedTriangleMeshes[subgeom].vertices[weightedVertices[v].vertexID * 3 + uniqueElementOffset * 3], resultTangent.coords,   3 * sizeof(float));
-      if (uploadBitangents) memcpy(&materializedTriangleMeshes[subgeom].vertices[weightedVertices[v].vertexID * 3 + uniqueElementOffset * 4], resultBitangent.coords, 3 * sizeof(float));
+      if (uploadVertices) {
+        float *dst = &materializedTriangleMeshes[subgeom].vertices[weightedVertices[v].vertexID * 3];
+        dst[0] = resultVertex.coords[0]; dst[1] = resultVertex.coords[1]; dst[2] = resultVertex.coords[2];
+      }
+      if (uploadNormals) {
+        float *dst = &materializedTriangleMeshes[subgeom].vertices[weightedVertices[v].vertexID * 3 + uniqueElementOffset];
+        dst[0] = resultNormal.coords[0]; dst[1] = resultNormal.coords[1]; dst[2] = resultNormal.coords[2];
+      }
+      if (uploadTangents) {
+        float *dst = &materializedTriangleMeshes[subgeom].vertices[weightedVertices[v].vertexID * 3 + uniqueElementOffset * 3];
+        dst[0] = resultTangent.coords[0]; dst[1] = resultTangent.coords[1]; dst[2] = resultTangent.coords[2];
+      }
+      if (uploadBitangents) {
+        float *dst = &materializedTriangleMeshes[subgeom].vertices[weightedVertices[v].vertexID * 3 + uniqueElementOffset * 4];
+        dst[0] = resultBitangent.coords[0]; dst[1] = resultBitangent.coords[1]; dst[2] = resultBitangent.coords[2];
+      }
     }
 
   } // subgeom

@@ -8,6 +8,7 @@
 #include "interface_renderer3d.hpp"
 
 #include "managers/environmentmanager.hpp"
+#include "base/profiler.hpp"
 
 namespace blunted {
 
@@ -57,6 +58,7 @@ namespace blunted {
       virtual bool Execute(void *caller = NULL) {
         static_cast<Renderer3D*>(caller)->SwapBuffers();
         readyTime_ms = EnvironmentManager::GetInstance().GetTime_ms();
+        PerformanceProfiler::GetInstance().OnSwapBuffers();
         return true;
       }
 
