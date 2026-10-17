@@ -150,9 +150,10 @@ namespace blunted {
       lastLogTime = now;
       char logMsg[256];
       snprintf(logMsg, sizeof(logMsg),
-               "[PERF] FPS: %.1f (1%%Low: %.1f, Min: %.1f) | Frame: %.1fms | GPU: %.1fms (G:%.1f L:%.1f P:%.1f) | CPU Skin: %.1fms (%d/%d pl) | Phys: %.1fms",
+               "[PERF] FPS: %.1f (1%%Low: %.1f, Min: %.1f) | Frame: %.1fms | GPU: %.1fms (G:%.1f L:%.1f P:%.1f) | Swap: %.1fms | CPU Skin: %.1fms (%d/%d pl) | Phys: %.1fms",
                avgFps, onePercentLowFps, minFps, avgFrameTimeMs,
                lastRenderMs, lastGeometryMs, lastLightingMs, lastPostprocessMs,
+               lastSwapMs,
                lastCpuSkinningMs, lastActiveSkinned, lastTotalPlayers, lastPhysicsMs);
 #ifdef __ANDROID__
       __android_log_print(ANDROID_LOG_INFO, "GameplayFootball", "%s", logMsg);
@@ -168,6 +169,11 @@ namespace blunted {
     lastAmbientMs = ambientMs;
     lastLightingMs = lightingMs;
     lastPostprocessMs = postprocessMs;
+    if (swapMs > 0.0f) lastSwapMs = swapMs;
+  }
+
+  void PerformanceProfiler::RecordSwap(float swapMs) {
+    std::lock_guard<std::mutex> lock(dataMutex);
     lastSwapMs = swapMs;
   }
 
@@ -186,8 +192,8 @@ namespace blunted {
   std::string PerformanceProfiler::GetHudString() {
     std::lock_guard<std::mutex> lock(dataMutex);
     char buf[128];
-    snprintf(buf, sizeof(buf), "FPS: %.0f [%.0f] | %.1fms (GPU:%.1f CPU:%.1f)",
-             avgFps, onePercentLowFps, avgFrameTimeMs, lastRenderMs, lastCpuSkinningMs);
+    snprintf(buf, sizeof(buf), "FPS: %.0f [%.0f] | %.1fms (GPU:%.1f Swp:%.1f CPU:%.1f)",
+             avgFps, onePercentLowFps, avgFrameTimeMs, lastRenderMs, lastSwapMs, lastCpuSkinningMs);
     return std::string(buf);
   }
 

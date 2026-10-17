@@ -86,10 +86,15 @@ public class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         Log.v("SDL", "surfaceCreated()");
         if (Build.VERSION.SDK_INT >= 30) {
             try {
-                holder.getSurface().setFrameRate(60.0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
-                Log.i("SDL", "Configured Surface frame rate to 60.0 FPS");
+                holder.getSurface().setFrameRate(120.0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT, Surface.CHANGE_FRAME_RATE_ALWAYS);
+                Log.i("SDL", "Configured Surface frame rate to 120.0 FPS");
             } catch (Throwable t) {
-                Log.w("SDL", "Failed to set surface frame rate: " + t);
+                try {
+                    holder.getSurface().setFrameRate(120.0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
+                    Log.i("SDL", "Configured Surface frame rate to 120.0 FPS (compat mode)");
+                } catch (Throwable t2) {
+                    Log.w("SDL", "Failed to set surface frame rate: " + t2);
+                }
             }
         }
         SDLActivity.onNativeSurfaceCreated();
@@ -116,8 +121,12 @@ public class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
 
         if (Build.VERSION.SDK_INT >= 30) {
             try {
-                holder.getSurface().setFrameRate(60.0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
+                holder.getSurface().setFrameRate(120.0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT, Surface.CHANGE_FRAME_RATE_ALWAYS);
             } catch (Throwable t) {
+                try {
+                    holder.getSurface().setFrameRate(120.0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
+                } catch (Throwable t2) {
+                }
             }
         }
 

@@ -30,6 +30,7 @@ namespace blunted {
 
       // Subsystem timing hooks
       void RecordRenderTimes(float totalRenderMs, float geometryMs, float ambientMs, float lightingMs, float postprocessMs, float swapMs);
+      void RecordSwap(float swapMs);
       void RecordCpuSkinning(float skinningMs, int activeSkinned, int totalPlayers);
       void RecordPhysics(float physicsMs);
 

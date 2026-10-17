@@ -390,7 +390,16 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         if (Build.VERSION.SDK_INT >= 23) {
             try {
                 android.view.WindowManager.LayoutParams lp = getWindow().getAttributes();
-                android.view.Display display = getWindowManager().getDefaultDisplay();
+                android.view.Display display = null;
+                if (Build.VERSION.SDK_INT >= 30) {
+                    try {
+                        display = getDisplay();
+                    } catch (Throwable t) {}
+                }
+                if (display == null) {
+                    display = getWindowManager().getDefaultDisplay();
+                }
+
                 android.view.Display.Mode[] modes = display.getSupportedModes();
                 android.view.Display.Mode bestMode = null;
                 float maxRate = 59.0f;
@@ -409,8 +418,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                     lp.preferredRefreshRate = maxRate;
                     Log.i(TAG, "Configured window preferred refresh rate to " + maxRate + "Hz (mode " + bestMode.getModeId() + ")");
                 } else {
-                    lp.preferredRefreshRate = 60.0f;
-                    Log.i(TAG, "Configured window preferred refresh rate to default 60Hz");
+                    lp.preferredRefreshRate = 120.0f;
+                    Log.i(TAG, "Configured window preferred refresh rate to default 120Hz");
                 }
                 getWindow().setAttributes(lp);
             } catch (Throwable t) {

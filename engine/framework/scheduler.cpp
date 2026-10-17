@@ -330,6 +330,21 @@ namespace blunted {
 
         if (dueEntry.program != boost::shared_ptr<TaskSequenceProgram>()) {
 
+          time_ms = EnvironmentManager::GetInstance().GetTime_ms();
+          if (dueEntry.program->programCounter == 0) {
+            if (dueEntry.program->taskSequence->GetSkippable()) {
+              if (dueEntry.program->taskSequence->GetSequenceTime() == 0) {
+                dueEntry.timeUntilDueEntry_ms = 0;
+              } else {
+                dueEntry.timeUntilDueEntry_ms = (dueEntry.program->sequenceStartTime + dueEntry.program->taskSequence->GetSequenceTime()) - time_ms;
+              }
+            } else {
+              dueEntry.timeUntilDueEntry_ms = (dueEntry.program->startTime + dueEntry.program->taskSequence->GetSequenceTime() * dueEntry.program->timesRan) - time_ms;
+            }
+          } else {
+            dueEntry.timeUntilDueEntry_ms = 0;
+          }
+
           if (verbose) printf("time until due entry: %li\n", dueEntry.timeUntilDueEntry_ms);
 
           if (dueEntry.timeUntilDueEntry_ms <= 0) { // the first and/or other entries are due

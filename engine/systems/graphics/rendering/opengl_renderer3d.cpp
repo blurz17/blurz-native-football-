@@ -40,6 +40,7 @@ inline void Dummy_glBindFragDataLocation(GLuint program, GLuint colorNumber, con
 #include "base/sdl_surface.hpp"
 #include "base/utils.hpp"
 #include "base/math/bluntmath.hpp"
+#include "base/profiler.hpp"
 
 #include "base/geometry/aabb.hpp"
 #include "base/geometry/trianglemeshutils.hpp"
@@ -79,7 +80,10 @@ struct GLfunctions {
   };
 
   void OpenGLRenderer3D::SwapBuffers() {
+    auto t0 = std::chrono::steady_clock::now();
     SDL_GL_SwapWindow(window);
+    float swapMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    PerformanceProfiler::GetInstance().RecordSwap(swapMs);
   }
 
   void OpenGLRenderer3D::SetMatrix(const std::string &shaderUniformName, const Matrix4 &matrix) {
@@ -416,7 +420,8 @@ struct GLfunctions {
 #endif
 
     // Unthrottle swap interval so rendering can achieve full 120 FPS without VSync blocking
-    SDL_GL_SetSwapInterval(0);
+    int swapRes = SDL_GL_SetSwapInterval(0);
+    Log(e_Notice, "OpenGLRenderer3D", "CreateContext", "SDL_GL_SetSwapInterval(0) returned: " + int_to_str(swapRes));
 
 
     //    *reinterpret_cast<void**>(&(mapping.func)) =
