@@ -8,7 +8,7 @@
 
 namespace blunted {
 
-  const int __triangleMeshElementCount = 5;
+  const int __triangleMeshElementCount = 7;
 
   AABB GetTriangleMeshAABB(float *vertices, int verticesDataSize, const std::vector<unsigned int> &indices) {
     AABB aabb;

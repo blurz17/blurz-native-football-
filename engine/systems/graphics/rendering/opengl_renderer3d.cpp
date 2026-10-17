@@ -1181,6 +1181,7 @@ struct GLfunctions {
     //glEnableClientState(GL_VERTEX_ARRAY);
 
    	Matrix4 transform;
+    int currentSkinningState = -1;
 
     std::deque<VertexBufferQueueEntry>::const_iterator vertexBufferQueueIter = vertexBufferQueue.begin();
     while (vertexBufferQueueIter != vertexBufferQueue.end()) {
@@ -1236,6 +1237,15 @@ struct GLfunctions {
 
       transform.Construct(queueEntry->position, Vector3(1, 1, 1), queueEntry->rotation);
       SetMatrix("modelMatrix", transform);
+
+      int skinningActive = queueEntry->boneMatrices.empty() ? 0 : 1;
+      if (skinningActive != currentSkinningState) {
+        SetUniformInt(currentShader->first, "u_SkinningEnabled", skinningActive);
+        currentSkinningState = skinningActive;
+      }
+      if (skinningActive) {
+        SetUniformMatrix4Array(currentShader->first, "u_Bones", (int)queueEntry->boneMatrices.size(), queueEntry->boneMatrices.data());
+      }
 
       bool sequential = true; // buffer vertexbuffer chunks until a change happens (in texture or index, for example)
       struct BufferChunk {
@@ -1361,6 +1371,10 @@ struct GLfunctions {
       }
 
       vertexBufferQueueIter++;
+    }
+
+    if (currentSkinningState != 0) {
+      SetUniformInt(currentShader->first, "u_SkinningEnabled", 0);
     }
 
     //printf("%i buffer switches\n", bufferSwitches);
@@ -2081,6 +2095,8 @@ struct GLfunctions {
 
     if (name == "zphase") {
       mapping.glBindAttribLocation(shader.programID, 0, "position");
+      mapping.glBindAttribLocation(shader.programID, 5, "boneIndices");
+      mapping.glBindAttribLocation(shader.programID, 6, "boneWeights");
       mapping.glBindFragDataLocation(shader.programID, 0, "stdout");
     }
     if (name == "simple") {
@@ -2089,6 +2105,8 @@ struct GLfunctions {
       mapping.glBindAttribLocation(shader.programID, 2, "texcoord");
       mapping.glBindAttribLocation(shader.programID, 3, "tangent");
       mapping.glBindAttribLocation(shader.programID, 4, "bitangent");
+      mapping.glBindAttribLocation(shader.programID, 5, "boneIndices");
+      mapping.glBindAttribLocation(shader.programID, 6, "boneWeights");
       mapping.glBindFragDataLocation(shader.programID, 0, "stdout0");
       mapping.glBindFragDataLocation(shader.programID, 1, "stdout1");
       mapping.glBindFragDataLocation(shader.programID, 2, "stdout2");
@@ -2226,10 +2244,15 @@ struct GLfunctions {
       location = iter->second;
     } else {
       location = mapping.glGetUniformLocation((*shaderIter).second.programID, varName.c_str());
-      if (location == -1) Log(e_Error, "OpenGLRenderer3D", "SetUniformInt", "Uniform location for shader '" + shaderName + "' not found: " + varName);
+      if (location == -1) {
+        uniformCache.insert(std::pair<std::string, GLint>(shaderName + "_var_" + varName, -1));
+        return;
+      }
       uniformCache.insert(std::pair<std::string, GLint>(shaderName + "_var_" + varName, location));
     }
-    mapping.glUniform1i(location, value);
+    if (location != -1) {
+      mapping.glUniform1i(location, value);
+    }
   }
 
   void OpenGLRenderer3D::SetUniformInt3(const std::string &shaderName, const std::string &varName, int value1, int value2, int value3) {

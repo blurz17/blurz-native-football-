@@ -72,6 +72,7 @@ class PlayerBase {
     void UpdateFullbodyNodes() { humanoid->UpdateFullbodyNodes(); }
     bool NeedsModelUpdate() { return humanoid->NeedsModelUpdate(); }
     void UpdateFullbodyModel() { humanoid->UpdateFullbodyModel(); }
+    bool IsGpuSkinningActive() const { return humanoid ? humanoid->IsGpuSkinningActive() : false; }
 
     virtual float GetStat(const char *name) const;
     float GetVelocityMultiplier() const;

@@ -14,6 +14,8 @@
 
 #include "../rendering/interface_renderer3d.hpp"
 
+#include <boost/thread/mutex.hpp>
+
 namespace blunted {
 
   class GraphicsGeometry_GeometryInterpreter;
@@ -33,8 +35,14 @@ namespace blunted {
       virtual void SetRotation(const Quaternion &newRotation);
       Quaternion GetRotation() const;
 
-      virtual void SetBoneMatrices(const std::vector<Matrix4> &newBoneMatrices) { boneMatrices = newBoneMatrices; }
-      const std::vector<Matrix4> &GetBoneMatrices() const { return boneMatrices; }
+      virtual void SetBoneMatrices(const std::vector<Matrix4> &newBoneMatrices) {
+        boost::mutex::scoped_lock lock(boneMutex);
+        boneMatrices = newBoneMatrices;
+      }
+      std::vector<Matrix4> GetBoneMatrices() const {
+        boost::mutex::scoped_lock lock(boneMutex);
+        return boneMatrices;
+      }
 
       std::list<VertexBufferIndex> vertexBufferIndices;
       boost::intrusive_ptr < Resource<VertexBuffer> > vertexBuffer;
@@ -43,6 +51,7 @@ namespace blunted {
       Vector3 position;
       Quaternion rotation;
       std::vector<Matrix4> boneMatrices;
+      mutable boost::mutex boneMutex;
 
   };
 

@@ -63,6 +63,7 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
 
   decayingPositionOffset = Vector3(0);
   decayingDifficultyFactor = 0.0f;
+  gpuSkinningActive = true;
 
   _cache_AgilityFactor = GetContext()->config->GetReal("gameplay_agilityfactor", _default_AgilityFactor);
   _cache_AccelerationFactor = GetContext()->config->GetReal("gameplay_accelerationfactor", _default_AccelerationFactor);
@@ -384,6 +385,23 @@ void HumanoidBase::PrepareFullbodyModel(std::map<Vector3, Vector3> &colorCoords)
       }
 
       weightedVerticesVec.at(subgeom).push_back(weightedVertex);
+
+      if (GetTriangleMeshElementCount() >= 7) {
+        float j0 = weightedVertex.bones.size() > 0 ? (float)weightedVertex.bones[0].jointID : 0.0f;
+        float w0 = weightedVertex.bones.size() > 0 ? weightedVertex.bones[0].weight : 0.0f;
+        float j1 = weightedVertex.bones.size() > 1 ? (float)weightedVertex.bones[1].jointID : 0.0f;
+        float w1 = weightedVertex.bones.size() > 1 ? weightedVertex.bones[1].weight : 0.0f;
+        float j2 = weightedVertex.bones.size() > 2 ? (float)weightedVertex.bones[2].jointID : 0.0f;
+        float w2 = weightedVertex.bones.size() > 2 ? weightedVertex.bones[2].weight : 0.0f;
+
+        uniqueMesh.data[v + 5 * uniqueElementOffset + 0] = j0;
+        uniqueMesh.data[v + 5 * uniqueElementOffset + 1] = j1;
+        uniqueMesh.data[v + 5 * uniqueElementOffset + 2] = j2;
+
+        uniqueMesh.data[v + 6 * uniqueElementOffset + 0] = w0;
+        uniqueMesh.data[v + 6 * uniqueElementOffset + 1] = w1;
+        uniqueMesh.data[v + 6 * uniqueElementOffset + 2] = w2;
+      }
     }
 
     uniqueFullbodyMesh.push_back(uniqueMesh);
@@ -485,6 +503,29 @@ bool HumanoidBase::NeedsModelUpdate() {
 
 void HumanoidBase::UpdateFullbodyModel(bool updateSrc) {
 #ifndef GPFB_HEADLESS
+  // Pre-scale joint positions once per frame
+  std::vector<Vector3> jointOrigPosScaled(joints.size());
+  std::vector<Vector3> jointPosScaled(joints.size());
+  for (size_t j = 0; j < joints.size(); j++) {
+    jointOrigPosScaled[j] = joints[j].origPos * zMultiplier;
+    jointPosScaled[j] = joints[j].position * zMultiplier;
+  }
+
+  if (gpuSkinningActive && !updateSrc) {
+    std::vector<Matrix4> boneMatrices(joints.size());
+    for (size_t j = 0; j < joints.size(); j++) {
+      Vector3 rotOrig = jointOrigPosScaled[j];
+      rotOrig.Rotate(joints[j].orientation);
+      Vector3 trans = jointPosScaled[j] - rotOrig;
+      boneMatrices[j].Construct(trans, Vector3(1, 1, 1), joints[j].orientation);
+    }
+    boost::intrusive_ptr<Geometry> fullbodyGeom = boost::static_pointer_cast<Geometry>(fullbodyNode->GetObject("fullbody"));
+    if (fullbodyGeom) {
+      fullbodyGeom->SetBoneMatrices(boneMatrices);
+    }
+    return;
+  }
+
   int uploadVertices = true;
   int uploadNormals = true;
   // Tangents and bitangents are only used if the material has a normal map.
@@ -497,14 +538,6 @@ void HumanoidBase::UpdateFullbodyModel(bool updateSrc) {
   boost::intrusive_ptr < Resource<GeometryData> > fullbodyGeometryData = boost::static_pointer_cast<Geometry>(fullbodyNode->GetObject("fullbody"))->GetGeometryData();
   fullbodyGeometryData->resourceMutex.lock();
   std::vector < MaterializedTriangleMesh > &materializedTriangleMeshes = fullbodyGeometryData->GetResource()->GetTriangleMeshesRef();
-
-  // Pre-scale joint positions once per frame instead of repeating in the 11,000-vertex loop
-  std::vector<Vector3> jointOrigPosScaled(joints.size());
-  std::vector<Vector3> jointPosScaled(joints.size());
-  for (size_t j = 0; j < joints.size(); j++) {
-    jointOrigPosScaled[j] = joints[j].origPos * zMultiplier;
-    jointPosScaled[j] = joints[j].position * zMultiplier;
-  }
 
   for (unsigned int subgeom = 0; subgeom < fullbodySubgeomCount; subgeom++) {
 

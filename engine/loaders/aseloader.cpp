@@ -315,6 +315,7 @@ namespace blunted {
 
     int tmeshsize = triangles.size() * 3 * 3 * GetTriangleMeshElementCount();
     float *rawTriangleMesh = new float[tmeshsize];
+    memset(rawTriangleMesh, 0, tmeshsize * sizeof(float));
 
     for (unsigned int t = 0; t < triangles.size(); t++) {
       triangles[t]->CalculateTangents();

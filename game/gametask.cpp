@@ -218,13 +218,17 @@ void GameTask::PutPhase() {
       std::vector < boost::intrusive_ptr<Geometry> > geometryToUploadInThread;
       for (unsigned int p = 0; p < playersPerThread; p++) {
         if (playerStartIndex + p >= playersToProcess.size()) break;
-        geometryToUploadInThread.push_back(boost::static_pointer_cast<Geometry>(playersToProcess.at(playerStartIndex + p)->GetFullbodyNode()->GetObject("fullbody")));
+        if (!playersToProcess.at(playerStartIndex + p)->IsGpuSkinningActive()) {
+          geometryToUploadInThread.push_back(boost::static_pointer_cast<Geometry>(playersToProcess.at(playerStartIndex + p)->GetFullbodyNode()->GetObject("fullbody")));
+        }
       }
       playerStartIndex += playersPerThread;
 
-      boost::intrusive_ptr<UploadFullbodyModel> uploadFullbodyModel(new UploadFullbodyModel(geometryToUploadInThread));
-      uploadFullbodyModels.push_back(uploadFullbodyModel);
-      TaskManager::GetInstance().EnqueueWork(uploadFullbodyModel, true);
+      if (!geometryToUploadInThread.empty()) {
+        boost::intrusive_ptr<UploadFullbodyModel> uploadFullbodyModel(new UploadFullbodyModel(geometryToUploadInThread));
+        uploadFullbodyModels.push_back(uploadFullbodyModel);
+        TaskManager::GetInstance().EnqueueWork(uploadFullbodyModel, true);
+      }
 
       //working on: maybe we need to use the gfx system get pointer somewhere here? too tired to analyse this now :p
     }
