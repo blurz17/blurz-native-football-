@@ -482,7 +482,15 @@ int main(int argc, const char** argv) {
 
 
 
-  graphicsSequence = boost::shared_ptr<TaskSequence>(new TaskSequence("graphics", config->GetInt("graphics3d_frametime_ms", 0), true));
+#ifdef __ANDROID__
+  // On Android, always set gfxFrametime = 0 to allow unthrottled 60-120 FPS high refresh rate rendering.
+  // Never cap graphics sequence with a software delay when running against mobile VSync!
+  int gfxFrametime = 0;
+#else
+  int gfxFrametime = config->GetInt("graphics3d_frametime_ms", 0);
+#endif
+  Log(e_Notice, "Main", "TaskSequences", "Graphics sequence frametime_ms: " + int_to_str(gfxFrametime));
+  graphicsSequence = boost::shared_ptr<TaskSequence>(new TaskSequence("graphics", gfxFrametime, true));
 
   graphicsSequence->AddUserTaskEntry(gameTask, e_TaskPhase_Put);
 

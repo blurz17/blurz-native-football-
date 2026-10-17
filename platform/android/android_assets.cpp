@@ -37,6 +37,10 @@ void InitAndroidAssets() {
     }
   }
 
+  // Force overwrite critical config and object files so updates in the APK take effect immediately
+  ExtractAsset("football.config", internalPath + "/football.config");
+  ExtractAsset("models/fullbody.object", internalPath + "/models/fullbody.object");
+
   // Force delete extracted ambient.frag so it falls back to the updated APK asset
   remove((internalPath + "/media/shaders/ambient.frag").c_str());
   
