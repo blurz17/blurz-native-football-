@@ -49,21 +49,23 @@ namespace blunted {
         std::string extension = get_file_extension(filename);
         std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 
-        // Modern 3D format auto-discovery: if an .ase file is requested, check if modern .glb or .fbx counterpart exists
+        // Modern 3D format auto-discovery: if an .ase file is requested, check if modern .fbx or .glb counterpart exists
         if (load && extension == "ase") {
           size_t dotPos = filename.find_last_of('.');
           if (dotPos != std::string::npos) {
-            std::string glbPath = filename.substr(0, dotPos) + ".glb";
-            SDL_RWops *testGlb = SDL_RWFromFile(glbPath.c_str(), "rb");
-            if (testGlb) {
-              SDL_RWclose(testGlb);
-              targetFilename = glbPath;
+            std::string fbxPath = filename.substr(0, dotPos) + ".fbx";
+            SDL_RWops *testFbx = SDL_RWFromFile(fbxPath.c_str(), "rb");
+            if (testFbx) {
+              SDL_RWclose(testFbx);
+              targetFilename = fbxPath;
+              Log(e_Notice, "ResourceManager", "Fetch", "Auto-discovered modern FBX asset: " + fbxPath);
             } else {
-              std::string fbxPath = filename.substr(0, dotPos) + ".fbx";
-              SDL_RWops *testFbx = SDL_RWFromFile(fbxPath.c_str(), "rb");
-              if (testFbx) {
-                SDL_RWclose(testFbx);
-                targetFilename = fbxPath;
+              std::string glbPath = filename.substr(0, dotPos) + ".glb";
+              SDL_RWops *testGlb = SDL_RWFromFile(glbPath.c_str(), "rb");
+              if (testGlb) {
+                SDL_RWclose(testGlb);
+                targetFilename = glbPath;
+                Log(e_Notice, "ResourceManager", "Fetch", "Auto-discovered modern GLB asset: " + glbPath);
               }
             }
           }
