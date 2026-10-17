@@ -81,13 +81,15 @@ namespace blunted {
         //printf("%s\n", surface->GetIdentString().c_str());
         surface->resourceMutex.lock();
         SDL_Surface *image = surface->GetResource()->GetData();
-        diffuseTexture->GetResource()->SetRenderer3D(renderer3D);
-        bool repeat = true;
-        bool mipmaps = true;
-        bool bilinear = true;
-        bool alpha = SDL_ISPIXELFORMAT_ALPHA((image->format->format));
-        diffuseTexture->GetResource()->CreateTexture(alpha ? e_InternalPixelFormat_RGBA8 : e_InternalPixelFormat_RGB8, alpha ? e_PixelFormat_RGBA : e_PixelFormat_RGB, image->w, image->h, alpha, repeat, mipmaps, bilinear);
-        diffuseTexture->GetResource()->UpdateTexture(image, alpha, true);
+        if (image) {
+          diffuseTexture->GetResource()->SetRenderer3D(renderer3D);
+          bool repeat = true;
+          bool mipmaps = true;
+          bool bilinear = true;
+          bool alpha = SDL_ISPIXELFORMAT_ALPHA((image->format->format));
+          diffuseTexture->GetResource()->CreateTexture(alpha ? e_InternalPixelFormat_RGBA8 : e_InternalPixelFormat_RGB8, alpha ? e_PixelFormat_RGBA : e_PixelFormat_RGB, image->w, image->h, alpha, repeat, mipmaps, bilinear);
+          diffuseTexture->GetResource()->UpdateTexture(image, alpha, true);
+        }
         surface->resourceMutex.unlock();
       }
     }
@@ -103,9 +105,11 @@ namespace blunted {
       if (!texAlreadyThere) {
         surface->resourceMutex.lock();
         SDL_Surface *image = surface->GetResource()->GetData();
-        normalTexture->GetResource()->SetRenderer3D(renderer3D);
-        normalTexture->GetResource()->CreateTexture(e_InternalPixelFormat_RGB8, e_PixelFormat_RGB, image->w, image->h, false, true, true, true);
-        normalTexture->GetResource()->UpdateTexture(image, false, true);
+        if (image) {
+          normalTexture->GetResource()->SetRenderer3D(renderer3D);
+          normalTexture->GetResource()->CreateTexture(e_InternalPixelFormat_RGB8, e_PixelFormat_RGB, image->w, image->h, false, true, true, true);
+          normalTexture->GetResource()->UpdateTexture(image, false, true);
+        }
         surface->resourceMutex.unlock();
       }
     }
@@ -121,9 +125,11 @@ namespace blunted {
       if (!texAlreadyThere) {
         surface->resourceMutex.lock();
         SDL_Surface *image = surface->GetResource()->GetData();
-        specularTexture->GetResource()->SetRenderer3D(renderer3D);
-        specularTexture->GetResource()->CreateTexture(e_InternalPixelFormat_RGB8, e_PixelFormat_RGB, image->w, image->h, false, true, true, true);
-        specularTexture->GetResource()->UpdateTexture(image, false, true);
+        if (image) {
+          specularTexture->GetResource()->SetRenderer3D(renderer3D);
+          specularTexture->GetResource()->CreateTexture(e_InternalPixelFormat_RGB8, e_PixelFormat_RGB, image->w, image->h, false, true, true, true);
+          specularTexture->GetResource()->UpdateTexture(image, false, true);
+        }
         surface->resourceMutex.unlock();
       }
     }
@@ -139,9 +145,11 @@ namespace blunted {
       if (!texAlreadyThere) {
         surface->resourceMutex.lock();
         SDL_Surface *image = surface->GetResource()->GetData();
-        illuminationTexture->GetResource()->SetRenderer3D(renderer3D);
-        illuminationTexture->GetResource()->CreateTexture(e_InternalPixelFormat_RGB8, e_PixelFormat_RGB, image->w, image->h, false, true, true, true);
-        illuminationTexture->GetResource()->UpdateTexture(image, false, true);
+        if (image) {
+          illuminationTexture->GetResource()->SetRenderer3D(renderer3D);
+          illuminationTexture->GetResource()->CreateTexture(e_InternalPixelFormat_RGB8, e_PixelFormat_RGB, image->w, image->h, false, true, true, true);
+          illuminationTexture->GetResource()->UpdateTexture(image, false, true);
+        }
         surface->resourceMutex.unlock();
       }
     }

@@ -11,6 +11,12 @@
 #include <vector>
 #include <string>
 
+#ifdef __ANDROID__
+#include <sys/stat.h>
+#include <unistd.h>
+#include <SDL2/SDL_system.h>
+#endif
+
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -22,6 +28,31 @@ namespace blunted {
   }
 
   GLTFLoader::~GLTFLoader() {
+  }
+
+  static int MapGLTFBoneNameToJointId(const std::string &boneName) {
+    std::string name = boneName;
+    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+    if (name.find("body") != std::string::npos || name.find("pelvis") != std::string::npos || name.find("hips") != std::string::npos) return 0;
+    if (name.find("middle") != std::string::npos || name.find("spine") != std::string::npos || name.find("trunk") != std::string::npos) return 1;
+    if (name.find("neck") != std::string::npos || name.find("head") != std::string::npos) return 2;
+    bool isLeft = (name.find("left") != std::string::npos || name.find(".l") != std::string::npos || name.find("_l") != std::string::npos);
+    bool isRight = (name.find("right") != std::string::npos || name.find(".r") != std::string::npos || name.find("_r") != std::string::npos);
+    if (isLeft) {
+      if (name.find("shoulder") != std::string::npos || (name.find("arm") != std::string::npos && name.find("fore") == std::string::npos && name.find("lower") == std::string::npos && name.find("elbow") == std::string::npos)) return 3;
+      if (name.find("elbow") != std::string::npos || name.find("forearm") != std::string::npos || name.find("lowerarm") != std::string::npos || name.find("hand") != std::string::npos) return 4;
+      if (name.find("thigh") != std::string::npos || name.find("upperleg") != std::string::npos || (name.find("leg") != std::string::npos && name.find("lower") == std::string::npos && name.find("calf") == std::string::npos && name.find("knee") == std::string::npos && name.find("foot") == std::string::npos)) return 7;
+      if (name.find("knee") != std::string::npos || name.find("lowerleg") != std::string::npos || name.find("calf") != std::string::npos || name.find("shin") != std::string::npos) return 8;
+      if (name.find("ankle") != std::string::npos || name.find("foot") != std::string::npos || name.find("toe") != std::string::npos) return 9;
+    }
+    if (isRight) {
+      if (name.find("shoulder") != std::string::npos || (name.find("arm") != std::string::npos && name.find("fore") == std::string::npos && name.find("lower") == std::string::npos && name.find("elbow") == std::string::npos)) return 5;
+      if (name.find("elbow") != std::string::npos || name.find("forearm") != std::string::npos || name.find("lowerarm") != std::string::npos || name.find("hand") != std::string::npos) return 6;
+      if (name.find("thigh") != std::string::npos || name.find("upperleg") != std::string::npos || (name.find("leg") != std::string::npos && name.find("lower") == std::string::npos && name.find("calf") == std::string::npos && name.find("knee") == std::string::npos && name.find("foot") == std::string::npos)) return 10;
+      if (name.find("knee") != std::string::npos || name.find("lowerleg") != std::string::npos || name.find("calf") != std::string::npos || name.find("shin") != std::string::npos) return 11;
+      if (name.find("ankle") != std::string::npos || name.find("foot") != std::string::npos || name.find("toe") != std::string::npos) return 12;
+    }
+    return 0;
   }
 
   void GLTFLoader::Load(std::string filename, boost::intrusive_ptr < Resource <GeometryData> > resource) {
@@ -37,19 +68,35 @@ namespace blunted {
       return;
     }
 
-    Sint64 fileSize = SDL_RWsize(rw);
-    if (fileSize <= 0) {
-      Log(e_Error, "GLTFLoader", "Load", "Empty glTF file: " + filename);
-      SDL_RWclose(rw);
-      return;
+    std::vector<unsigned char> fileBuffer;
+    char chunk[8192];
+    size_t readBytes;
+    while ((readBytes = SDL_RWread(rw, chunk, 1, sizeof(chunk))) > 0) {
+      fileBuffer.insert(fileBuffer.end(), chunk, chunk + readBytes);
     }
-
-    std::vector<unsigned char> fileBuffer(fileSize);
-    size_t readBytes = SDL_RWread(rw, fileBuffer.data(), 1, fileSize);
     SDL_RWclose(rw);
 
-    if (readBytes != (size_t)fileSize) {
-      Log(e_Error, "GLTFLoader", "Load", "Failed to read complete file: " + filename);
+    if (fileBuffer.empty()) {
+#ifdef __ANDROID__
+      // Fallback: if empty due to a 0-byte file on disk, remove it and retry from APK asset
+      std::string internalPath = SDL_AndroidGetInternalStoragePath();
+      std::string diskPath = internalPath + "/" + filename;
+      struct stat st;
+      if (stat(diskPath.c_str(), &st) == 0 && st.st_size == 0) {
+        remove(diskPath.c_str());
+        rw = SDL_RWFromFile(filename.c_str(), "rb");
+        if (rw) {
+          while ((readBytes = SDL_RWread(rw, chunk, 1, sizeof(chunk))) > 0) {
+            fileBuffer.insert(fileBuffer.end(), chunk, chunk + readBytes);
+          }
+          SDL_RWclose(rw);
+        }
+      }
+#endif
+    }
+
+    if (fileBuffer.empty()) {
+      Log(e_Error, "GLTFLoader", "Load", "Empty glTF file: " + filename);
       return;
     }
 
@@ -58,6 +105,8 @@ namespace blunted {
     if (lastSlash != std::string::npos) {
       baseDir = filename.substr(0, lastSlash);
     }
+
+    loader.SetImageLoader([](tinygltf::Image *, const int, std::string *, std::string *, int, int, const unsigned char *, int, void *) { return true; }, nullptr);
 
     bool ret = false;
     if (filename.find(".glb") != std::string::npos) {
@@ -82,9 +131,36 @@ namespace blunted {
     int totalTrianglesLoaded = 0;
     int submeshIndex = 0;
 
+    // Build mapping of mesh index to skin index
+    std::vector<int> meshToSkin(model.meshes.size(), -1);
+    for (const auto &node : model.nodes) {
+      if (node.mesh >= 0 && (size_t)node.mesh < meshToSkin.size()) {
+        if (node.skin >= 0) {
+          meshToSkin[node.mesh] = node.skin;
+        }
+      }
+    }
+
     // Process each mesh and primitive as an independent submesh (matching engine architecture)
     for (size_t m = 0; m < model.meshes.size(); m++) {
       const auto &mesh = model.meshes[m];
+
+      int skinIdx = meshToSkin[m];
+      if (skinIdx < 0 && !model.skins.empty()) skinIdx = 0;
+
+      auto mapJointIndexToEngineJointId = [&](int jointIdx) -> float {
+        if (skinIdx >= 0 && (size_t)skinIdx < model.skins.size()) {
+          const auto &skin = model.skins[skinIdx];
+          if (jointIdx >= 0 && (size_t)jointIdx < skin.joints.size()) {
+            int nodeIdx = skin.joints[jointIdx];
+            if (nodeIdx >= 0 && (size_t)nodeIdx < model.nodes.size()) {
+              const std::string &bName = model.nodes[nodeIdx].name;
+              return (float)MapGLTFBoneNameToJointId(bName);
+            }
+          }
+        }
+        return (float)jointIdx;
+      };
 
       for (size_t p = 0; p < mesh.primitives.size(); p++) {
         const auto &primitive = mesh.primitives[p];
@@ -127,13 +203,19 @@ namespace blunted {
           const unsigned char *ptr = &buf.data[view.byteOffset + acc.byteOffset + vertIdx * stride];
           float j0 = 0, j1 = 0, j2 = 0;
           if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
-            j0 = ptr[0]; j1 = ptr[1]; j2 = ptr[2];
+            j0 = mapJointIndexToEngineJointId(ptr[0]);
+            j1 = mapJointIndexToEngineJointId(ptr[1]);
+            j2 = mapJointIndexToEngineJointId(ptr[2]);
           } else if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
             const uint16_t *u16 = reinterpret_cast<const uint16_t*>(ptr);
-            j0 = u16[0]; j1 = u16[1]; j2 = u16[2];
+            j0 = mapJointIndexToEngineJointId(u16[0]);
+            j1 = mapJointIndexToEngineJointId(u16[1]);
+            j2 = mapJointIndexToEngineJointId(u16[2]);
           } else if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
             const uint32_t *u32 = reinterpret_cast<const uint32_t*>(ptr);
-            j0 = (float)u32[0]; j1 = (float)u32[1]; j2 = (float)u32[2];
+            j0 = mapJointIndexToEngineJointId(u32[0]);
+            j1 = mapJointIndexToEngineJointId(u32[1]);
+            j2 = mapJointIndexToEngineJointId(u32[2]);
           }
           return Vector3(j0, j1, j2);
         };
@@ -246,6 +328,10 @@ namespace blunted {
             memcpy(&rawTriangleMesh[2 * triangles.size() * 9 + t * 9 + v * 3], triangles[t]->GetTextureVertex(0, v).coords, sizeof(float) * 3);
             memcpy(&rawTriangleMesh[3 * triangles.size() * 9 + t * 9 + v * 3], triangles[t]->GetTangent(v).coords, sizeof(float) * 3);
             memcpy(&rawTriangleMesh[4 * triangles.size() * 9 + t * 9 + v * 3], triangles[t]->GetBiTangent(v).coords, sizeof(float) * 3);
+            if (GetTriangleMeshElementCount() >= 7) {
+              memcpy(&rawTriangleMesh[5 * triangles.size() * 9 + t * 9 + v * 3], triangles[t]->GetTextureVertex(1, v).coords, sizeof(float) * 3);
+              memcpy(&rawTriangleMesh[6 * triangles.size() * 9 + t * 9 + v * 3], triangles[t]->GetTextureVertex(2, v).coords, sizeof(float) * 3);
+            }
           }
         }
 
@@ -262,87 +348,67 @@ namespace blunted {
         if (primitive.material >= 0 && primitive.material < (int)model.materials.size()) {
           const auto &gltfMat = model.materials[primitive.material];
 
-          // Diffuse / BaseColor Texture
-          if (gltfMat.pbrMetallicRoughness.baseColorTexture.index >= 0) {
+          std::string lowerMatName = gltfMat.name;
+          std::transform(lowerMatName.begin(), lowerMatName.end(), lowerMatName.begin(), ::tolower);
+
+          std::string customTexPath = "";
+          if (lowerMatName.find("kit") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/kit_template.png";
+          } else if (lowerMatName.find("hair") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/alnassr_cr7_hair.png";
+            material.specular_amount = 0.05f;
+            material.shininess = 0.1f;
+          } else if (lowerMatName.find("player") != std::string::npos ||
+                     lowerMatName.find("cr7") != std::string::npos ||
+                     lowerMatName.find("ronaldo") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/alnassr_cr7.png";
+            material.specular_amount = 0.02f;
+            material.shininess = 0.15f;
+          } else if (lowerMatName.find("ball") != std::string::npos) {
+            customTexPath = "media/objects/balls/ball.png";
+            material.specular_amount = 0.05f;
+            material.shininess = 0.10f;
+          } else if (lowerMatName.find("skin") != std::string::npos ||
+                     lowerMatName.find("arm") != std::string::npos ||
+                     lowerMatName.find("head") != std::string::npos ||
+                     lowerMatName.find("knee") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/skin.jpg";
+          } else if (lowerMatName.find("shoe") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/shoe.jpg";
+          } else if (lowerMatName.find("sole") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/shoe_sole.jpg";
+          }
+
+          if (!customTexPath.empty()) {
+            material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(customTexPath, true, true);
+          } else if (gltfMat.pbrMetallicRoughness.baseColorTexture.index >= 0) {
             int texIdx = gltfMat.pbrMetallicRoughness.baseColorTexture.index;
             if (texIdx >= 0 && texIdx < (int)model.textures.size()) {
               int imgIdx = model.textures[texIdx].source;
               if (imgIdx >= 0 && imgIdx < (int)model.images.size()) {
                 const auto &img = model.images[imgIdx];
-
-                // Detect dynamic player material roles (kit, skin, shoe)
-                std::string lowerImgName = img.name;
-                std::transform(lowerImgName.begin(), lowerImgName.end(), lowerImgName.begin(), ::tolower);
-                std::string lowerMatName = gltfMat.name;
-                std::transform(lowerMatName.begin(), lowerMatName.end(), lowerMatName.begin(), ::tolower);
-                std::string lowerUri = img.uri;
-                std::transform(lowerUri.begin(), lowerUri.end(), lowerUri.begin(), ::tolower);
-
-                std::string dynamicIdent = "";
-                if (lowerImgName.find("kit") != std::string::npos || lowerMatName.find("kit") != std::string::npos || lowerUri.find("kit") != std::string::npos) {
-                  dynamicIdent = "kit_template.png";
-                } else if (lowerImgName.find("skin") != std::string::npos || lowerMatName.find("skin") != std::string::npos || lowerUri.find("skin") != std::string::npos) {
-                  dynamicIdent = "skin.jpg";
-                } else if (lowerImgName.find("shoe") != std::string::npos || lowerMatName.find("shoe") != std::string::npos || lowerUri.find("shoe") != std::string::npos) {
-                  dynamicIdent = "shoe.jpg";
-                }
-
-                if (!img.image.empty() && img.width > 0 && img.height > 0) {
-                  // Embedded binary image in GLB
-                  std::string texIdent = !dynamicIdent.empty() ? dynamicIdent : (filename + "#img_" + int_to_str(imgIdx));
-                  bool alreadyThere = false;
-                  boost::intrusive_ptr<Resource<Surface>> texRes = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texIdent, false, alreadyThere, true);
-                  if (!alreadyThere) {
-                    SDL_Surface *sdlSurf = SDL_CreateRGBSurfaceWithFormat(0, img.width, img.height, 32, SDL_PIXELFORMAT_RGBA32);
-                    if (sdlSurf) {
-                      SDL_LockSurface(sdlSurf);
-                      memcpy(sdlSurf->pixels, img.image.data(), img.width * img.height * 4);
-                      SDL_UnlockSurface(sdlSurf);
-                      texRes->GetResource()->SetData(sdlSurf);
-                    }
-                  }
-                  material.diffuseTexture = texRes;
-                } else if (!img.uri.empty()) {
-                  // External texture URI
-                  std::string texPath = !dynamicIdent.empty() ? ("media/objects/players/textures/" + dynamicIdent) : (baseDir.empty() ? img.uri : (baseDir + "/" + img.uri));
+                if (!img.uri.empty()) {
+                  std::string texPath = baseDir.empty() ? img.uri : (baseDir + "/" + img.uri);
                   material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texPath, true, true);
                 }
               }
             }
           }
 
-          // Normal Texture
-          if (gltfMat.normalTexture.index >= 0) {
-            int normIdx = gltfMat.normalTexture.index;
-            if (normIdx >= 0 && normIdx < (int)model.textures.size()) {
-              int imgIdx = model.textures[normIdx].source;
-              if (imgIdx >= 0 && imgIdx < (int)model.images.size()) {
-                const auto &img = model.images[imgIdx];
-                if (!img.image.empty() && img.width > 0 && img.height > 0) {
-                  std::string normIdent = filename + "#norm_" + int_to_str(imgIdx);
-                  bool alreadyThere = false;
-                  boost::intrusive_ptr<Resource<Surface>> normRes = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(normIdent, false, alreadyThere, true);
-                  if (!alreadyThere) {
-                    SDL_Surface *sdlSurf = SDL_CreateRGBSurfaceWithFormat(0, img.width, img.height, 32, SDL_PIXELFORMAT_RGBA32);
-                    if (sdlSurf) {
-                      SDL_LockSurface(sdlSurf);
-                      memcpy(sdlSurf->pixels, img.image.data(), img.width * img.height * 4);
-                      SDL_UnlockSurface(sdlSurf);
-                      normRes->GetResource()->SetData(sdlSurf);
-                    }
-                  }
-                  material.normalTexture = normRes;
-                } else if (!img.uri.empty()) {
-                  std::string normPath = baseDir.empty() ? img.uri : (baseDir + "/" + img.uri);
-                  material.normalTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(normPath, true, true);
-                }
-              }
-            }
+          // Normal maps for player body parts
+          if (lowerMatName.find("arm") != std::string::npos) {
+            material.normalTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch("media/objects/players/textures/arm_normal.png", true, true);
+          } else if (lowerMatName.find("knee") != std::string::npos) {
+            material.normalTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch("media/objects/players/textures/knee_normal.png", true, true);
+          } else if (lowerMatName.find("kit") != std::string::npos) {
+            material.normalTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch("media/objects/players/textures/kit_UVWnormal.png", true, true);
           }
 
-          // PBR Roughness to blinn-phong specular mapping
-          material.specular_amount = (float)std::max(0.01, 1.0 - gltfMat.pbrMetallicRoughness.roughnessFactor);
-          material.shininess = (float)std::max(0.01, 1.0 - gltfMat.pbrMetallicRoughness.roughnessFactor);
+          // PBR Roughness to blinn-phong specular fallback if not already set by custom material profile
+          if (customTexPath.empty()) {
+            material.specular_amount = (float)std::max(0.01, (1.0 - gltfMat.pbrMetallicRoughness.roughnessFactor) * 0.1);
+            material.shininess = (float)std::max(0.01, (1.0 - gltfMat.pbrMetallicRoughness.roughnessFactor) * 0.2);
+          }
         }
 
         resource->resourceMutex.lock();

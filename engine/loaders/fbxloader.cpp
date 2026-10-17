@@ -13,6 +13,12 @@
 #include <cmath>
 #include <algorithm>
 
+#ifdef __ANDROID__
+#include <sys/stat.h>
+#include <unistd.h>
+#include <SDL2/SDL_system.h>
+#endif
+
 #include "ufbx.h"
 
 namespace blunted {
@@ -23,6 +29,31 @@ namespace blunted {
   FBXLoader::~FBXLoader() {
   }
 
+  static int MapBoneNameToJointId(const std::string &boneName) {
+    std::string name = boneName;
+    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+    if (name.find("body") != std::string::npos || name.find("pelvis") != std::string::npos || name.find("hips") != std::string::npos) return 0;
+    if (name.find("middle") != std::string::npos || name.find("spine") != std::string::npos || name.find("trunk") != std::string::npos) return 1;
+    if (name.find("neck") != std::string::npos || name.find("head") != std::string::npos) return 2;
+    bool isLeft = (name.find("left") != std::string::npos || name.find(".l") != std::string::npos || name.find("_l") != std::string::npos);
+    bool isRight = (name.find("right") != std::string::npos || name.find(".r") != std::string::npos || name.find("_r") != std::string::npos);
+    if (isLeft) {
+      if (name.find("shoulder") != std::string::npos || (name.find("arm") != std::string::npos && name.find("fore") == std::string::npos && name.find("lower") == std::string::npos && name.find("elbow") == std::string::npos)) return 3;
+      if (name.find("elbow") != std::string::npos || name.find("forearm") != std::string::npos || name.find("lowerarm") != std::string::npos || name.find("hand") != std::string::npos) return 4;
+      if (name.find("thigh") != std::string::npos || name.find("upperleg") != std::string::npos || (name.find("leg") != std::string::npos && name.find("lower") == std::string::npos && name.find("calf") == std::string::npos && name.find("knee") == std::string::npos && name.find("foot") == std::string::npos)) return 7;
+      if (name.find("knee") != std::string::npos || name.find("lowerleg") != std::string::npos || name.find("calf") != std::string::npos || name.find("shin") != std::string::npos) return 8;
+      if (name.find("ankle") != std::string::npos || name.find("foot") != std::string::npos || name.find("toe") != std::string::npos) return 9;
+    }
+    if (isRight) {
+      if (name.find("shoulder") != std::string::npos || (name.find("arm") != std::string::npos && name.find("fore") == std::string::npos && name.find("lower") == std::string::npos && name.find("elbow") == std::string::npos)) return 5;
+      if (name.find("elbow") != std::string::npos || name.find("forearm") != std::string::npos || name.find("lowerarm") != std::string::npos || name.find("hand") != std::string::npos) return 6;
+      if (name.find("thigh") != std::string::npos || name.find("upperleg") != std::string::npos || (name.find("leg") != std::string::npos && name.find("lower") == std::string::npos && name.find("calf") == std::string::npos && name.find("knee") == std::string::npos && name.find("foot") == std::string::npos)) return 10;
+      if (name.find("knee") != std::string::npos || name.find("lowerleg") != std::string::npos || name.find("calf") != std::string::npos || name.find("shin") != std::string::npos) return 11;
+      if (name.find("ankle") != std::string::npos || name.find("foot") != std::string::npos || name.find("toe") != std::string::npos) return 12;
+    }
+    return 0;
+  }
+
   void FBXLoader::Load(std::string filename, boost::intrusive_ptr < Resource <GeometryData> > resource) {
     // Use SDL_RWops to load file from disk, APK asset, or memory
     SDL_RWops *rw = SDL_RWFromFile(filename.c_str(), "rb");
@@ -31,19 +62,35 @@ namespace blunted {
       return;
     }
 
-    Sint64 fileSize = SDL_RWsize(rw);
-    if (fileSize <= 0) {
-      Log(e_Error, "FBXLoader", "Load", "Empty FBX file: " + filename);
-      SDL_RWclose(rw);
-      return;
+    std::vector<unsigned char> fileBuffer;
+    char chunk[8192];
+    size_t readBytes;
+    while ((readBytes = SDL_RWread(rw, chunk, 1, sizeof(chunk))) > 0) {
+      fileBuffer.insert(fileBuffer.end(), chunk, chunk + readBytes);
     }
-
-    std::vector<unsigned char> fileBuffer(fileSize);
-    size_t readBytes = SDL_RWread(rw, fileBuffer.data(), 1, fileSize);
     SDL_RWclose(rw);
 
-    if (readBytes != (size_t)fileSize) {
-      Log(e_Error, "FBXLoader", "Load", "Failed to read complete file: " + filename);
+    if (fileBuffer.empty()) {
+#ifdef __ANDROID__
+      // Fallback: if empty due to a 0-byte file on disk, remove it and retry from APK asset
+      std::string internalPath = SDL_AndroidGetInternalStoragePath();
+      std::string diskPath = internalPath + "/" + filename;
+      struct stat st;
+      if (stat(diskPath.c_str(), &st) == 0 && st.st_size == 0) {
+        remove(diskPath.c_str());
+        rw = SDL_RWFromFile(filename.c_str(), "rb");
+        if (rw) {
+          while ((readBytes = SDL_RWread(rw, chunk, 1, sizeof(chunk))) > 0) {
+            fileBuffer.insert(fileBuffer.end(), chunk, chunk + readBytes);
+          }
+          SDL_RWclose(rw);
+        }
+      }
+#endif
+    }
+
+    if (fileBuffer.empty()) {
+      Log(e_Error, "FBXLoader", "Load", "Empty FBX file: " + filename);
       return;
     }
 
@@ -144,16 +191,26 @@ namespace blunted {
                   float j0 = 0, j1 = 0, j2 = 0;
                   float w0 = 1.0f, w1 = 0, w2 = 0;
 
+                  auto getClusterJointId = [&](uint32_t clusterIdx) -> float {
+                    if (clusterIdx < skin->clusters.count) {
+                      ufbx_skin_cluster *c = skin->clusters.data[clusterIdx];
+                      if (c && c->bone_node && c->bone_node->name.data) {
+                        return (float)MapBoneNameToJointId(c->bone_node->name.data);
+                      }
+                    }
+                    return 0.0f;
+                  };
+
                   if (skv.num_weights > 0) {
-                    j0 = (float)skin->weights.data[skv.weight_begin].cluster_index;
+                    j0 = getClusterJointId(skin->weights.data[skv.weight_begin].cluster_index);
                     w0 = (float)skin->weights.data[skv.weight_begin].weight;
                   }
                   if (skv.num_weights > 1) {
-                    j1 = (float)skin->weights.data[skv.weight_begin + 1].cluster_index;
+                    j1 = getClusterJointId(skin->weights.data[skv.weight_begin + 1].cluster_index);
                     w1 = (float)skin->weights.data[skv.weight_begin + 1].weight;
                   }
                   if (skv.num_weights > 2) {
-                    j2 = (float)skin->weights.data[skv.weight_begin + 2].cluster_index;
+                    j2 = getClusterJointId(skin->weights.data[skv.weight_begin + 2].cluster_index);
                     w2 = (float)skin->weights.data[skv.weight_begin + 2].weight;
                   }
 

@@ -246,7 +246,7 @@ class HumanoidBase {
 
     const NodeMap &GetNodeMap() { return nodeMap; }
 
-    void Hide() { fullbodyNode->SetPosition(Vector3(1000, 1000, -1000)); hairStyle->SetPosition(Vector3(1000, 1000, -1000)); } // hax ;)
+    void Hide() { fullbodyNode->SetPosition(Vector3(1000, 1000, -1000)); if (hairStyle) hairStyle->SetPosition(Vector3(1000, 1000, -1000)); } // hax ;)
 
     void SetKit(boost::intrusive_ptr < Resource<Surface> > newKit);
 

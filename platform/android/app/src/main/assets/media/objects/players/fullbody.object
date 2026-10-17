@@ -1,7 +1,7 @@
 <object>
 
 	<geometry>
-		<filename>models/fullbody.ase</filename>
+		<filename>models/fullbody.glb</filename>
 		<name>fullbody</name>
 		<properties>
 			<dynamic>true</dynamic>

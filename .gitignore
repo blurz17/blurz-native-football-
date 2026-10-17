@@ -6,3 +6,6 @@ platform/android/app/.cxx/
 platform/android/.gradle/
 logs
 crash
+scratch/
+*.apk
+*.blend1

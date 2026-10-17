@@ -24,6 +24,9 @@ android {
             }
         }
     }
+    aaptOptions {
+        noCompress 'glb', 'fbx', 'ase', 'object', 'anim', 'txt', 'sqlite'
+    }
     signingConfigs {
         release {
             storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
@@ -56,6 +59,7 @@ android {
     }
     lint {
         abortOnError false
+        checkReleaseBuilds false
     }
 
     if (buildAsLibrary) {

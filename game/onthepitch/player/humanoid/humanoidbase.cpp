@@ -1,5 +1,6 @@
 
 #include <cmath>
+#include <unordered_map>
 #include "base/geometry/trianglemeshutils.hpp"
 #include "humanoid.hpp"
 
@@ -187,30 +188,32 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
 
 
   // hairstyle
-
-  boost::intrusive_ptr < Resource<GeometryData> > geometry = ResourceManagerPool::GetInstance().GetManager<GeometryData>(e_ResourceType_GeometryData)->Fetch("media/objects/players/hairstyles/" + player->GetPlayerData()->GetHairStyle() + ".ase", true, true);
-  hairStyle = static_pointer_cast<Geometry>(ObjectFactory::GetInstance().CreateObject("hairstyle", e_ObjectType_Geometry));
+  bool hasEmbeddedWeightsModel = (GetTriangleMeshElementCount() >= 7);
+  if (!hasEmbeddedWeightsModel) {
+    boost::intrusive_ptr < Resource<GeometryData> > geometry = ResourceManagerPool::GetInstance().GetManager<GeometryData>(e_ResourceType_GeometryData)->Fetch("media/objects/players/hairstyles/" + player->GetPlayerData()->GetHairStyle() + ".ase", true, true);
+    hairStyle = static_pointer_cast<Geometry>(ObjectFactory::GetInstance().CreateObject("hairstyle", e_ObjectType_Geometry));
 
 #ifndef GPFB_HEADLESS
-  scene3D->CreateSystemObjects(hairStyle);
+    scene3D->CreateSystemObjects(hairStyle);
 #endif
-  hairStyle->SetLocalMode(e_LocalMode_Absolute);
-  hairStyle->SetGeometryData(geometry);
-  fullbodyTargetNode->AddObject(hairStyle);
+    hairStyle->SetLocalMode(e_LocalMode_Absolute);
+    hairStyle->SetGeometryData(geometry);
+    fullbodyTargetNode->AddObject(hairStyle);
 
-  boost::intrusive_ptr < Resource<Surface> > hairTexture;
-  hairTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch("media/objects/players/textures/hair/" + player->GetPlayerData()->GetHairColor() + ".png", true, true);
+    boost::intrusive_ptr < Resource<Surface> > hairTexture;
+    hairTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch("media/objects/players/textures/hair/" + player->GetPlayerData()->GetHairColor() + ".png", true, true);
 
-  std::vector < MaterializedTriangleMesh > &hairtmesh = hairStyle->GetGeometryData()->GetResource()->GetTriangleMeshesRef();
+    std::vector < MaterializedTriangleMesh > &hairtmesh = hairStyle->GetGeometryData()->GetResource()->GetTriangleMeshesRef();
 
-  for (unsigned int i = 0; i < hairtmesh.size(); i++) {
-    if (hairtmesh.at(i).material.diffuseTexture != boost::intrusive_ptr<Resource <Surface> >()) {
-      hairtmesh.at(i).material.diffuseTexture = hairTexture;
-      hairtmesh.at(i).material.specular_amount = 0.01f;
-      hairtmesh.at(i).material.shininess = 0.05f;
+    for (unsigned int i = 0; i < hairtmesh.size(); i++) {
+      if (hairtmesh.at(i).material.diffuseTexture != boost::intrusive_ptr<Resource <Surface> >()) {
+        hairtmesh.at(i).material.diffuseTexture = hairTexture;
+        hairtmesh.at(i).material.specular_amount = 0.01f;
+        hairtmesh.at(i).material.shininess = 0.05f;
+      }
     }
+    hairStyle->OnUpdateGeometryData();
   }
-  hairStyle->OnUpdateGeometryData();
 
 
   ResetPosition(Vector3(0), Vector3(0));
@@ -228,7 +231,7 @@ HumanoidBase::~HumanoidBase() {
   humanoidNode->Exit();
   humanoidNode.reset();
   fullbodyTargetNode->DeleteNode(fullbodyNode);
-  fullbodyTargetNode->DeleteObject(hairStyle);
+  if (hairStyle) fullbodyTargetNode->DeleteObject(hairStyle);
 
   buf_TemporalHumanoidNodes.clear();
 
@@ -301,27 +304,47 @@ void HumanoidBase::PrepareFullbodyModel(std::map<Vector3, Vector3> &colorCoords)
 
     // generate list of unique vertices and an array linking vertexIDs with uniqueVertexIDs
     int *uniqueIndices = new int[elementOffset / 3];
+
+    struct VertKey {
+      int64_t px, py, pz, u, v;
+      bool operator==(const VertKey &o) const {
+        return px == o.px && py == o.py && pz == o.pz && u == o.u && v == o.v;
+      }
+    };
+    struct VertKeyHash {
+      std::size_t operator()(const VertKey &k) const {
+        std::size_t h = std::hash<int64_t>()(k.px);
+        h ^= std::hash<int64_t>()(k.py) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        h ^= std::hash<int64_t>()(k.pz) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        h ^= std::hash<int64_t>()(k.u)  + 0x9e3779b9 + (h << 6) + (h >> 2);
+        h ^= std::hash<int64_t>()(k.v)  + 0x9e3779b9 + (h << 6) + (h >> 2);
+        return h;
+      }
+    };
+    std::unordered_map<VertKey, int, VertKeyHash> uniqueMap;
+    uniqueMap.reserve(elementOffset / 3);
+
     for (int v = 0; v < elementOffset; v += 3) {
       std::vector<Vector3> elementalVertex;
       for (int e = 0; e < GetTriangleMeshElementCount(); e++) {
         elementalVertex.push_back(Vector3(meshRef.data[v + e * elementOffset], meshRef.data[v + e * elementOffset + 1], meshRef.data[v + e * elementOffset + 2]));
-        // test: if (e == 2) elementalVertex.at(elementalVertex.size() - 1) += 0.2f;
       }
 
-      // see if this one already exists; if not, add
-      bool duplicate = false;
+      VertKey key;
+      key.px = (int64_t)std::round(elementalVertex[0].coords[0] * 10000.0f);
+      key.py = (int64_t)std::round(elementalVertex[0].coords[1] * 10000.0f);
+      key.pz = (int64_t)std::round(elementalVertex[0].coords[2] * 10000.0f);
+      key.u  = (int64_t)std::round(elementalVertex[2].coords[0] * 10000.0f);
+      key.v  = (int64_t)std::round(elementalVertex[2].coords[1] * 10000.0f);
+
+      auto it = uniqueMap.find(key);
       int index = 0;
-      for (unsigned int i = 0; i < uniqueVertices.size(); i++) {
-        if (uniqueVertices[i][0] == elementalVertex[0] &&
-            uniqueVertices[i][2] == elementalVertex[2]) { // texcoord also needs to be shared
-          duplicate = true;
-          index = i;
-          break;
-        }
-      }
-      if (!duplicate) {
+      if (it != uniqueMap.end()) {
+        index = it->second;
+      } else {
         uniqueVertices.push_back(elementalVertex);
-        index = uniqueVertices.size() - 1;
+        index = (int)uniqueVertices.size() - 1;
+        uniqueMap[key] = index;
       }
       uniqueIndices[v / 3] = index;
     }
@@ -351,45 +374,67 @@ void HumanoidBase::PrepareFullbodyModel(std::map<Vector3, Vector3> &colorCoords)
       WeightedVertex weightedVertex;
       weightedVertex.vertexID = v / 3;
 
-      Vector3 color;
-      std::map<Vector3, Vector3>::const_iterator colorIter = colorCoords.find(vertexPos);
-      if (colorIter != colorCoords.end()) {
-        color = colorIter->second;
-      } else {
-        float bestDist = 1e9f;
-        for (std::map<Vector3, Vector3>::const_iterator it = colorCoords.begin(); it != colorCoords.end(); ++it) {
-          float dist = (it->first - vertexPos).GetLength();
-          if (dist < bestDist) {
-            bestDist = dist;
-            color = it->second;
+      bool hasEmbeddedWeights = false;
+      if (GetTriangleMeshElementCount() >= 7) {
+        float wSum = uniqueMesh.data[v + 6 * uniqueElementOffset + 0] +
+                     uniqueMesh.data[v + 6 * uniqueElementOffset + 1] +
+                     uniqueMesh.data[v + 6 * uniqueElementOffset + 2];
+        if (wSum > 0.01f) {
+          hasEmbeddedWeights = true;
+          for (int c = 0; c < 3; c++) {
+            float weight = uniqueMesh.data[v + 6 * uniqueElementOffset + c];
+            if (weight > 0.01f) {
+              WeightedBone wb;
+              wb.jointID = (int)round(uniqueMesh.data[v + 5 * uniqueElementOffset + c]);
+              wb.weight = weight / wSum;
+              weightedVertex.bones.push_back(wb);
+            }
           }
         }
       }
+
       uniqueMesh.data[v + 0] *= zMultiplier;
       uniqueMesh.data[v + 1] *= zMultiplier;
       uniqueMesh.data[v + 2] *= zMultiplier;
 
-      float totalWeight = 0.0;
-      WeightedBone weightedBones[3];
-      for (int c = 0; c < 3; c++) {
-        int jointID = floor(color.coords[c] * 0.1);
-        float weight = (color.coords[c] - jointID * 10.0) / 9.0;
-
-        weightedBones[c].jointID = jointID;
-        weightedBones[c].weight = weight;
-
-        totalWeight += weight;
-      }
-
-      // total weight has to be 1.0;
-      for (int c = 0; c < 3; c++) {
-        if (c == 0) {
-          if (weightedBones[c].weight == 0.f) printf("offending jointID: %i (coord %i) (vertexpos %f, %f, %f)\n", weightedBones[c].jointID, c, vertexPos.coords[0], vertexPos.coords[1], vertexPos.coords[2]);
-          assert(weightedBones[c].weight != 0.f);
+      if (!hasEmbeddedWeights) {
+        Vector3 color;
+        std::map<Vector3, Vector3>::const_iterator colorIter = colorCoords.find(vertexPos);
+        if (colorIter != colorCoords.end()) {
+          color = colorIter->second;
+        } else {
+          float bestDist = 1e9f;
+          for (std::map<Vector3, Vector3>::const_iterator it = colorCoords.begin(); it != colorCoords.end(); ++it) {
+            float dist = (it->first - vertexPos).GetLength();
+            if (dist < bestDist) {
+              bestDist = dist;
+              color = it->second;
+            }
+          }
         }
-        if (weightedBones[c].weight > 0.01f) {
-          weightedBones[c].weight /= totalWeight;
-          weightedVertex.bones.push_back(weightedBones[c]);
+
+        float totalWeight = 0.0;
+        WeightedBone weightedBones[3];
+        for (int c = 0; c < 3; c++) {
+          int jointID = floor(color.coords[c] * 0.1);
+          float weight = (color.coords[c] - jointID * 10.0) / 9.0;
+
+          weightedBones[c].jointID = jointID;
+          weightedBones[c].weight = weight;
+
+          totalWeight += weight;
+        }
+
+        // total weight has to be 1.0;
+        for (int c = 0; c < 3; c++) {
+          if (c == 0) {
+            if (weightedBones[c].weight == 0.f) printf("offending jointID: %i (coord %i) (vertexpos %f, %f, %f)\n", weightedBones[c].jointID, c, vertexPos.coords[0], vertexPos.coords[1], vertexPos.coords[2]);
+            assert(weightedBones[c].weight != 0.f);
+          }
+          if (weightedBones[c].weight > 0.01f) {
+            weightedBones[c].weight /= totalWeight;
+            weightedVertex.bones.push_back(weightedBones[c]);
+          }
         }
       }
 
@@ -460,7 +505,10 @@ void HumanoidBase::PrepareFullbodyModel(std::map<Vector3, Vector3> &colorCoords)
 
   if (Verbose()) printf("6\n");
 
-  UpdateFullbodyModel(true);
+  bool hasEmbeddedWeightsModel = (GetTriangleMeshElementCount() >= 7);
+  if (!hasEmbeddedWeightsModel) {
+    UpdateFullbodyModel(true);
+  }
   boost::static_pointer_cast<Geometry>(fullbodyNode->GetObject("fullbody"))->OnUpdateGeometryData(false);
 
   for (unsigned int i = 0; i < joints.size(); i++) {
@@ -498,9 +546,11 @@ void HumanoidBase::UpdateFullbodyNodes() {
     hairStyle->RecursiveUpdateSpatialData(e_SpatialDataType_Both);
   }
   */
-  hairStyle->SetRotation(joints[2].orientation, false);
-  hairStyle->SetPosition(joints[2].position * zMultiplier + fullbodyOffset, false);
-  hairStyle->RecursiveUpdateSpatialData(e_SpatialDataType_Both);
+  if (hairStyle) {
+    hairStyle->SetRotation(joints[2].orientation, false);
+    hairStyle->SetPosition(joints[2].position * zMultiplier + fullbodyOffset, false);
+    hairStyle->RecursiveUpdateSpatialData(e_SpatialDataType_Both);
+  }
 
   //hairStyle->SetRotation(nodeMap.find("neck")->second->GetDerivedRotation());
   //hairStyle->SetPosition(nodeMap.find("neck")->second->GetDerivedPosition() + joints[2].orientation * Vector3(0, 0, player->GetPlayerData()->GetHeight() - defaultPlayerHeight));

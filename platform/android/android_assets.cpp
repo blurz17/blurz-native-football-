@@ -10,18 +10,34 @@
 #include "asset_list.hpp"
 
 static void ExtractAsset(const char* assetFile, const std::string& destFile) {
+  // If destination file already exists, check if it's 0 bytes
+  struct stat st;
+  if (stat(destFile.c_str(), &st) == 0 && st.st_size == 0) {
+    remove(destFile.c_str());
+  }
+
   SDL_RWops* src = SDL_RWFromFile(assetFile, "rb");
-  if (src) {
-    SDL_RWops* dst = SDL_RWFromFile(destFile.c_str(), "wb");
-    if (dst) {
-      char buffer[4096];
-      size_t read_bytes;
-      while ((read_bytes = SDL_RWread(src, buffer, 1, sizeof(buffer))) > 0) {
-        SDL_RWwrite(dst, buffer, 1, read_bytes);
-      }
-      SDL_RWclose(dst);
-    }
+  if (!src) return;
+
+  SDL_RWops* dst = SDL_RWFromFile(destFile.c_str(), "wb");
+  if (!dst) {
     SDL_RWclose(src);
+    return;
+  }
+
+  char buffer[8192];
+  size_t read_bytes;
+  size_t total_written = 0;
+  while ((read_bytes = SDL_RWread(src, buffer, 1, sizeof(buffer))) > 0) {
+    SDL_RWwrite(dst, buffer, 1, read_bytes);
+    total_written += read_bytes;
+  }
+  SDL_RWclose(dst);
+  SDL_RWclose(src);
+
+  // If extraction wrote 0 bytes, remove the file so an empty file is never left on disk
+  if (total_written == 0) {
+    remove(destFile.c_str());
   }
 }
 
@@ -37,13 +53,23 @@ void InitAndroidAssets() {
     }
   }
 
-  // Force overwrite critical config and object files so updates in the APK take effect immediately
-  ExtractAsset("football.config", internalPath + "/football.config");
-  ExtractAsset("models/fullbody.object", internalPath + "/models/fullbody.object");
+  // Force overwrite critical config, shaders, and player model files so updates in the APK take effect immediately
+  mkdir((internalPath + "/media").c_str(), 0777);
+  mkdir((internalPath + "/media/objects").c_str(), 0777);
+  mkdir((internalPath + "/media/objects/players").c_str(), 0777);
+  mkdir((internalPath + "/media/objects/players/models").c_str(), 0777);
 
-  // Force delete extracted ambient.frag so it falls back to the updated APK asset
+  // Explicitly remove stale or 0-byte disk files before extracting so SDL_RWFromFile reads directly from APK
+  remove((internalPath + "/media/objects/players/fullbody.object").c_str());
+  remove((internalPath + "/media/objects/players/models/fullbody.fbx").c_str());
+  remove((internalPath + "/media/objects/players/models/fullbody.glb").c_str());
   remove((internalPath + "/media/shaders/ambient.frag").c_str());
-  
+
+  ExtractAsset("football.config", internalPath + "/football.config");
+  ExtractAsset("media/objects/players/fullbody.object", internalPath + "/media/objects/players/fullbody.object");
+  ExtractAsset("media/objects/players/models/fullbody.fbx", internalPath + "/media/objects/players/models/fullbody.fbx");
+  ExtractAsset("media/objects/players/models/fullbody.glb", internalPath + "/media/objects/players/models/fullbody.glb");
+
   chdir(internalPath.c_str());
 }
 #endif

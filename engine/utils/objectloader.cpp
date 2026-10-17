@@ -73,9 +73,10 @@ namespace blunted {
 
     XMLLoader loader;
     const XMLTree objectTree = loader.LoadFile(filename);
-    // printf("\n\n");
-    // loader.PrintTree(objectTree);
-    // printf("\n\n");
+    if (objectTree.children.empty()) {
+      Log(e_FatalError, "ObjectLoader", "LoadObject", "Could not parse XML or file empty: " + filename);
+      return boost::intrusive_ptr<Node>(new Node("empty: " + filename));
+    }
     boost::intrusive_ptr<Node> result = LoadObjectImpl(scene3D, filename, objectTree.children.begin()->second, offset);
     // printf("\n\n");
     // result->PrintTree();
@@ -167,15 +168,19 @@ namespace blunted {
         }
         boost::intrusive_ptr < Resource<GeometryData> > geometry = ResourceManagerPool::GetInstance().GetManager<GeometryData>(e_ResourceType_GeometryData)->Fetch(dirpart + aseFilename, true);
         boost::intrusive_ptr<Geometry> object = static_pointer_cast<Geometry>(ObjectFactory::GetInstance().CreateObject(objectName, objectType));
-        if (properties.GetBool("dynamic")) geometry->GetResource()->SetDynamic(true);
+        if (geometry && geometry->GetResource() && properties.GetBool("dynamic")) {
+          geometry->GetResource()->SetDynamic(true);
+        }
 
-        object->SetProperties(properties);
-        if (scene3D) scene3D->CreateSystemObjects(object);
-        object->SetLocalMode(localMode);
-        object->SetPosition(position);
-        object->SetRotation(rotation);
-        object->SetGeometryData(geometry);
-        objNode->AddObject(object);
+        if (object) {
+          object->SetProperties(properties);
+          if (scene3D) scene3D->CreateSystemObjects(object);
+          object->SetLocalMode(localMode);
+          object->SetPosition(position);
+          object->SetRotation(rotation);
+          if (geometry) object->SetGeometryData(geometry);
+          objNode->AddObject(object);
+        }
       }
 
 

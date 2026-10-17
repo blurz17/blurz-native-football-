@@ -115,6 +115,15 @@ namespace blunted {
   }
 
   Triangle::Triangle() {
+    for (int v = 0; v < 3; v++) {
+      vertices[v].Set(0, 0, 0);
+      normals[v].Set(0, 0, 0);
+      tangents[v].Set(0, 0, 0);
+      biTangents[v].Set(0, 0, 0);
+      for (int tu = 0; tu < 8; tu++) {
+        textureVertices[v][tu].Set(0, 0, 0);
+      }
+    }
   }
 
   Triangle::Triangle(const Triangle &triangle) {

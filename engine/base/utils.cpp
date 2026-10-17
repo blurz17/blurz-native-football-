@@ -12,6 +12,12 @@
 #include <SDL2/SDL.h>
 #include <sstream>
 
+#ifdef __ANDROID__
+#include <sys/stat.h>
+#include <unistd.h>
+#include <SDL2/SDL_system.h>
+#endif
+
 namespace blunted {
 
   s_treeentry::~s_treeentry() {
@@ -162,6 +168,26 @@ namespace blunted {
 
     SDL_RWclose(file);
 
+#ifdef __ANDROID__
+    // If the file read from disk was completely empty (e.g. corrupted 0-byte file left on internal storage),
+    // remove the 0-byte file and attempt to read directly from the APK asset!
+    if (source.empty()) {
+      std::string internalPath = SDL_AndroidGetInternalStoragePath();
+      std::string diskPath = internalPath + "/" + filename;
+      struct stat st;
+      if (stat(diskPath.c_str(), &st) == 0 && st.st_size == 0) {
+        remove(diskPath.c_str());
+        file = SDL_RWFromFile(filename.c_str(), "rb");
+        if (file) {
+          while ((read_bytes = SDL_RWread(file, buffer, 1, sizeof(buffer))) > 0) {
+            source.append(buffer, read_bytes);
+          }
+          SDL_RWclose(file);
+        }
+      }
+    }
+#endif
+
     // remove possible windows CR
     source.erase( std::remove(source.begin(), source.end(), '\r'), source.end() );
 
@@ -180,19 +206,27 @@ namespace blunted {
   }
 
   std::string get_file_name(const std::string &filename) {
+    if (filename.empty()) return "";
     size_t lastSlash = filename.find_last_of("/\\");
     if (lastSlash != std::string::npos) {
-      return filename.substr(lastSlash + 1);
+      if (lastSlash + 1 < filename.length()) {
+        return filename.substr(lastSlash + 1);
+      }
+      return "";
     }
     return filename;
   }
 
   std::string get_file_extension(const std::string &filename) {
+    if (filename.empty()) return "";
     size_t dotPos = filename.find_last_of('.');
     size_t slashPos = filename.find_last_of("/\\");
     if (dotPos == std::string::npos) return "";
     if (slashPos != std::string::npos && dotPos < slashPos) return "";
-    return filename.substr(dotPos + 1);
+    if (dotPos + 1 < filename.length()) {
+      return filename.substr(dotPos + 1);
+    }
+    return "";
   }
 
   std::string int_to_str(int i) {
