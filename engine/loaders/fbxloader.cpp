@@ -73,6 +73,8 @@ namespace blunted {
       ufbx_mesh *mesh = scene->meshes.data[m];
       if (!mesh || mesh->num_triangles == 0) continue;
 
+      const ufbx_node *node = mesh->instances.count > 0 ? mesh->instances.data[0] : nullptr;
+
       size_t numParts = mesh->material_parts.count;
       if (numParts == 0) numParts = 1; // Fallback to single part if no material parts defined
 
@@ -111,13 +113,19 @@ namespace blunted {
             for (int v = 0; v < 3; v++) {
               uint32_t cornerIdx = tri_indices[t * 3 + v];
 
-              // Position
+              // Position (transformed by node geometry_to_world)
               ufbx_vec3 pos = ufbx_get_vertex_vec3(&mesh->vertex_position, cornerIdx);
+              if (node) {
+                pos = ufbx_transform_position(&node->geometry_to_world, pos);
+              }
               tri->SetVertex(v, Vector3(pos.x, pos.y, pos.z));
 
-              // Normal
+              // Normal (transformed by node geometry_to_world)
               if (mesh->vertex_normal.indices.count > 0) {
                 ufbx_vec3 norm = ufbx_get_vertex_vec3(&mesh->vertex_normal, cornerIdx);
+                if (node) {
+                  norm = ufbx_transform_direction(&node->geometry_to_world, norm);
+                }
                 tri->SetNormal(v, norm.x, norm.y, norm.z);
               }
 
