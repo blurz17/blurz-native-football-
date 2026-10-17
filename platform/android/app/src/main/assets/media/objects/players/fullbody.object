@@ -1,10 +1,10 @@
 <object>
 
 	<geometry>
-		<filename>models/fullbody.ase</filename>
+		<filename>models/fullbody.fbx</filename>
 		<name>fullbody</name>
 		<properties>
-			<dynamic>true</dynamic>
+			<dynamic>false</dynamic>
 		</properties>
 	</geometry>
 

@@ -106,7 +106,7 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
 
   assert(match);
 
-  gpuSkinningActive = false;
+  gpuSkinningActive = true;
 
   float playerHeight = player->GetPlayerData()->GetHeight();
   zMultiplier = (1.0f / defaultPlayerHeight) * playerHeight;
@@ -351,11 +351,20 @@ void HumanoidBase::PrepareFullbodyModel(std::map<Vector3, Vector3> &colorCoords)
       WeightedVertex weightedVertex;
       weightedVertex.vertexID = v / 3;
 
-      if (colorCoords.find(vertexPos) == colorCoords.end()) {
-        printf("color coord not found: %f, %f, %f\n", vertexPos.coords[0], vertexPos.coords[1], vertexPos.coords[2]);
+      Vector3 color;
+      std::map<Vector3, Vector3>::const_iterator colorIter = colorCoords.find(vertexPos);
+      if (colorIter != colorCoords.end()) {
+        color = colorIter->second;
+      } else {
+        float bestDist = 1e9f;
+        for (std::map<Vector3, Vector3>::const_iterator it = colorCoords.begin(); it != colorCoords.end(); ++it) {
+          float dist = (it->first - vertexPos).GetLength();
+          if (dist < bestDist) {
+            bestDist = dist;
+            color = it->second;
+          }
+        }
       }
-      assert(colorCoords.find(vertexPos) != colorCoords.end());
-      const Vector3 &color = colorCoords.find(vertexPos)->second;
       uniqueMesh.data[v + 0] *= zMultiplier;
       uniqueMesh.data[v + 1] *= zMultiplier;
       uniqueMesh.data[v + 2] *= zMultiplier;
@@ -1197,10 +1206,13 @@ void HumanoidBase::SetKit(boost::intrusive_ptr < Resource<Surface> > newKit) {
   if (newKit != boost::intrusive_ptr< Resource<Surface> >()) {
     for (unsigned int i = 0; i < tmesh.size(); i++) {
       if (tmesh.at(i).material.diffuseTexture != boost::intrusive_ptr< Resource<Surface> >()) {
-        if (tmesh.at(i).material.diffuseTexture->GetIdentString() == kitDiffuseTextureIdentString) {
+        std::string currentIdent = tmesh.at(i).material.diffuseTexture->GetIdentString();
+        if (currentIdent == kitDiffuseTextureIdentString ||
+            currentIdent.find("kit_template.png") != std::string::npos ||
+            currentIdent.find(kitDiffuseTextureIdentString) != std::string::npos) {
           tmesh.at(i).material.diffuseTexture = newKit;
-          tmesh.at(i).material.specular_amount = 0.01f;//0.02f;//0.033f;//0.01f;
-          tmesh.at(i).material.shininess = 0.01f;//0.005f;
+          tmesh.at(i).material.specular_amount = 0.01f;
+          tmesh.at(i).material.shininess = 0.01f;
         }
       } else if (Verbose()) printf("no texture!\n");
     }

@@ -156,8 +156,6 @@ void GameTask::PutPhase() {
 
   matchLifetimeMutex.lock();
 
-  auto skinStart = std::chrono::steady_clock::now();
-
   if (match) {
 
     matchPutBufferMutex.lock();
@@ -179,35 +177,14 @@ void GameTask::PutPhase() {
       playersToProcess.push_back(officials.at(i));
     }
 
-    //printf("%i players, %i threads.\n", playersToProcess.size(), threadCount);
-    unsigned int playersPerThread = 7;
-    unsigned int playerStartIndex = 0;
-    while (playerStartIndex < playersToProcess.size()) {
-      std::vector<PlayerBase*> playersToProcessInThread;
-      for (unsigned int p = 0; p < playersPerThread; p++) {
-        if (playerStartIndex + p >= playersToProcess.size()) break;
-        playersToProcessInThread.push_back(playersToProcess.at(playerStartIndex + p));
-        //printf("adding player %i\n", playerStartIndex + p);
-        // unthreaded version: playersToProcess.at(playerStartIndex + p)->UpdateFullbodyModel();
-      }
-      playerStartIndex += playersPerThread;
-
-      boost::intrusive_ptr<UpdateFullbodyModel> updateFullbodyModel(new UpdateFullbodyModel(playersToProcessInThread));
-      updateFullbodyModels.push_back(updateFullbodyModel);
-      TaskManager::GetInstance().EnqueueWork(updateFullbodyModel, true);
+    auto skinStart = std::chrono::steady_clock::now();
+    for (unsigned int i = 0; i < playersToProcess.size(); i++) {
+      playersToProcess.at(i)->UpdateFullbodyModel();
     }
-
-    match->UploadGoalNetting(); // won't this block the whole process thing too? (opengl busy == wait, while mutex locked == no process)
-
-  }
-
-
-  for (unsigned int t = 0; t < updateFullbodyModels.size(); t++) {
-    updateFullbodyModels.at(t)->Wait();
-  }
-  float skinMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - skinStart).count();
-  if (match) {
+    float skinMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - skinStart).count();
     PerformanceProfiler::GetInstance().RecordCpuSkinning(skinMs, (int)playersToProcess.size(), 22);
+
+    match->UploadGoalNetting();
   }
 
   if (match) {

@@ -415,7 +415,8 @@ struct GLfunctions {
     SDL_GetWindowSize(window, &this->context_width, &this->context_height);
 #endif
 
-    SDL_GL_SetSwapInterval(1);
+    // Unthrottle swap interval so rendering can achieve full 120 FPS without VSync blocking
+    SDL_GL_SetSwapInterval(0);
 
 
     //    *reinterpret_cast<void**>(&(mapping.func)) =

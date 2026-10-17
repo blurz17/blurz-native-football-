@@ -386,23 +386,32 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             getWindow().setAttributes(lp);
         }
 
-        // Request 60 Hz display refresh rate to prevent Android from throttling to 30 Hz
+        // Request High Refresh Rate (120 Hz / max available) to unlock smooth gameplay
         if (Build.VERSION.SDK_INT >= 23) {
             try {
                 android.view.WindowManager.LayoutParams lp = getWindow().getAttributes();
-                lp.preferredRefreshRate = 60.0f;
                 android.view.Display display = getWindowManager().getDefaultDisplay();
                 android.view.Display.Mode[] modes = display.getSupportedModes();
+                android.view.Display.Mode bestMode = null;
+                float maxRate = 60.0f;
                 if (modes != null) {
                     for (android.view.Display.Mode mode : modes) {
-                        if (Math.round(mode.getRefreshRate()) >= 60) {
-                            lp.preferredDisplayModeId = mode.getModeId();
-                            break;
+                        float rate = mode.getRefreshRate();
+                        if (rate > maxRate) {
+                            maxRate = rate;
+                            bestMode = mode;
                         }
                     }
                 }
+                if (bestMode != null) {
+                    lp.preferredDisplayModeId = bestMode.getModeId();
+                    lp.preferredRefreshRate = maxRate;
+                    Log.i(TAG, "Configured window preferred refresh rate to " + maxRate + "Hz (mode " + bestMode.getModeId() + ")");
+                } else {
+                    lp.preferredRefreshRate = 60.0f;
+                    Log.i(TAG, "Configured window preferred refresh rate to default 60Hz");
+                }
                 getWindow().setAttributes(lp);
-                Log.i(TAG, "Configured window preferred refresh rate to 60Hz");
             } catch (Throwable t) {
                 Log.w(TAG, "Failed to set preferred refresh rate: " + t);
             }
