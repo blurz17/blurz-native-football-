@@ -487,6 +487,9 @@ Match::Match(MatchData *matchData, GameContext *context) : matchData(matchData),
 
 #endif
   if (Verbose()) printf("loadingmatchpage closed\n");
+
+  // Reset profiler so loading hiccups do not pollute gameplay 1% Low FPS telemetry
+  PerformanceProfiler::GetInstance().ResetBenchmark();
 }
 
 Match::~Match() {

@@ -98,11 +98,14 @@ namespace blunted {
       avgFrameTimeMs = sum / (float)sampleCount;
       avgFps = (avgFrameTimeMs > 0.001f) ? (1000.0f / avgFrameTimeMs) : 60.0f;
 
-      // 99th percentile frame time = 1% Low FPS
-      size_t idx99 = (size_t)((float)sampleCount * 0.99f);
-      if (idx99 >= sampleCount) idx99 = sampleCount - 1;
-      float frameTime99 = sorted[idx99];
-      onePercentLowFps = (frameTime99 > 0.001f) ? (1000.0f / frameTime99) : 60.0f;
+      // True 1% Low FPS = average of slowest 1% of frames in rolling window
+      size_t lowCount = std::max((size_t)1, (size_t)(sampleCount * 0.01f));
+      float lowSum = 0.0f;
+      for (size_t k = sampleCount - lowCount; k < sampleCount; k++) {
+        lowSum += sorted[k];
+      }
+      float avgLowFrameTime = lowSum / (float)lowCount;
+      onePercentLowFps = (avgLowFrameTime > 0.001f) ? (1000.0f / avgLowFrameTime) : 60.0f;
 
       float maxFrameTime = sorted.back();
       float minFrameTime = sorted.front();
@@ -224,6 +227,14 @@ namespace blunted {
     totalSpikes = 0;
     lifetimeSamples.clear();
     lastLogTime = std::chrono::steady_clock::now();
+    hasLastSwapTime = false;
+    historyIndex = 0;
+    historyFull = false;
+    std::fill(frameTimeHistory.begin(), frameTimeHistory.end(), 16.67f);
+    avgFps = 60.0f;
+    onePercentLowFps = 60.0f;
+    minFps = 60.0f;
+    maxFps = 60.0f;
   }
 
   void PerformanceProfiler::DumpBenchmarkReport() {

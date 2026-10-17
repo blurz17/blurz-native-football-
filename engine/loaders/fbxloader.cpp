@@ -129,10 +129,10 @@ namespace blunted {
                 tri->SetNormal(v, norm.x, norm.y, norm.z);
               }
 
-              // UV (OpenGL convention: flip Y)
+              // UV (Blender FBX exports in OpenGL convention with bottom-left origin)
               if (mesh->vertex_uv.indices.count > 0) {
                 ufbx_vec2 uv = ufbx_get_vertex_vec2(&mesh->vertex_uv, cornerIdx);
-                tri->SetTextureVertex(0, v, uv.x, 1.0f - uv.y, 0.0f);
+                tri->SetTextureVertex(0, v, uv.x, uv.y, 0.0f);
               }
 
               // Skeletal Skinning deformers (Joint indices & weights)
@@ -237,6 +237,15 @@ namespace blunted {
           std::string lowerMatName = fbxMat->name.data ? std::string(fbxMat->name.data) : "";
           std::transform(lowerMatName.begin(), lowerMatName.end(), lowerMatName.begin(), ::tolower);
 
+          std::string dynamicIdent = "";
+          if (lowerMatName.find("kit") != std::string::npos) {
+            dynamicIdent = "kit_template.png";
+          } else if (lowerMatName.find("skin") != std::string::npos || lowerMatName.find("arm") != std::string::npos || lowerMatName.find("head") != std::string::npos || lowerMatName.find("knee") != std::string::npos) {
+            dynamicIdent = "skin.jpg";
+          } else if (lowerMatName.find("shoe") != std::string::npos) {
+            dynamicIdent = "shoe.jpg";
+          }
+
           // Diffuse / Base color
           const ufbx_texture *diffTex = fbxMat->fbx.diffuse_color.texture ? fbxMat->fbx.diffuse_color.texture : fbxMat->pbr.base_color.texture;
           if (diffTex) {
@@ -245,13 +254,14 @@ namespace blunted {
             std::string lowerFileName = diffTex->filename.data ? std::string(diffTex->filename.data) : "";
             std::transform(lowerFileName.begin(), lowerFileName.end(), lowerFileName.begin(), ::tolower);
 
-            std::string dynamicIdent = "";
-            if (lowerMatName.find("kit") != std::string::npos || lowerTexName.find("kit") != std::string::npos || lowerFileName.find("kit") != std::string::npos) {
-              dynamicIdent = "kit_template.png";
-            } else if (lowerMatName.find("skin") != std::string::npos || lowerTexName.find("skin") != std::string::npos || lowerFileName.find("skin") != std::string::npos) {
-              dynamicIdent = "skin.jpg";
-            } else if (lowerMatName.find("shoe") != std::string::npos || lowerTexName.find("shoe") != std::string::npos || lowerFileName.find("shoe") != std::string::npos) {
-              dynamicIdent = "shoe.jpg";
+            if (dynamicIdent.empty()) {
+              if (lowerTexName.find("kit") != std::string::npos || lowerFileName.find("kit") != std::string::npos) {
+                dynamicIdent = "kit_template.png";
+              } else if (lowerTexName.find("skin") != std::string::npos || lowerFileName.find("skin") != std::string::npos) {
+                dynamicIdent = "skin.jpg";
+              } else if (lowerTexName.find("shoe") != std::string::npos || lowerFileName.find("shoe") != std::string::npos) {
+                dynamicIdent = "shoe.jpg";
+              }
             }
 
             if (diffTex->content.size > 0 && diffTex->content.data) {
@@ -273,6 +283,9 @@ namespace blunted {
               std::string texPath = !dynamicIdent.empty() ? ("media/objects/players/textures/" + dynamicIdent) : resolveTexturePath(diffTex->filename.data);
               material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texPath, true, true);
             }
+          } else if (!dynamicIdent.empty()) {
+            std::string texPath = "media/objects/players/textures/" + dynamicIdent;
+            material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texPath, true, true);
           }
 
           // Normal Map
