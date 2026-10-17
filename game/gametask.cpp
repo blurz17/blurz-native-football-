@@ -180,6 +180,7 @@ void GameTask::PutPhase() {
     auto skinStart = std::chrono::steady_clock::now();
     for (unsigned int i = 0; i < playersToProcess.size(); i++) {
       playersToProcess.at(i)->UpdateFullbodyModel();
+      boost::static_pointer_cast<Geometry>(playersToProcess.at(i)->GetFullbodyNode()->GetObject("fullbody"))->OnUpdateGeometryData(false);
     }
     float skinMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - skinStart).count();
     PerformanceProfiler::GetInstance().RecordCpuSkinning(skinMs, (int)playersToProcess.size(), 22);
@@ -187,30 +188,6 @@ void GameTask::PutPhase() {
     match->UploadGoalNetting();
   }
 
-  if (match) {
-
-    unsigned int playersPerThread = 7;
-    unsigned int playerStartIndex = 0;
-    while (playerStartIndex < playersToProcess.size()) {
-      std::vector < boost::intrusive_ptr<Geometry> > geometryToUploadInThread;
-      for (unsigned int p = 0; p < playersPerThread; p++) {
-        if (playerStartIndex + p >= playersToProcess.size()) break;
-        if (!playersToProcess.at(playerStartIndex + p)->IsGpuSkinningActive()) {
-          geometryToUploadInThread.push_back(boost::static_pointer_cast<Geometry>(playersToProcess.at(playerStartIndex + p)->GetFullbodyNode()->GetObject("fullbody")));
-        }
-      }
-      playerStartIndex += playersPerThread;
-
-      if (!geometryToUploadInThread.empty()) {
-        boost::intrusive_ptr<UploadFullbodyModel> uploadFullbodyModel(new UploadFullbodyModel(geometryToUploadInThread));
-        uploadFullbodyModels.push_back(uploadFullbodyModel);
-        TaskManager::GetInstance().EnqueueWork(uploadFullbodyModel, true);
-      }
-
-      //working on: maybe we need to use the gfx system get pointer somewhere here? too tired to analyse this now :p
-    }
-
-  } // !match
 
   matchLifetimeMutex.unlock();
 

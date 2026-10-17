@@ -63,7 +63,7 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
 
   decayingPositionOffset = Vector3(0);
   decayingDifficultyFactor = 0.0f;
-  gpuSkinningActive = true;
+  gpuSkinningActive = false;
 
   _cache_AgilityFactor = GetContext()->config->GetReal("gameplay_agilityfactor", _default_AgilityFactor);
   _cache_AccelerationFactor = GetContext()->config->GetReal("gameplay_accelerationfactor", _default_AccelerationFactor);
@@ -106,7 +106,7 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
 
   assert(match);
 
-  gpuSkinningActive = true;
+  gpuSkinningActive = false;
 
   float playerHeight = player->GetPlayerData()->GetHeight();
   zMultiplier = (1.0f / defaultPlayerHeight) * playerHeight;

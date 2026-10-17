@@ -393,10 +393,11 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                 android.view.Display display = getWindowManager().getDefaultDisplay();
                 android.view.Display.Mode[] modes = display.getSupportedModes();
                 android.view.Display.Mode bestMode = null;
-                float maxRate = 60.0f;
+                float maxRate = 59.0f;
                 if (modes != null) {
                     for (android.view.Display.Mode mode : modes) {
                         float rate = mode.getRefreshRate();
+                        Log.i(TAG, "Available display mode: id=" + mode.getModeId() + " (" + mode.getPhysicalWidth() + "x" + mode.getPhysicalHeight() + " @" + rate + "Hz)");
                         if (rate > maxRate) {
                             maxRate = rate;
                             bestMode = mode;
