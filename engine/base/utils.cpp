@@ -180,13 +180,19 @@ namespace blunted {
   }
 
   std::string get_file_name(const std::string &filename) {
-    std::string chompedFilename = filename.substr(filename.find_last_of("\\") + 1);
-    chompedFilename = chompedFilename.substr(filename.find_last_of("/") + 1);
-    return chompedFilename;
+    size_t lastSlash = filename.find_last_of("/\\");
+    if (lastSlash != std::string::npos) {
+      return filename.substr(lastSlash + 1);
+    }
+    return filename;
   }
 
   std::string get_file_extension(const std::string &filename) {
-    return filename.substr(filename.find_last_of(".") + 1);
+    size_t dotPos = filename.find_last_of('.');
+    size_t slashPos = filename.find_last_of("/\\");
+    if (dotPos == std::string::npos) return "";
+    if (slashPos != std::string::npos && dotPos < slashPos) return "";
+    return filename.substr(dotPos + 1);
   }
 
   std::string int_to_str(int i) {

@@ -199,6 +199,31 @@ namespace blunted {
         material.specular_amount = 0.05f;
         material.shininess = 0.1f;
 
+        auto resolveTexturePath = [&](const std::string &rawPath) -> std::string {
+          if (rawPath.empty()) return "";
+          std::string baseName = get_file_name(rawPath);
+          if (baseName.empty()) return "";
+
+          // 1. Check relative to model base directory
+          if (!baseDir.empty()) {
+            std::string candidate = baseDir + "/" + baseName;
+            SDL_RWops *rw = SDL_RWFromFile(candidate.c_str(), "rb");
+            if (rw) { SDL_RWclose(rw); return candidate; }
+          }
+
+          // 2. Check player textures directory
+          std::string candidate = "media/objects/players/textures/" + baseName;
+          SDL_RWops *rw = SDL_RWFromFile(candidate.c_str(), "rb");
+          if (rw) { SDL_RWclose(rw); return candidate; }
+
+          // 3. Check general textures directory
+          candidate = "media/textures/" + baseName;
+          rw = SDL_RWFromFile(candidate.c_str(), "rb");
+          if (rw) { SDL_RWclose(rw); return candidate; }
+
+          return "media/objects/players/textures/" + baseName;
+        };
+
         if (fbxMat) {
           // Detect dynamic player material roles (kit, skin, shoe)
           std::string lowerMatName = fbxMat->name.data ? std::string(fbxMat->name.data) : "";
@@ -237,10 +262,7 @@ namespace blunted {
               }
               material.diffuseTexture = texRes;
             } else if (diffTex->filename.length > 0 || !dynamicIdent.empty()) {
-              std::string texPath = !dynamicIdent.empty() ? ("media/objects/players/textures/" + dynamicIdent) : diffTex->filename.data;
-              if (dynamicIdent.empty() && diffTex->relative_filename.length > 0) {
-                texPath = baseDir.empty() ? std::string(diffTex->relative_filename.data) : (baseDir + "/" + diffTex->relative_filename.data);
-              }
+              std::string texPath = !dynamicIdent.empty() ? ("media/objects/players/textures/" + dynamicIdent) : resolveTexturePath(diffTex->filename.data);
               material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texPath, true, true);
             }
           }
@@ -263,10 +285,7 @@ namespace blunted {
               }
               material.normalTexture = normRes;
             } else if (normTex->filename.length > 0) {
-              std::string normPath = normTex->filename.data;
-              if (normTex->relative_filename.length > 0) {
-                normPath = baseDir.empty() ? std::string(normTex->relative_filename.data) : (baseDir + "/" + normTex->relative_filename.data);
-              }
+              std::string normPath = resolveTexturePath(normTex->filename.data);
               material.normalTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(normPath, true, true);
             }
           }
