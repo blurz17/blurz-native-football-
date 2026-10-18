@@ -95,10 +95,10 @@ public class MobileControlsView extends View {
     }
     private final LiveMatchStats liveStats = new LiveMatchStats();
 
-    // In-game Settings Sliders State
-    private float settingCamHeight = 0.40f;
-    private float settingCamZoom = 0.75f;
-    private float settingCamAngle = 0.50f;
+    // In-game Settings Sliders State (Defaults: Preset 1: 12% Zoom, 15% Height, 50% Angle)
+    private float settingCamHeight = 0.31f; // 15%
+    private float settingCamZoom = 0.356f;  // 12%
+    private float settingCamAngle = 0.50f;  // 50%
     private float settingAudioVolume = 0.80f;
     private boolean settingRadarEnabled = true;
     private boolean settingPlayerNames = true;
@@ -106,6 +106,33 @@ public class MobileControlsView extends View {
     private int selectedKit2 = 1; // 0=Kit 01, 1=Kit 02
     private int draggingSlider = -1; // 0=Height, 1=Zoom, 2=Angle, 3=Audio
     private int pressedSettingsCardIndex = -1; // 0=Squad, 1=Controls, 2=General, 3=Camera, 4=Sound
+
+    private String cameraBannerText = null;
+    private long cameraBannerExpiry = 0;
+
+    public static float heightPercentToValue(int h) {
+        return 0.1f + (h / 100f) * 1.4f;
+    }
+
+    public static int heightValueToPercent(float hVal) {
+        return Math.max(0, Math.min(100, Math.round((hVal - 0.1f) / 1.4f * 100f)));
+    }
+
+    public static float zoomPercentToValue(int z) {
+        if (z <= 12) {
+            return (z / 12f) * 0.356f;
+        } else {
+            return 0.356f + ((z - 12f) / 88f) * (1.50f - 0.356f);
+        }
+    }
+
+    public static int zoomValueToPercent(float zVal) {
+        if (zVal <= 0.356f) {
+            return Math.max(0, Math.min(12, Math.round((zVal / 0.356f) * 12f)));
+        } else {
+            return Math.max(12, Math.min(100, Math.round(12f + ((zVal - 0.356f) / (1.50f - 0.356f)) * 88f)));
+        }
+    }
 
     // Team Logos and Branding
     private Bitmap team1LogoBitmap = null;
@@ -231,12 +258,12 @@ public class MobileControlsView extends View {
         // Load saved camera and audio settings
         try {
             SharedPreferences prefs = getContext().getSharedPreferences("blurz_settings", Context.MODE_PRIVATE);
-            int h = prefs.getInt("camera_height", 50);
-            int z = prefs.getInt("camera_zoom", 50);
+            int h = prefs.getInt("camera_height", 15);
+            int z = prefs.getInt("camera_zoom", 12);
             int a = prefs.getInt("camera_angle", 50);
             int vol = prefs.getInt("audio_volume", 80);
-            settingCamHeight = 0.1f + (h / 100f) * 1.4f;
-            settingCamZoom = 0.2f + (z / 100f) * 1.3f;
+            settingCamHeight = heightPercentToValue(h);
+            settingCamZoom = zoomPercentToValue(z);
             settingCamAngle = a / 100f;
             settingAudioVolume = vol / 100f;
             settingRadarEnabled = prefs.getBoolean("radar_enabled", true);
@@ -291,26 +318,81 @@ public class MobileControlsView extends View {
         } catch (Throwable ignored) {}
     }
 
+    public void showCameraPresetBanner(String text) {
+        this.cameraBannerText = text;
+        this.cameraBannerExpiry = System.currentTimeMillis() + 2000;
+        postInvalidate();
+    }
+
+    private void drawCameraBanner(Canvas canvas, int w, int h) {
+        long now = System.currentTimeMillis();
+        if (cameraBannerText == null || now >= cameraBannerExpiry) return;
+
+        float alphaFrac = 1.0f;
+        long remaining = cameraBannerExpiry - now;
+        if (remaining < 400) {
+            alphaFrac = remaining / 400.0f;
+        }
+        int alpha = Math.max(0, Math.min(255, Math.round(alphaFrac * 230)));
+        if (alpha <= 0) return;
+
+        Paint bBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bBgPaint.setColor(Color.argb(alpha, 14, 22, 34));
+        Paint bBorderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bBorderPaint.setColor(Color.argb(Math.round(alphaFrac * 255), 0, 229, 255)); // Neon Cyan #00E5FF
+        bBorderPaint.setStyle(Paint.Style.STROKE);
+        bBorderPaint.setStrokeWidth(2.0f);
+
+        Paint bTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bTextPaint.setColor(Color.argb(Math.round(alphaFrac * 255), 255, 255, 255));
+        bTextPaint.setTextSize(Math.max(h * 0.034f, 18f));
+        bTextPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        bTextPaint.setTextAlign(Paint.Align.CENTER);
+
+        float textW = bTextPaint.measureText(cameraBannerText);
+        float pillW = textW + 48f;
+        float pillH = Math.max(h * 0.055f, 32f);
+        float pillX = (w - pillW) * 0.5f;
+        float pillY = Math.max(h * 0.14f, safeInsetTop + 56f);
+
+        RectF pillRect = new RectF(pillX, pillY, pillX + pillW, pillY + pillH);
+        canvas.drawRoundRect(pillRect, pillH * 0.5f, pillH * 0.5f, bBgPaint);
+        canvas.drawRoundRect(pillRect, pillH * 0.5f, pillH * 0.5f, bBorderPaint);
+
+        Paint.FontMetrics fm = bTextPaint.getFontMetrics();
+        float textBaseline = pillY + (pillH - (fm.ascent + fm.descent)) * 0.5f;
+        canvas.drawText(cameraBannerText, pillRect.centerX(), textBaseline, bTextPaint);
+
+        if (remaining > 0) {
+            postInvalidateDelayed(16);
+        }
+    }
+
     private void cycleCameraPreset() {
         currentCamPreset = (currentCamPreset + 1) % 3;
+        String presetBanner;
         if (currentCamPreset == 0) {
-            // Tele (Default broadcast)
-            settingCamZoom = 0.75f;
-            settingCamHeight = 0.40f;
+            // Preset 1: Zoom 12%, Camera Angle 50%, Height 15% (Broadcast Low)
+            settingCamZoom = zoomPercentToValue(12);
+            settingCamHeight = heightPercentToValue(15);
             settingCamAngle = 0.50f;
+            presetBanner = "PRESET 1: BROADCAST LOW (12% ZOOM | 15% HEIGHT | 50% ANGLE)";
         } else if (currentCamPreset == 1) {
-            // Dynamic (Close action)
-            settingCamZoom = 1.15f;
-            settingCamHeight = 0.30f;
-            settingCamAngle = 0.40f;
+            // Preset 2: Zoom 12%, Camera Angle 50%, Height 50% (Broadcast Mid)
+            settingCamZoom = zoomPercentToValue(12);
+            settingCamHeight = heightPercentToValue(50);
+            settingCamAngle = 0.50f;
+            presetBanner = "PRESET 2: BROADCAST MID (12% ZOOM | 50% HEIGHT | 50% ANGLE)";
         } else {
-            // Wide (Tactical broadcast)
-            settingCamZoom = 0.50f;
-            settingCamHeight = 0.75f;
-            settingCamAngle = 0.60f;
+            // Preset 3: Zoom 0% (Single Player Close-Up), Camera Angle 50%, Height 20%
+            settingCamZoom = zoomPercentToValue(0);
+            settingCamHeight = heightPercentToValue(20);
+            settingCamAngle = 0.50f;
+            presetBanner = "PRESET 3: PLAYER CLOSE-UP (0% ZOOM | 20% HEIGHT | 50% ANGLE)";
         }
         applyCameraAndAudioSettings();
         saveSettingsToPrefs();
+        showCameraPresetBanner(presetBanner);
     }
 
     private void cycleTactics() {
@@ -320,8 +402,8 @@ public class MobileControlsView extends View {
     private void saveSettingsToPrefs() {
         try {
             SharedPreferences prefs = getContext().getSharedPreferences("blurz_settings", Context.MODE_PRIVATE);
-            int hProgress = Math.round((settingCamHeight - 0.1f) / 1.4f * 100f);
-            int zProgress = Math.round((settingCamZoom - 0.2f) / 1.3f * 100f);
+            int hProgress = heightValueToPercent(settingCamHeight);
+            int zProgress = zoomValueToPercent(settingCamZoom);
             int aProgress = Math.round(settingCamAngle * 100f);
             int volProgress = Math.round(settingAudioVolume * 100f);
             prefs.edit()
@@ -508,6 +590,7 @@ public class MobileControlsView extends View {
             drawVirtualJoystick(canvas);
             drawActionButtons(canvas);
             drawTopRightHud(canvas);
+            drawCameraBanner(canvas, w, h);
         }
     }
 
@@ -1604,8 +1687,8 @@ public class MobileControlsView extends View {
                 "Reset Camera Settings"
         };
         float[] fracs = {
-                Math.max(0f, Math.min(1f, (settingCamHeight - 0.1f) / 1.4f)),
-                Math.max(0f, Math.min(1f, (settingCamZoom - 0.2f) / 1.3f)),
+                heightValueToPercent(settingCamHeight) / 100f,
+                zoomValueToPercent(settingCamZoom) / 100f,
                 Math.max(0f, Math.min(1f, settingCamAngle))
         };
 
@@ -2121,10 +2204,11 @@ public class MobileControlsView extends View {
 
     private void updateSliderValue(int s, float fraction) {
         fraction = Math.max(0f, Math.min(1f, fraction));
+        int percent = Math.round(fraction * 100f);
         if (s == 0) {
-            settingCamHeight = 0.1f + fraction * 1.4f;
+            settingCamHeight = heightPercentToValue(percent);
         } else if (s == 1) {
-            settingCamZoom = 0.2f + fraction * 1.3f;
+            settingCamZoom = zoomPercentToValue(percent);
         } else if (s == 2) {
             settingCamAngle = fraction;
         } else if (s == 3) {
@@ -2561,8 +2645,8 @@ public class MobileControlsView extends View {
                             return true;
                         }
                         if (resetBtn.contains(x, y)) {
-                            settingCamHeight = 0.40f;
-                            settingCamZoom = 0.75f;
+                            settingCamHeight = heightPercentToValue(15);
+                            settingCamZoom = zoomPercentToValue(12);
                             settingCamAngle = 0.50f;
                             applyCameraAndAudioSettings();
                             saveSettingsToPrefs();

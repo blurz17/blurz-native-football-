@@ -101,6 +101,13 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setMatchPaused
 }
 
 extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setCameraSettings(JNIEnv* env, jclass cls, jfloat zoom, jfloat height, jfloat fov, jfloat angleFactor) {
+    if (GetConfiguration()) {
+        GetConfiguration()->Set("camera_zoom", (float)zoom);
+        GetConfiguration()->Set("camera_height", (float)height);
+        GetConfiguration()->Set("camera_fov", (float)fov);
+        GetConfiguration()->Set("camera_anglefactor", (float)angleFactor);
+        GetConfiguration()->SaveFile(GetConfigFilename());
+    }
     boost::shared_ptr<GameTask> gTask = GetGameTask();
     if (gTask) {
         Match* match = gTask->GetMatch();
@@ -113,7 +120,7 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setCameraSetti
 extern "C" JNIEXPORT jfloatArray JNICALL Java_org_libsdl_app_SDLActivity_getCameraSettings(JNIEnv* env, jclass cls) {
     jfloatArray result = env->NewFloatArray(4);
     if (!result) return nullptr;
-    jfloat values[4] = {0.75f, 0.40f, 0.50f, 0.70f};
+    jfloat values[4] = {0.356f, 0.31f, 0.50f, 0.50f};
     boost::shared_ptr<GameTask> gTask = GetGameTask();
     if (gTask) {
         Match* match = gTask->GetMatch();

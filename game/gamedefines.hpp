@@ -35,10 +35,10 @@ const bool quantizeDirection = false;
 // Mobile/analog standard 15% deadzone (was 0.75f which blocked gentle analog movement)
 const float analogStickDeadzone = 0.15f;
 
-const float _default_CameraZoom = 0.5f;
-const float _default_CameraHeight = 0.3f;
-const float _default_CameraFOV = 0.4f;
-const float _default_CameraAngleFactor = 0.0f;
+const float _default_CameraZoom = 0.356f;
+const float _default_CameraHeight = 0.31f;
+const float _default_CameraFOV = 0.5f;
+const float _default_CameraAngleFactor = 0.5f;
 
 const float _default_Difficulty = 0.6f;
 const float _default_MatchDuration = 0.4f;

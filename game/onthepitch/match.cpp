@@ -879,12 +879,20 @@ void Match::UpdateIngameCamera() {
   zoom = cameraUserZoom;
   height = cameraUserHeight * 1.5f;
 
-  float playerBias = 0.6f;//0.7f;
+  float zoomBase;
+  if (zoom >= 0.356f) {
+    zoomBase = 0.6f + zoom * 1.0f;
+  } else {
+    float t = std::max(0.0f, std::min(1.0f, zoom / 0.356f));
+    zoomBase = 0.14f + t * (0.956f - 0.14f);
+  }
+
+  float playerBias = 0.6f + (1.0f - std::min(1.0f, zoomBase / 0.956f)) * 0.25f;
   Vector3 ballPos = ball->Predict(0) * (1.0f - playerBias) + GetDesignatedPossessionPlayer()->GetPosition() * playerBias;
   // look in possession player's direction
-  ballPos += GetDesignatedPossessionPlayer()->GetDirectionVec() * 1.0f;
+  ballPos += GetDesignatedPossessionPlayer()->GetDirectionVec() * (1.0f * std::min(1.0f, zoomBase / 0.6f));
   // look in possession team's attacking direction
-  ballPos += Vector3(((teams[0]->GetFadingTeamPossessionAmount() - 1.0f) * -teams[0]->GetSide() + (teams[1]->GetFadingTeamPossessionAmount() - 1.0f) * -teams[1]->GetSide()) * 4.0f, 0, 0);
+  ballPos += Vector3(((teams[0]->GetFadingTeamPossessionAmount() - 1.0f) * -teams[0]->GetSide() + (teams[1]->GetFadingTeamPossessionAmount() - 1.0f) * -teams[1]->GetSide()) * 4.0f, 0, 0) * std::min(1.0f, zoomBase / 0.6f);
 
   ballPos.coords[2] *= 0.1f;
 
@@ -894,7 +902,7 @@ void Match::UpdateIngameCamera() {
   if (fabs(ballPos.coords[1]) > maxH) ballPos.coords[1] = maxH * signSide(ballPos.coords[1]);
 
   Vector3 shudder = Vector3(random(-0.1f, 0.1f), random(-0.1f, 0.1f), 0) * (ball->GetMovement().GetLength() * 0.8f + 6.0f);
-  shudder *= 0.2f;
+  shudder *= 0.2f * std::min(1.0f, zoomBase / 0.5f);
   camPos.push_back(ballPos + shudder * ((float)camPos.size() / (float)camPosSize));
   if (camPos.size() > camPosSize) camPos.pop_front();
 
@@ -926,18 +934,19 @@ void Match::UpdateIngameCamera() {
 
       // wide cam
 
-      zoom = (0.6f + zoom * 1.0f) * (1.0f / fov);
+      zoom = zoomBase * (1.0f / fov);
       height = 4.0f + height * 10;
 
       float distRot = average.coords[1] / 800.0f;
 
       cameraOrientation.SetAngleAxis(distRot + (0.42f - height * 0.01f) * pi, Vector3(1, 0, 0));
-      float dynamicPanAngle = (-average.coords[0] / pitchHalfW) * (cameraUserAngleFactor * 0.5f + 0.1f) * 0.25f * pi * 1.24f;
+      float panScale = std::min(1.0f, zoomBase / 0.5f);
+      float dynamicPanAngle = (-average.coords[0] / pitchHalfW) * (cameraUserAngleFactor * 0.5f + 0.1f) * 0.25f * pi * 1.24f * panScale;
       float baseTiltAngle = (cameraUserAngleFactor - 0.5f) * 0.25f * pi;
       cameraNodeOrientation.SetAngleAxis(dynamicPanAngle + baseTiltAngle, Vector3(0, 0, 1));
       cameraNodePosition = average * Vector3(1.0f * (1.0f - cameraUserAngleFactor * 0.2f) * (1.0f - cameraUserZoom * 0.3f), 0.9f - cameraUserZoom * 0.3f, 0.2f) + Vector3(0, -41.4f - (cameraUserFOV * 3.7f) + pow(height, 1.2f) * 0.46f, 10.0f + height) * zoom;
       cameraFOV = (fov * 28.0f) - (cameraNodePosition.coords[1] / 30.0f);
-      cameraNearCap = cameraNodePosition.coords[2];
+      cameraNearCap = 1.0f;
       cameraFarCap = 200;
 
     } else if (camMethod == 2) {

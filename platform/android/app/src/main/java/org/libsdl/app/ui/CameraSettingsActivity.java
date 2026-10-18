@@ -82,7 +82,8 @@ public class CameraSettingsActivity extends Activity {
 
         for (int i = 0; i < SLIDER_KEYS.length; i++) {
             final int idx = i;
-            int saved = prefs.getInt(SLIDER_KEYS[i], 50);
+            int defaultVal = (i == 0) ? 15 : (i == 1 ? 12 : 50);
+            int saved = prefs.getInt(SLIDER_KEYS[i], defaultVal);
 
             TextView label = new TextView(this);
             label.setText(SLIDER_LABELS[i]);
@@ -150,11 +151,11 @@ public class CameraSettingsActivity extends Activity {
         editor.apply();
 
         try {
-            int h = prefs.getInt("camera_height", 50);
-            int z = prefs.getInt("camera_zoom", 50);
+            int h = prefs.getInt("camera_height", 15);
+            int z = prefs.getInt("camera_zoom", 12);
             int a = prefs.getInt("camera_angle", 50);
-            float camHeight = 0.1f + (h / 100f) * 1.4f;
-            float camZoom = 0.2f + (z / 100f) * 1.3f;
+            float camHeight = org.libsdl.app.MobileControlsView.heightPercentToValue(h);
+            float camZoom = org.libsdl.app.MobileControlsView.zoomPercentToValue(z);
             float camAngle = a / 100f;
             org.libsdl.app.SDLActivity.setCameraSettings(camZoom, camHeight, 0.5f, camAngle);
         } catch (Throwable ignored) {}
