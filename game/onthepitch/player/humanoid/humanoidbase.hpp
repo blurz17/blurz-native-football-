@@ -15,6 +15,7 @@
 #include "animcollection.hpp"
 
 #include "../../AIsupport/mentalimage.hpp"
+#include <mutex>
 
 using namespace blunted;
 
@@ -133,6 +134,7 @@ struct IdealAnimDescription {
 
 struct AnimApplyBuffer {
   AnimApplyBuffer() {
+    anim = nullptr;
     frameNum = 0;
     snapshotTime_ms = 0;
     smooth = true;
@@ -150,6 +152,20 @@ struct AnimApplyBuffer {
     position = src.position;
     orientation = src.orientation;
     offsets = src.offsets;
+  }
+  AnimApplyBuffer& operator=(const AnimApplyBuffer &src) {
+    if (this != &src) {
+      anim = src.anim;
+      frameNum = src.frameNum;
+      snapshotTime_ms = src.snapshotTime_ms;
+      smooth = src.smooth;
+      smoothFactor = src.smoothFactor;
+      noPos = src.noPos;
+      position = src.position;
+      orientation = src.orientation;
+      offsets = src.offsets;
+    }
+    return *this;
   }
   Animation *anim;
   int frameNum;
@@ -321,6 +337,7 @@ class HumanoidBase {
 
     AnimApplyBuffer animApplyBuffer;
 
+    boost::mutex putBufferMutex;
     AnimApplyBuffer buf_animApplyBuffer;
 
     std::vector<TemporalHumanoidNode> buf_TemporalHumanoidNodes;

@@ -120,7 +120,9 @@ void GoalieDefaultStrategy::RequestInput(const MentalImage *mentalImage, Vector3
           mateToThresholdDistance = (shootingPoint - matePos).GetLength();
         }
 
-        if (mateToThresholdDistance > oppToThresholdDistance + 1.0f) { // come out, brave keeper!
+        if (team->GetMatch()->IsTrainingMode()) {
+          awayFromGoalBias = 0.05f; // In training mode, stay on goal line to guard and save shots; never rush out to tackle
+        } else if (mateToThresholdDistance > oppToThresholdDistance + 1.0f) { // come out, brave keeper!
 
           awayFromGoalBias = 1.0f;
 

@@ -22,6 +22,7 @@
 #include "../../match.hpp"
 #include "../../team.hpp"
 #include "../player.hpp"
+#include "training/training_manager.hpp"
 
 HumanController::HumanController(Match *match, IHIDevice *hid) : PlayerController(match), hid(hid) {
   Reset();
@@ -525,9 +526,26 @@ void HumanController::Process() {
 
 }
 
+Vector3 HumanController::_TransformInputDirection(const Vector3 &inputDir) const {
+  if (match && match->GetTrainingManager() && match->GetTrainingManager()->IsPlayerCamActive()) {
+    Vector3 camFwd = match->GetCamera2DForward();
+    if (camFwd.GetLength() > 0.01f) {
+      camFwd.Normalize();
+      // In pitch coordinates (X: length, Y: width), if camera forward is (fx, fy),
+      // the vector pointing to the right of the camera view on screen is (fy, -fx).
+      Vector3 camRight(camFwd.coords[1], -camFwd.coords[0], 0.0f);
+      float screenX = inputDir.coords[0];
+      float screenY = inputDir.coords[1];
+      return camFwd * screenY + camRight * screenX;
+    }
+  }
+  return inputDir;
+}
+
 Vector3 HumanController::GetDirection() {
   Vector3 direction = CastPlayer()->GetDirectionVec();
-  return hid->GetDirection().GetNormalized(direction);
+  Vector3 rawDir = _TransformInputDirection(hid->GetDirection());
+  return rawDir.GetNormalized(direction);
 }
 
 float HumanController::GetFloatVelocity() {
@@ -561,7 +579,7 @@ void HumanController::Reset() {
 }
 
 void HumanController::_GetHidInput(Vector3 &rawInputDirection, float &rawInputVelocityFloat) {
-  rawInputDirection = hid->GetDirection();
+  rawInputDirection = _TransformInputDirection(hid->GetDirection());
 
   float analogMagnitude = rawInputDirection.GetLength();
 

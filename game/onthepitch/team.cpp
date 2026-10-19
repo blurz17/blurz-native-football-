@@ -16,6 +16,7 @@
 #include "hid/gamepad.hpp"
 #include "framework/scheduler.hpp"
 #include "onthepitch/match.hpp"
+#include "training/training_manager.hpp"
 
 
 #include "managers/usereventmanager.hpp"
@@ -448,7 +449,16 @@ void Team::Process() {
           } else if (!IsHumanControlled(GetBestPossessionPlayer()->GetID()) && match->GetBestPossessionTeamID() == GetID()) {
             targetPlayer = GetBestPossessionPlayer();
           } else {
-            targetPlayer = AI_GetBestSwitchTargetPlayer(match, this, humanGamers.at(i)->GetHIDevice()->GetDirection());
+            Vector3 switchDir = humanGamers.at(i)->GetHIDevice()->GetDirection();
+            if (match && match->GetTrainingManager() && match->GetTrainingManager()->IsPlayerCamActive()) {
+              Vector3 camFwd = match->GetCamera2DForward();
+              if (camFwd.GetLength() > 0.01f) {
+                camFwd.Normalize();
+                Vector3 camRight(camFwd.coords[1], -camFwd.coords[0], 0.0f);
+                switchDir = camFwd * switchDir.coords[1] + camRight * switchDir.coords[0];
+              }
+            }
+            targetPlayer = AI_GetBestSwitchTargetPlayer(match, this, switchDir);
             if (targetPlayer)
               if (IsHumanControlled(targetPlayer->GetID())) targetPlayer = 0;
           }

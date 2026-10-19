@@ -105,6 +105,10 @@ struct MissingAnim {
 };
 */
 
+namespace blunted {
+  class TrainingManager;
+}
+
 class Match {
 
   public:
@@ -232,6 +236,9 @@ class Match {
 #endif
 
     MatchData* GetMatchData() { return matchData; }
+    bool IsTrainingMode() const;
+    blunted::TrainingManager* GetTrainingManager() { return trainingManager; }
+    Vector3 GetCamera2DForward() const { return camera2DForward; }
 
     float GetMatchDurationFactor() const { return matchDurationFactor; }
     float GetMatchDifficulty() const { return matchDifficulty; }
@@ -281,6 +288,7 @@ class Match {
     int timeSincePreviousPut_ms;
 
     MatchData *matchData;
+    blunted::TrainingManager *trainingManager;
     Team *teams[2];
 
     Officials *officials;
@@ -361,6 +369,7 @@ class Match {
     Quaternion cameraOrientation;
     Quaternion cameraNodeOrientation;
     Vector3 cameraNodePosition;
+    Vector3 camera2DForward;
     float cameraFOV;
     float cameraNearCap;
     float cameraFarCap;

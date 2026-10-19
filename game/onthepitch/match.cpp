@@ -4,8 +4,14 @@
 
 #include "match.hpp"
 
+#include "../training/training_manager.hpp"
+
 #include "base/gamecontext.hpp"
 #include "base/profiler.hpp"
+
+bool Match::IsTrainingMode() const {
+  return trainingManager != nullptr;
+}
 
 #include "gametask.hpp"
 #include "menu/menutask.hpp"
@@ -57,6 +63,8 @@ Match::Match(MatchData *matchData, GameContext *context) : matchData(matchData),
   menuTask = context->menuTask;
 #endif
 
+  trainingManager = nullptr;
+  camera2DForward = Vector3(0.0f, 1.0f, 0.0f);
   iterations.SetData(0);
   actualTime_ms = 0;
   buf_matchTime_ms = 0;
@@ -490,6 +498,13 @@ Match::Match(MatchData *matchData, GameContext *context) : matchData(matchData),
 
   // Reset profiler so loading hiccups do not pollute gameplay 1% Low FPS telemetry
   PerformanceProfiler::GetInstance().ResetBenchmark();
+
+  if (matchData->IsTrainingMode()) {
+    blunted::TrainingConfig tConfig;
+    tConfig.type = (blunted::e_TrainingType)matchData->GetTrainingType();
+    tConfig.humanTeamID = 0;
+    trainingManager = new blunted::TrainingManager(this, tConfig);
+  }
 }
 
 Match::~Match() {
@@ -528,6 +543,10 @@ void Match::Exit() {
   delete officials;
   delete ball;
   delete referee;
+  if (trainingManager) {
+    delete trainingManager;
+    trainingManager = nullptr;
+  }
   delete matchData;
 #ifndef GPFB_HEADLESS
   menuTask->SetMatchData(0);
@@ -780,8 +799,14 @@ void Match::GetOfficialPlayers(std::vector<PlayerBase*> &players) {
 }
 
 const MentalImage *Match::GetMentalImage(int history_ms) {
+  if (mentalImages.empty()) {
+    MentalImage *freshSnapshot = new MentalImage(this);
+    freshSnapshot->TakeSnapshot();
+    mentalImages.push_back(freshSnapshot);
+  }
+
   int index = int(round((float)history_ms / 10.0));
-  if (index >= (signed int)mentalImages.size()) index = mentalImages.size() - 1;
+  if (index >= (signed int)mentalImages.size()) index = (signed int)mentalImages.size() - 1;
   if (index < 0) index = 0;
 
   mentalImages.at(index)->SetTimeStampNeg_ms(index * 10.0f);
@@ -803,6 +828,11 @@ void Match::ResetSituation(const Vector3 &focusPos) {
     delete mentalImages[i];
   }
   mentalImages.clear();
+
+  MentalImage *freshSnapshot = new MentalImage(this);
+  freshSnapshot->TakeSnapshot();
+  mentalImages.push_back(freshSnapshot);
+
   goalScored = false;
   ballIsInGoal = false;
   for (unsigned int i = 0; i < e_TouchType_SIZE; i++) {
@@ -812,7 +842,6 @@ void Match::ResetSituation(const Vector3 &focusPos) {
   lastGoalScorer = 0;
   bestPossessionTeamID = -1;
 
-  mentalImages.clear();
   possessionSideHistory->Clear();
 
   lastBodyBallCollisionTime_ms = 0;
@@ -869,6 +898,104 @@ void Match::SetCameraParams(float zoom, float height, float fov, float angleFact
 }
 
 void Match::UpdateIngameCamera() {
+  if (trainingManager && trainingManager->IsPlayerCamActive()) {
+    float oppSide = teams[1]->GetSide();
+    Vector3 goalTarget(oppSide * pitchHalfW, 0.0f, 1.0f);
+    Vector3 currentBallPos = ball->Predict(0);
+
+    blunted::e_TrainingType drill = trainingManager->GetDrill();
+
+    if (drill == blunted::e_TrainingType_FreeKick || drill == blunted::e_TrainingType_Penalty) {
+      // Behind-the-kicker set-piece view (focused on wall & goal)
+      Player *taker = referee->GetBuffer().taker;
+      if (!taker) taker = GetDesignatedPossessionPlayer();
+      Vector3 kickerPos = taker ? taker->GetPosition() : currentBallPos;
+
+      float ballTravelDist = (currentBallPos - kickerPos).GetLength();
+      if (ballTravelDist > 1.5f && currentBallPos.coords[0] * oppSide > kickerPos.coords[0] * oppSide) {
+        goalTarget = goalTarget * 0.3f + currentBallPos * 0.7f;
+      }
+
+      Vector3 toGoal = (goalTarget - kickerPos).GetNormalized(Vector3(oppSide, 0, 0));
+      Vector3 camPosDesired = kickerPos - toGoal * 7.0f + Vector3(0, 0, 2.3f);
+
+      cameraNodePosition = cameraNodePosition * 0.82f + camPosDesired * 0.18f;
+
+      Vector3 aimVector = (goalTarget + Vector3(0, 0, 0.5f)) - cameraNodePosition;
+      float aimAngle2D = aimVector.GetAngle2D();
+      cameraOrientation.SetAngleAxis(0.47f * pi, Vector3(1, 0, 0));
+      cameraNodeOrientation.SetAngleAxis(aimAngle2D + 1.5f * pi, Vector3(0, 0, 1));
+      cameraFOV = 36.0f;
+      cameraNearCap = 0.5f;
+      cameraFarCap = 250.0f;
+      camera2DForward = aimVector.Get2D().GetNormalized(Vector3(oppSide, 0.0f, 0.0f));
+      return;
+
+    } else if (drill == blunted::e_TrainingType_Corner) {
+      // Corner delivery view (behind corner taker angled into penalty box)
+      Player *taker = referee->GetBuffer().taker;
+      if (!taker) taker = GetDesignatedPossessionPlayer();
+      Vector3 kickerPos = taker ? taker->GetPosition() : currentBallPos;
+
+      Vector3 boxTarget = goalTarget + Vector3(-oppSide * 6.0f, 0, 1.0f);
+      float ballTravelDist = (currentBallPos - kickerPos).GetLength();
+      if (ballTravelDist > 2.0f) {
+        boxTarget = boxTarget * 0.4f + currentBallPos * 0.6f;
+      }
+
+      Vector3 toBox = (boxTarget - kickerPos).GetNormalized(Vector3(oppSide, 0, 0));
+      Vector3 camPosDesired = kickerPos - toBox * 7.5f + Vector3(0, 0, 2.8f);
+
+      cameraNodePosition = cameraNodePosition * 0.82f + camPosDesired * 0.18f;
+
+      Vector3 aimVector = (boxTarget + Vector3(0, 0, 0.6f)) - cameraNodePosition;
+      float aimAngle2D = aimVector.GetAngle2D();
+      cameraOrientation.SetAngleAxis(0.46f * pi, Vector3(1, 0, 0));
+      cameraNodeOrientation.SetAngleAxis(aimAngle2D + 1.5f * pi, Vector3(0, 0, 1));
+      cameraFOV = 40.0f;
+      cameraNearCap = 0.5f;
+      cameraFarCap = 280.0f;
+      camera2DForward = aimVector.Get2D().GetNormalized(Vector3(oppSide, 0.0f, 0.0f));
+      return;
+
+    } else {
+      // Free Play: 3rd-person follow cam tracking the active user-controlled player
+      Player *activePlayer = GetDesignatedPossessionPlayer();
+      if (!activePlayer) activePlayer = teams[0]->GetDesignatedTeamPossessionPlayer();
+      Vector3 playerPos = activePlayer ? activePlayer->GetPosition() : currentBallPos;
+
+      Vector3 toGoal = (goalTarget - playerPos).GetNormalized(Vector3(oppSide, 0, 0));
+      Vector3 facingDir = activePlayer ? activePlayer->GetDirectionVec() : toGoal;
+
+      // Blend looking mostly toward the opponent goal with subtle facing bias
+      Vector3 lookDir = (toGoal * 0.70f + facingDir * 0.30f).GetNormalized(toGoal);
+
+      Vector3 camPosDesired = playerPos - lookDir * 8.5f + Vector3(0, 0, 3.2f);
+
+      // Smooth tracking towards player position
+      cameraNodePosition = cameraNodePosition * 0.85f + camPosDesired * 0.15f;
+
+      Vector3 lookTarget = playerPos + lookDir * 14.0f + Vector3(0, 0, 1.0f);
+      float ballDist = (currentBallPos - playerPos).GetLength();
+      if (ballDist > 3.0f && currentBallPos.coords[0] * oppSide > playerPos.coords[0] * oppSide) {
+        // Track ball when shot towards goal or passed forward
+        lookTarget = lookTarget * 0.4f + currentBallPos * 0.6f;
+      }
+
+      Vector3 aimVector = lookTarget - cameraNodePosition;
+      float aimAngle2D = aimVector.GetAngle2D();
+      cameraOrientation.SetAngleAxis(0.46f * pi, Vector3(1, 0, 0));
+      cameraNodeOrientation.SetAngleAxis(aimAngle2D + 1.5f * pi, Vector3(0, 0, 1));
+      cameraFOV = 42.0f;
+      cameraNearCap = 0.5f;
+      cameraFarCap = 300.0f;
+      camera2DForward = aimVector.Get2D().GetNormalized(Vector3(oppSide, 0.0f, 0.0f));
+      return;
+    }
+  }
+
+  camera2DForward = Vector3(0.0f, 1.0f, 0.0f);
+
   // camera
 
   float fov;
@@ -1018,6 +1145,10 @@ void Match::Process() {
     sig_OnGameOver(this);
   }
 
+  if (trainingManager) {
+    trainingManager->Process();
+  }
+
   if (!pause) {
 
     if (IsInPlay()) {
@@ -1149,6 +1280,9 @@ void Match::Process() {
         teams[0]->GetController()->UpdateTactics();
       }
       if (t1goal || t2goal) {
+        if (trainingManager) {
+          trainingManager->OnGoalScored(t1goal ? 1 : 0);
+        }
 
         // find out who scored
         bool ownGoal = true;

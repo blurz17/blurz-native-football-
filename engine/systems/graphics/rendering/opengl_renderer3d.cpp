@@ -1246,11 +1246,16 @@ struct GLfunctions {
 
       int skinningActive = queueEntry->boneMatrices.empty() ? 0 : 1;
       if (skinningActive != currentSkinningState) {
-        SetUniformInt(currentShader->first, "u_SkinningEnabled", skinningActive);
+        if (currentShader != shaders.end()) {
+          SetUniformInt(currentShader->first, "u_SkinningEnabled", skinningActive);
+        }
         currentSkinningState = skinningActive;
       }
       if (skinningActive) {
-        SetUniformMatrix4Array(currentShader->first, "u_Bones", (int)queueEntry->boneMatrices.size(), queueEntry->boneMatrices.data());
+        if (currentShader != shaders.end()) {
+          int boneCount = std::min((int)queueEntry->boneMatrices.size(), 32);
+          SetUniformMatrix4Array(currentShader->first, "u_Bones", boneCount, queueEntry->boneMatrices.data());
+        }
       }
 
       bool sequential = true; // buffer vertexbuffer chunks until a change happens (in texture or index, for example)
@@ -2370,12 +2375,27 @@ struct GLfunctions {
     } else {
       location = mapping.glGetUniformLocation((*shaderIter).second.programID, varName.c_str());
       if (location == -1) {
-        // Uniform may be optimized out if inactive
+        // Fallback for drivers requiring array element syntax e.g. u_Bones[0]
+        location = mapping.glGetUniformLocation((*shaderIter).second.programID, (varName + "[0]").c_str());
+      }
+      if (location == -1) {
+        uniformCache.insert(std::pair<std::string, GLint>(shaderName + "_var_" + varName, -1));
         return;
       }
       uniformCache.insert(std::pair<std::string, GLint>(shaderName + "_var_" + varName, location));
     }
-    mapping.glUniformMatrix4fv(location, count, true, (float*)mats);
+    if (location != -1) {
+      float glMats[32 * 16];
+      int clampedCount = std::min(count, 32);
+      for (int i = 0; i < clampedCount; i++) {
+        Matrix4 trans = mats[i].GetTransposed();
+        memcpy(&glMats[i * 16], trans.elements, 16 * sizeof(float));
+      }
+      for (int i = clampedCount; i < 32; i++) {
+        memcpy(&glMats[i * 16], MATRIX4_IDENTITY, 16 * sizeof(float));
+      }
+      mapping.glUniformMatrix4fv(location, 32, GL_FALSE, glMats);
+    }
   }
 
   void OpenGLRenderer3D::HDRCaptureOverallBrightness() {

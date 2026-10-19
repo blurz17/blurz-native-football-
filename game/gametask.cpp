@@ -180,7 +180,9 @@ void GameTask::PutPhase() {
     auto skinStart = std::chrono::steady_clock::now();
     for (unsigned int i = 0; i < playersToProcess.size(); i++) {
       playersToProcess.at(i)->UpdateFullbodyModel();
-      boost::static_pointer_cast<Geometry>(playersToProcess.at(i)->GetFullbodyNode()->GetObject("fullbody"))->OnUpdateGeometryData(false);
+      if (!playersToProcess.at(i)->IsGpuSkinningActive()) {
+        boost::static_pointer_cast<Geometry>(playersToProcess.at(i)->GetFullbodyNode()->GetObject("fullbody"))->OnUpdateGeometryData(false);
+      }
     }
     float skinMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - skinStart).count();
     PerformanceProfiler::GetInstance().RecordCpuSkinning(skinMs, (int)playersToProcess.size(), 22);

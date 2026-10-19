@@ -10,7 +10,7 @@ set(GAME_DIR ${CMAKE_CURRENT_SOURCE_DIR}/game)
 set(PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/platform)
 
 # Game & Engine sources
-file(GLOB_RECURSE ALL_SOURCES 
+file(GLOB_RECURSE ALL_SOURCES CONFIGURE_DEPENDS
     "${ENGINE_DIR}/*.cpp"
     "${ENGINE_DIR}/*.hpp"
     "${ENGINE_DIR}/*.c"

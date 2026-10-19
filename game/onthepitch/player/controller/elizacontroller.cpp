@@ -41,6 +41,7 @@
 #include "strategies/offtheball/default_off.hpp"
 #include "strategies/offtheball/goalie_default.hpp"
 #include "../playerofficial.hpp"
+#include "training/training_manager.hpp"
 
 ElizaController::ElizaController(Match *match) : PlayerController(match) {
   lastDesiredDirection = Vector3(0);
@@ -57,6 +58,16 @@ ElizaController::~ElizaController() {
 }
 
 void ElizaController::RequestCommand(PlayerCommandQueue &commandQueue) {
+
+  if (match->IsTrainingMode()) {
+    // In training mode, only the human team (ID 0) and the opponent Goalkeeper act.
+    // Opponent outfield players are disabled so the player has full control without AI defending.
+    if (CastPlayer()->GetTeam()->GetID() != 0 && CastPlayer()->GetFormationEntry().role != e_PlayerRole_GK) {
+      if (!match->GetTrainingManager() || !match->GetTrainingManager()->GetOpponentsEnabled()) {
+        return;
+      }
+    }
+  }
 
   lastSwitchTimeDuration_ms = 0;
   lastSwitchTime_ms = 0;

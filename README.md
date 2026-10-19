@@ -1,71 +1,104 @@
-# blurz-native-football-
+# Android Native Football (GPFB)
 
-A native Android port of the open-source Gameplay Football engine, originally created by Bastiaan Konings and later updated by Google LLC.
+An open-source, high-performance 3D football (soccer) simulation game natively compiled for Android (ARM64) and desktop systems via C++, SDL2, OpenGL ES, and ODE physics.
 
-## Features
+![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Windows%20%7C%20Linux-green.svg)
+![Architecture](https://img.shields.io/badge/Architecture-ARM64--v8a%20%7C%20x86__64-blue.svg)
+![Graphics](https://img.shields.io/badge/Graphics-OpenGL%20ES%202.0%20%2F%203.0-orange.svg)
 
-- Full 3D football simulation running natively on Android (ARM64)
-- Custom touch controls with virtual joystick and action buttons
-- Menu navigation via on-screen D-PAD
-- Dual control modes: Match Mode (joystick + action buttons) and Menu Mode (D-PAD + Enter/Back)
-- OpenGL ES 3.x rendering
-- OpenAL audio
+---
 
-## Tech Stack
+## 📖 Table of Contents
 
-| Component | Technology |
-|-----------|------------|
-| Engine | C++ (GameplayFootball) |
-| Graphics | OpenGL ES via SDL2 |
-| Audio | OpenAL Soft |
-| Platform | Android NDK (arm64-v8a) |
-| Build | Gradle + ndk-build |
-| JDK | JDK 17 |
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Documentation Index](#documentation-index)
+- [Project Architecture](#project-architecture)
+- [Building & Installation](#building--installation)
+- [Controls & Gameplay](#controls--gameplay)
+- [Directory Structure](#directory-structure)
 
-## Building
+---
+
+## 🌟 Overview
+
+Android Native Football is built on the Gameplay Football engine, overhauled for modern mobile devices with:
+* High-performance native C++ core with multi-threaded rendering and physics.
+* Comprehensive **Training Mode** subsystem with Free Play, Free Kicks, Corners, and Penalty Shootouts.
+* PES Mobile-style touch HUD controls and customizable camera angles.
+* Immersive **3rd-Person Player Camera** with 360° camera-relative analog controls.
+* High-fidelity 3D player models (CR7 / Al Nassr) and authentic match ball physics.
+
+---
+
+## 📚 Documentation Index
+
+For in-depth technical documentation, refer to the following guides in the [`docs/`](docs/) directory:
+
+| Document | Description |
+| :--- | :--- |
+| **[Architecture & Systems](docs/ARCHITECTURE.md)** | Multi-threaded game loop, memory buffering, thread synchronization (`putBufferMutex`), and physics pipeline. |
+| **[Training Mode Subsystem](docs/TRAINING_MODE.md)** | Decoupled training manager, drill mechanics, center kick-off Free Play, AI suppression, and UI integration. |
+| **[Camera & Control Systems](docs/CAMERA_AND_CONTROLS.md)** | Broadcast camera presets, 3rd-person Player Cam, and SO(2) camera-relative joystick coordinate transformation math. |
+| **[Changelog & History](docs/CHANGELOG.md)** | Comprehensive log of all updates, optimizations, bug fixes, and multi-threaded crash resolutions. |
+
+---
+
+## ⚡ Key Features
+
+### 1. Dedicated Training Mode
+* **Free Play (Solo Practice)**: Starts at the center circle with a stationary ball and full 11-player tactical team deployment. Opponent outfielders are parked off the pitch, and the goalkeeper guards the line without aggressively rushing out.
+* **Direct Free Kicks**: 4 realistic shooting variations (Center 24m, Left Angle 23m, Right Angle 23m, Long Range 32m) against a 3-man defensive wall.
+* **Corner Kicks**: Cross deliveries from left and right corners with aerial heading opportunities.
+* **Penalty Shootout**: 1v1 spot kicks from 11 meters against the goalkeeper.
+* **PES Mobile Training Menu**: Dedicated in-game overlay to swap drills, toggle variations, switch camera views, or instantly reset the scenario.
+
+### 2. Player Camera (3rd-Person 3D View)
+* Dynamic over-the-shoulder tracking following the active possession player.
+* Set-piece behind-the-kicker camera focusing on defensive walls and goal targets.
+* **Camera-Relative Controls**: Analog stick swiping directly translates to screen-relative movement (Up = Forward, Down = Backward, Left = Left, Right = Right).
+
+### 3. Stability & Thread Safety
+* Complete synchronization between physics/gameplay thread and render worker thread (`Thread-6`).
+* Thread-safe `putBufferMutex` preventing race conditions during animation buffer swaps.
+* Lock-free atomic command queue decoupling Android UI JNI commands from native C++ loops.
+
+---
+
+## 🛠️ Building & Installation
 
 ### Prerequisites
+* **Android SDK & NDK** (NDK r25+ recommended, e.g. Unity OpenJDK & NDK).
+* **CMake** 3.22+.
+* **Java 17+**.
 
-- JDK 17
-- Android NDK (r25+)
-- Android SDK (API 33+)
-- SDL2 2.28.5 source — Download from https://github.com/libsdl-org/SDL/releases/tag/release-2.28.5 and extract to the project root as `SDL2-2.28.5/`
+### Build Command (Windows PowerShell)
+```powershell
+$env:JAVA_HOME = "D:\unity\6000.4.2f1\Editor\Data\PlaybackEngines\AndroidPlayer\OpenJDK"
+$env:ANDROID_NDK_HOME = "D:\unity\6000.4.2f1\Editor\Data\PlaybackEngines\AndroidPlayer\NDK"
+cd platform\android
+.\gradlew.bat assembleRelease
+```
 
-### Build APK
+The output release APK is generated at:
+* `platform/android/app/build/outputs/apk/release/app-release.apk`
+* Mirrored in project root: `app-release.apk`
 
+### Installing via ADB
 ```bash
-cd android-project
-# Set JAVA_HOME to your JDK 17 path
-export JAVA_HOME=/path/to/jdk-17
-./gradlew assembleRelease
+adb install -r app-release.apk
 ```
 
-The APK will be output to:
-`android-project/app/build/outputs/apk/release/app-release.apk`
+---
 
-## Project Structure
+## 🎮 Controls & Gameplay
 
-```
-android_native_football/
-├── LICENSE                     # Proprietary license
-├── THIRD_PARTY_NOTICES.md      # Open-source acknowledgments
-├── README.md                   # This file
-└── android-project/
-    └── app/
-        ├── build.gradle
-        ├── jni/
-        │   └── src/            # C++ engine source code
-        └── src/main/java/
-            └── org/libsdl/app/
-                ├── SDLActivity.java         # Main activity
-                ├── SDLSurface.java          # OpenGL rendering surface
-                └── MobileControlsView.java  # Touch controls overlay
-```
-
-## License
-
-This project is **proprietary software**. All rights reserved.
-See [LICENSE](LICENSE) for details.
-
-This project incorporates open-source components.
-See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details.
+### Touch Controls (PES Mobile Style)
+* **Left Screen**: Floating 360° virtual analog stick (continuous analog magnitude & direction).
+* **Right Screen**: Action buttons:
+  * **Short Pass / Pressure**: Low ground pass to targeted teammate or defensive pressure.
+  * **Through Ball**: Angled through-pass into space.
+  * **Shoot**: Power-meter shot towards the goal corners.
+  * **Sprint**: Accelerate to maximum velocity.
+  * **Player Switch**: Semi-assisted or manual player switching.
+* **Top Right**: Pause / Menu button and Camera toggle button.

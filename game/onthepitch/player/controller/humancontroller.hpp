@@ -35,6 +35,7 @@ class HumanController : public PlayerController {
   protected:
 
     void _GetHidInput(Vector3 &rawInputDirection, float &rawInputVelocityFloat);
+    Vector3 _TransformInputDirection(const Vector3 &inputDir) const;
 
     IHIDevice *hid;
 

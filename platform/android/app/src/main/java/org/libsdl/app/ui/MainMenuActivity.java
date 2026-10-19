@@ -1,10 +1,13 @@
 package org.libsdl.app.ui;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.view.Window;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -110,9 +113,10 @@ public class MainMenuActivity extends Activity {
         content.addView(titleRow);
 
         // ── Menu Buttons ──
-        String[] labels  = { "▶  MATCH", "⚙  SETTINGS", "ℹ  CREDITS", "✕  EXIT" };
+        String[] labels  = { "▶  MATCH", "⚽  TRAINING", "⚙  SETTINGS", "ℹ  CREDITS", "✕  EXIT" };
         View.OnClickListener[] actions = {
             v -> startActivity(new Intent(this, TeamSelectActivity.class)),
+            v -> showTrainingDialog(),
             v -> startActivity(new Intent(this, SettingsActivity.class)),
             v -> startActivity(new Intent(this, CreditsActivity.class)),
             v -> finishAffinity()
@@ -211,6 +215,132 @@ public class MainMenuActivity extends Activity {
         }
 
         return btn;
+    }
+
+    private void showTrainingDialog() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        int dp12 = BlurzTheme.dpToPx(this, 12);
+        int dp16 = BlurzTheme.dpToPx(this, 16);
+        int dp24 = BlurzTheme.dpToPx(this, 24);
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable cardBg = new GradientDrawable();
+        cardBg.setColor(BlurzTheme.CARD_BG);
+        cardBg.setCornerRadius(BlurzTheme.CORNER_RADIUS_CARD);
+        cardBg.setStroke(2, Color.parseColor("#2A3A4E"));
+        card.setBackground(cardBg);
+        card.setPadding(dp24, dp24, dp24, dp24);
+
+        TextView title = new TextView(this);
+        title.setText("⚽  TRAINING GROUND");
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+        title.setTypeface(BlurzTheme.FONT_BOLD);
+        title.setTextColor(BlurzTheme.ACCENT_CYAN);
+        title.setLetterSpacing(0.08f);
+        card.addView(title);
+
+        TextView subtitle = new TextView(this);
+        subtitle.setText("Select a practice drill to hone your football skills:");
+        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        subtitle.setTypeface(BlurzTheme.FONT_REGULAR);
+        subtitle.setTextColor(BlurzTheme.TEXT_SECONDARY);
+        subtitle.setPadding(0, dp12 / 2, 0, dp16);
+        card.addView(subtitle);
+
+        // Options: Free Play (1), Free Kick (2), Corner (3), Penalty (4)
+        String[][] drills = {
+            { "🟢  FREE PLAY", "Open field practice: passing, shooting, and dribbling", "1" },
+            { "🎯  FREE KICKS", "Direct set pieces with 3-man defensive wall & goalkeeper", "2" },
+            { "🚩  CORNER KICKS", "Cross deliveries and attacking headers from both corners", "3" },
+            { "🥅  PENALTY SHOOTOUT", "1v1 penalty spot kicks against the goalkeeper", "4" }
+        };
+
+        for (String[] drill : drills) {
+            final int drillType = Integer.parseInt(drill[2]);
+            LinearLayout item = new LinearLayout(this);
+            item.setOrientation(LinearLayout.VERTICAL);
+            item.setClickable(true);
+            item.setFocusable(true);
+            item.setPadding(dp16, dp12, dp16, dp12);
+
+            GradientDrawable itemBg = new GradientDrawable();
+            itemBg.setColor(Color.parseColor("#121926"));
+            itemBg.setCornerRadius(BlurzTheme.dpToPx(this, 12));
+            itemBg.setStroke(1, Color.parseColor("#223044"));
+            item.setBackground(itemBg);
+
+            TextView itemTitle = new TextView(this);
+            itemTitle.setText(drill[0]);
+            itemTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+            itemTitle.setTypeface(BlurzTheme.FONT_BOLD);
+            itemTitle.setTextColor(BlurzTheme.TEXT_PRIMARY);
+            item.addView(itemTitle);
+
+            TextView itemDesc = new TextView(this);
+            itemDesc.setText(drill[1]);
+            itemDesc.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+            itemDesc.setTypeface(BlurzTheme.FONT_REGULAR);
+            itemDesc.setTextColor(BlurzTheme.TEXT_SECONDARY);
+            item.addView(itemDesc);
+
+            item.setOnTouchListener((v, event) -> {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        itemBg.setColor(Color.parseColor("#1B283D"));
+                        itemBg.setStroke(1, BlurzTheme.ACCENT_CYAN);
+                        break;
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL:
+                        itemBg.setColor(Color.parseColor("#121926"));
+                        itemBg.setStroke(1, Color.parseColor("#223044"));
+                        break;
+                }
+                return false;
+            });
+
+            item.setOnClickListener(v -> {
+                dialog.dismiss();
+                launchTraining(drillType);
+            });
+
+            LinearLayout.LayoutParams itemParams = new LinearLayout.LayoutParams(
+                BlurzTheme.dpToPx(this, 360), ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            itemParams.bottomMargin = dp12;
+            card.addView(item, itemParams);
+        }
+
+        // Cancel / Back Button
+        TextView cancelBtn = new TextView(this);
+        cancelBtn.setText("✕  CANCEL");
+        cancelBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        cancelBtn.setTypeface(BlurzTheme.FONT_BOLD);
+        cancelBtn.setTextColor(BlurzTheme.TEXT_SECONDARY);
+        cancelBtn.setGravity(Gravity.CENTER);
+        cancelBtn.setPadding(0, dp12, 0, dp12 / 2);
+        cancelBtn.setClickable(true);
+        cancelBtn.setOnClickListener(v -> dialog.dismiss());
+        card.addView(cancelBtn);
+
+        dialog.setContentView(card);
+        dialog.show();
+    }
+
+    private void launchTraining(int type) {
+        Intent intent = new Intent(this, org.libsdl.app.SDLActivity.class);
+        intent.putExtra("startQuickMatch", true);
+        intent.putExtra("isTrainingMode", true);
+        intent.putExtra("trainingType", String.valueOf(type));
+        intent.putExtra("homeTeamId", "1");
+        intent.putExtra("awayTeamId", "2");
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+        startActivity(intent);
     }
 
     @Override

@@ -341,6 +341,19 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     public static native void forceQuitEngine();
     public static native void triggerInGamePause();
 
+    public static native boolean isTrainingMode();
+    public static native int getTrainingType();
+    public static native String getTrainingDrillName();
+    public static native String getTrainingVariationName();
+    public static native void resetTrainingDrill();
+    public static native void setTrainingType(int type);
+    public static native void nextTrainingDrill();
+    public static native void nextTrainingVariation();
+    public static native void toggleTrainingOpponents();
+    public static native boolean isTrainingPlayerCam();
+    public static native void toggleTrainingPlayerCam();
+    public static native void setTrainingPlayerCam(boolean active);
+
     public static void initialize() {
         // The static nature of the singleton and Android quirkyness force us to initialize everything here
         // Otherwise, when exiting the app and returning to it, these variables *keep* their pre exit values
@@ -516,6 +529,19 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                 if (dur != null) nativeSetenv("MATCH_DURATION", dur);
                 String vol = intent.getStringExtra("audioVolume");
                 if (vol != null) nativeSetenv("AUDIO_VOLUME", vol);
+            }
+            if (intent.getBooleanExtra("isTrainingMode", false)) {
+                nativeSetenv("SKIP_MAIN_MENU", "1");
+                nativeSetenv("TRAINING_MODE", "1");
+                String tType = intent.getStringExtra("trainingType");
+                if (tType == null && intent.hasExtra("trainingType")) {
+                    tType = String.valueOf(intent.getIntExtra("trainingType", 1));
+                }
+                if (tType != null) nativeSetenv("TRAINING_TYPE", tType);
+                String homeId = intent.getStringExtra("homeTeamId");
+                if (homeId != null) nativeSetenv("TEAM1_ID", homeId);
+                String awayId = intent.getStringExtra("awayTeamId");
+                if (awayId != null) nativeSetenv("TEAM2_ID", awayId);
             }
             if (intent.getData() != null) {
                 String filename = intent.getData().getPath();

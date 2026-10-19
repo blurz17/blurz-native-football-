@@ -73,7 +73,8 @@ public class MobileControlsView extends View {
         CAMERA_SETTINGS,
         SOUND_SETTINGS,
         REPLAY_PLAYBACK,
-        CONFIRM_QUIT
+        CONFIRM_QUIT,
+        TRAINING_MENU
     }
     private PauseSubView pauseSubView = PauseSubView.OVERVIEW;
 
@@ -106,6 +107,7 @@ public class MobileControlsView extends View {
     private int selectedKit2 = 1; // 0=Kit 01, 1=Kit 02
     private int draggingSlider = -1; // 0=Height, 1=Zoom, 2=Angle, 3=Audio
     private int pressedSettingsCardIndex = -1; // 0=Squad, 1=Controls, 2=General, 3=Camera, 4=Sound
+    private int pressedTrainingCardIndex = -1; // 0=FreePlay, 1=FreeKick, 2=Corner, 3=Penalty, 4=Angle, 5=PlayerCam
 
     private String cameraBannerText = null;
     private long cameraBannerExpiry = 0;
@@ -210,6 +212,19 @@ public class MobileControlsView extends View {
     private final RectF pauseRect = new RectF();
     private final RectF cameraRect = new RectF();
     private final RectF tacticsRect = new RectF();
+
+    // Training Mode HUD Rectangles
+    private final RectF trainingResetRect = new RectF();
+    private final RectF trainingDrillRect = new RectF();
+    private final RectF trainingVariationRect = new RectF();
+
+    public boolean isTrainingModeActive() {
+        try {
+            return SDLActivity.isTrainingMode();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
 
     private int currentCamPreset = 0; // 0=Tele, 1=Dynamic, 2=Wide
     private int currentTacticsIndex = 0;
@@ -511,6 +526,16 @@ public class MobileControlsView extends View {
         // Tactics Pill: Rounded rect pill with formation / mentality
         float tacticsW = Math.max(trH * 3.4f, 135f);
         tacticsRect.set(cameraRect.left - gap - tacticsW, trY, cameraRect.left - gap, trY + trH);
+
+        // Training Mode Buttons
+        float resetW = Math.max(trH * 2.2f, 85f);
+        trainingResetRect.set(cameraRect.left - gap - resetW, trY, cameraRect.left - gap, trY + trH);
+
+        float varW = Math.max(trH * 3.2f, 130f);
+        trainingVariationRect.set(trainingResetRect.left - gap - varW, trY, trainingResetRect.left - gap, trY + trH);
+
+        float drillW = Math.max(trH * 3.2f, 130f);
+        trainingDrillRect.set(trainingVariationRect.left - gap - drillW, trY, trainingVariationRect.left - gap, trY + trH);
     }
 
     // ── External State Updates ──
@@ -594,6 +619,65 @@ public class MobileControlsView extends View {
         }
     }
 
+    private void drawTrainingScoreboard(Canvas canvas, int w, int h) {
+        float sbH = Math.max(h * 0.080f, 38f);
+        float sbX = Math.max(w * 0.035f, safeInsetLeft + 16f);
+        float sbY = Math.max(h * 0.038f, safeInsetTop + 14f);
+
+        float crestBoxW = sbH * 1.08f;
+        float midStripW = sbH * 4.6f;
+        float timerW = sbH * 2.0f;
+        float totalW = crestBoxW + midStripW + timerW;
+
+        // Subtle drop shadow behind entire scoreboard strip
+        cardPaint.setColor(Color.argb(80, 0, 0, 0));
+        canvas.drawRoundRect(new RectF(sbX + 2f, sbY + 3f, sbX + totalW + 2f, sbY + sbH + 3f), 4f, 4f, cardPaint);
+
+        // 1. LEFT CREST BOX (Soccer Ball Icon)
+        RectF iconBox = new RectF(sbX, sbY, sbX + crestBoxW, sbY + sbH);
+        cardPaint.setColor(Color.parseColor("#10141D"));
+        canvas.drawRect(iconBox, cardPaint);
+        borderPaint.setColor(Color.parseColor("#262C38"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRect(iconBox, borderPaint);
+
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextSize(sbH * 0.52f);
+        canvas.drawText("⚽", iconBox.centerX(), iconBox.centerY() + sbH * 0.18f, textPaint);
+
+        // 2. MIDDLE STRIP
+        RectF midBox = new RectF(iconBox.right, sbY, iconBox.right + midStripW, sbY + sbH);
+        cardPaint.setColor(Color.parseColor("#161D2B"));
+        canvas.drawRect(midBox, cardPaint);
+        borderPaint.setColor(Color.parseColor("#2C3A4E"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRect(midBox, borderPaint);
+
+        textPaint.setTextAlign(Paint.Align.LEFT);
+        textPaint.setColor(Color.parseColor("#00E5FF"));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(sbH * 0.36f);
+        canvas.drawText("TRAINING GROUND", midBox.left + sbH * 0.25f, midBox.centerY() - sbH * 0.04f, textPaint);
+
+        subTextPaint.setTextAlign(Paint.Align.LEFT);
+        subTextPaint.setColor(Color.parseColor("#8899AA"));
+        subTextPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
+        subTextPaint.setTextSize(sbH * 0.26f);
+        canvas.drawText("PRACTICE DRILLS & SET PIECES", midBox.left + sbH * 0.25f, midBox.centerY() + sbH * 0.30f, subTextPaint);
+
+        // 3. RIGHT BADGE
+        RectF badgeBox = new RectF(midBox.right, sbY, midBox.right + timerW, sbY + sbH);
+        cardPaint.setColor(Color.parseColor("#00E676"));
+        canvas.drawRoundRect(badgeBox, 2f, 2f, cardPaint);
+
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.parseColor("#0A0E1A"));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(sbH * 0.38f);
+        canvas.drawText("PRACTICE", badgeBox.centerX(), badgeBox.centerY() + sbH * 0.13f, textPaint);
+    }
+
     /**
      * Draw authentic EA Sports FC Mobile Match Scoreboard & Timer HUD (Top-Left):
      * Matches media_1791749694601_4dc03aae.png:
@@ -603,6 +687,11 @@ public class MobileControlsView extends View {
      * - Attached Timer Pill: Vivid neon green (#00E676) with bold black match time (20:30)
      */
     private void drawScoreboard(Canvas canvas, int w, int h) {
+        if (isTrainingModeActive()) {
+            drawTrainingScoreboard(canvas, w, h);
+            return;
+        }
+
         float sbH = Math.max(h * 0.080f, 38f);
         float sbX = Math.max(w * 0.035f, safeInsetLeft + 16f);
         float sbY = Math.max(h * 0.038f, safeInsetTop + 14f);
@@ -880,6 +969,11 @@ public class MobileControlsView extends View {
      * - Pause button: square dark box with ☰ 3 horizontal bars (hamburger)
      */
     private void drawTopRightHud(Canvas canvas) {
+        if (isTrainingModeActive()) {
+            drawTrainingTopRightHud(canvas);
+            return;
+        }
+
         // 1. TACTICS PILL
         cardPaint.setColor(Color.argb(220, 20, 24, 34));
         canvas.drawRoundRect(tacticsRect, 6f, 6f, cardPaint);
@@ -976,6 +1070,102 @@ public class MobileControlsView extends View {
                 pCx + pBarW * 0.5f, pCy + pBarGap + pBarH * 0.5f), 2f, 2f, barP);
     }
 
+    private void drawTrainingTopRightHud(Canvas canvas) {
+        String drillName = "Free Play";
+        String varName = "Standard";
+        try {
+            drillName = SDLActivity.getTrainingDrillName();
+            varName = SDLActivity.getTrainingVariationName();
+        } catch (Throwable ignored) {}
+
+        // 1. DRILL SELECTOR PILL
+        cardPaint.setColor(Color.argb(230, 20, 24, 34));
+        canvas.drawRoundRect(trainingDrillRect, 6f, 6f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#00E5FF"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRoundRect(trainingDrillRect, 6f, 6f, borderPaint);
+
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.parseColor("#00E5FF"));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(trainingDrillRect.height() * 0.34f);
+        canvas.drawText("🎯 " + drillName.toUpperCase(), trainingDrillRect.centerX(),
+                trainingDrillRect.centerY() + trainingDrillRect.height() * 0.12f, textPaint);
+
+        // 2. VARIATION PILL
+        cardPaint.setColor(Color.argb(230, 20, 24, 34));
+        canvas.drawRoundRect(trainingVariationRect, 6f, 6f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#2C3A4E"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRoundRect(trainingVariationRect, 6f, 6f, borderPaint);
+
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(trainingVariationRect.height() * 0.32f);
+        canvas.drawText("🔀 " + varName, trainingVariationRect.centerX(),
+                trainingVariationRect.centerY() + trainingVariationRect.height() * 0.12f, textPaint);
+
+        // 3. RESET BUTTON PILL
+        cardPaint.setColor(Color.argb(240, 11, 48, 32));
+        canvas.drawRoundRect(trainingResetRect, 6f, 6f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#00E676"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRoundRect(trainingResetRect, 6f, 6f, borderPaint);
+
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.parseColor("#00E676"));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(trainingResetRect.height() * 0.36f);
+        canvas.drawText("🔄 RESET", trainingResetRect.centerX(),
+                trainingResetRect.centerY() + trainingResetRect.height() * 0.12f, textPaint);
+
+        // 4. CAMERA SWITCH BUTTON
+        cardPaint.setColor(Color.argb(220, 20, 24, 34));
+        canvas.drawRoundRect(cameraRect, 6f, 6f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#2C3342"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRoundRect(cameraRect, 6f, 6f, borderPaint);
+
+        float camCx = cameraRect.centerX();
+        float camCy = cameraRect.centerY();
+        float arrowW = cameraRect.width() * 0.26f;
+        float dy = cameraRect.height() * 0.12f;
+        Paint camP = new Paint(Paint.ANTI_ALIAS_FLAG);
+        camP.setColor(Color.WHITE);
+        camP.setStrokeWidth(2.2f);
+        camP.setStyle(Paint.Style.STROKE);
+        canvas.drawLine(camCx - arrowW, camCy - dy, camCx + arrowW, camCy - dy, camP);
+        canvas.drawLine(camCx + arrowW - 5f, camCy - dy - 4f, camCx + arrowW, camCy - dy, camP);
+        canvas.drawLine(camCx + arrowW - 5f, camCy - dy + 4f, camCx + arrowW, camCy - dy, camP);
+        canvas.drawLine(camCx - arrowW, camCy + dy, camCx + arrowW, camCy + dy, camP);
+        canvas.drawLine(camCx - arrowW + 5f, camCy + dy - 4f, camCx - arrowW, camCy + dy, camP);
+        canvas.drawLine(camCx - arrowW + 5f, camCy + dy + 4f, camCx - arrowW, camCy + dy, camP);
+
+        // 5. PAUSE BUTTON
+        boolean pPressed = (pauseButton != null && pauseButton.isPressed);
+        cardPaint.setColor(pPressed ? Color.argb(240, 36, 44, 60) : Color.argb(220, 20, 24, 34));
+        canvas.drawRoundRect(pauseRect, 6f, 6f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#2C3342"));
+        borderPaint.setStrokeWidth(1.5f);
+        canvas.drawRoundRect(pauseRect, 6f, 6f, borderPaint);
+
+        float pCx = pauseRect.centerX();
+        float pCy = pauseRect.centerY();
+        float pBarW = pauseRect.width() * 0.46f;
+        float pBarH = pauseRect.height() * 0.08f;
+        float pBarGap = pauseRect.height() * 0.16f;
+        Paint barP = new Paint(Paint.ANTI_ALIAS_FLAG);
+        barP.setColor(Color.WHITE);
+        barP.setStyle(Paint.Style.FILL);
+        canvas.drawRoundRect(new RectF(pCx - pBarW * 0.5f, pCy - pBarGap - pBarH * 0.5f,
+                pCx + pBarW * 0.5f, pCy - pBarGap + pBarH * 0.5f), 2f, 2f, barP);
+        canvas.drawRoundRect(new RectF(pCx - pBarW * 0.5f, pCy - pBarH * 0.5f,
+                pCx + pBarW * 0.5f, pCy + pBarH * 0.5f), 2f, 2f, barP);
+        canvas.drawRoundRect(new RectF(pCx - pBarW * 0.5f, pCy + pBarGap - pBarH * 0.5f,
+                pCx + pBarW * 0.5f, pCy + pBarGap + pBarH * 0.5f), 2f, 2f, barP);
+    }
+
     /**
      * Draw modern PES Mobile Style Pause Menu Overlay.
      */
@@ -1004,6 +1194,9 @@ public class MobileControlsView extends View {
                 break;
             case CONFIRM_QUIT:
                 drawConfirmQuitOverlay(canvas, w, h);
+                break;
+            case TRAINING_MENU:
+                drawTrainingPauseMenu(canvas, w, h);
                 break;
             case SETTINGS_GRID:
             default:
@@ -1168,6 +1361,353 @@ public class MobileControlsView extends View {
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
         textPaint.setTextSize(btnH * 0.38f);
         canvas.drawText("❮  Resume", resumeBtn.centerX(), resumeBtn.centerY() + btnH * 0.12f, textPaint);
+    }
+
+    /**
+     * Dedicated PES-style Training Pause Menu Overlay.
+     * Offers instant drill switching (Free Play, Free Kick, Corner, Penalty),
+     * angle/position variations, player camera toggle, reset, camera settings, and quit.
+     */
+    private void drawTrainingPauseMenu(Canvas canvas, int w, int h) {
+        // Soft stadium pitch dimming (translucent so real pitch is visible underneath)
+        cardPaint.setColor(Color.argb(165, 8, 16, 12));
+        canvas.drawRect(0, 0, w, h, cardPaint);
+
+        float cardH = Math.max(h * 0.22f, 150f);
+        float gapY = Math.max(h * 0.024f, 16f);
+        float actualGridH = 2f * cardH + gapY;
+
+        float btnH = Math.max(h * 0.075f, 44f);
+        float btnY = h - Math.max(h * 0.045f, safeInsetBottom + 14f) - btnH;
+
+        float topY = Math.max(h * 0.045f, safeInsetTop + 12f);
+        float badgeH = Math.max(h * 0.038f, 22f);
+        float badgeW = Math.max(h * 0.26f, 170f);
+
+        float titleY = topY + badgeH + Math.max(h * 0.045f, 28f);
+        float subY = titleY + Math.max(h * 0.028f, 18f);
+
+        float gridTop = subY + Math.max(h * 0.035f, 20f);
+        float gridBottom = btnY - Math.max(h * 0.025f, 14f);
+        float availableH = Math.max(gridBottom - gridTop, actualGridH);
+        float startGridY = gridTop + (availableH - actualGridH) * 0.45f;
+
+        float sideMargin = Math.max(w * 0.09f, safeInsetLeft + 24f);
+        float availableW = w - 2f * sideMargin;
+        float gapX = Math.max(availableW * 0.024f, 18f);
+        float targetCardW = Math.min((availableW - 2f * gapX) / 3f, cardH * 2.25f);
+        float cardW = Math.max(targetCardW, 200f);
+        float gridW = 3f * cardW + 2f * gapX;
+        float padL = (w - gridW) * 0.5f;
+
+        // Top Header Badge
+        RectF badgeRect = new RectF(w * 0.5f - badgeW * 0.5f, topY, w * 0.5f + badgeW * 0.5f, topY + badgeH);
+        cardPaint.setColor(Color.parseColor("#00E5FF"));
+        canvas.drawRoundRect(badgeRect, badgeH * 0.5f, badgeH * 0.5f, cardPaint);
+
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.parseColor("#003344"));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(badgeH * 0.58f);
+        canvas.drawText("PRACTICE GROUND", badgeRect.centerX(), badgeRect.centerY() + badgeH * 0.18f, textPaint);
+
+        // Header Title
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextSize(Math.max(h * 0.042f, 26f));
+        canvas.drawText("TRAINING & DRILL PRACTICE", w * 0.5f, titleY, textPaint);
+
+        // Subtitle
+        subTextPaint.setTextAlign(Paint.Align.CENTER);
+        subTextPaint.setColor(Color.parseColor("#B0BEC5"));
+        subTextPaint.setTextSize(Math.max(h * 0.022f, 14f));
+        canvas.drawText("Zero opponent pressure • Full squad control • Practice skills & set pieces", w * 0.5f, subY, subTextPaint);
+
+        int curDrill = 1;
+        String curVar = "Standard";
+        boolean isPlayerCam = true;
+        try {
+            curDrill = SDLActivity.getTrainingType();
+            curVar = SDLActivity.getTrainingVariationName();
+            isPlayerCam = SDLActivity.isTrainingPlayerCam();
+        } catch (Throwable ignored) {}
+
+        RectF[] cardRects = new RectF[6];
+        cardRects[0] = new RectF(padL + 0 * (cardW + gapX), startGridY, padL + 0 * (cardW + gapX) + cardW, startGridY + cardH);
+        cardRects[1] = new RectF(padL + 1 * (cardW + gapX), startGridY, padL + 1 * (cardW + gapX) + cardW, startGridY + cardH);
+        cardRects[2] = new RectF(padL + 2 * (cardW + gapX), startGridY, padL + 2 * (cardW + gapX) + cardW, startGridY + cardH);
+        cardRects[3] = new RectF(padL + 0 * (cardW + gapX), startGridY + cardH + gapY, padL + 0 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
+        cardRects[4] = new RectF(padL + 1 * (cardW + gapX), startGridY + cardH + gapY, padL + 1 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
+        cardRects[5] = new RectF(padL + 2 * (cardW + gapX), startGridY + cardH + gapY, padL + 2 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
+
+        String[] titles = {
+            "Free Play",
+            "Free Kick",
+            "Corner Kick",
+            "Penalty Kick",
+            "Angle / Side",
+            "Player Cam"
+        };
+        String[] subs = {
+            "Open pitch • Full control",
+            "Direct shots vs GK",
+            "Crosses & headers",
+            "1-on-1 vs Goalkeeper",
+            (curVar != null && !curVar.isEmpty()) ? curVar : "Standard",
+            isPlayerCam ? "Behind Player (Active)" : "Tactical Broadcast"
+        };
+
+        boolean[] actives = {
+            curDrill == 1,
+            curDrill == 2,
+            curDrill == 3,
+            curDrill == 4,
+            false,
+            isPlayerCam
+        };
+
+        float cardCorner = cardH * 0.14f;
+        float iconR = Math.min(cardH * 0.22f, cardW * 0.12f);
+        float titleTextSize = Math.max(cardH * 0.125f, 15f);
+        float subTextSize = Math.max(cardH * 0.088f, 12f);
+
+        for (int i = 0; i < 6; i++) {
+            RectF r = cardRects[i];
+            boolean isPressed = (pressedTrainingCardIndex == i);
+            boolean isActive = actives[i];
+
+            // Card background fill
+            if (isPressed) {
+                cardPaint.setColor(Color.parseColor("#E4E7ED"));
+            } else if (isActive) {
+                cardPaint.setColor(Color.parseColor("#F1F8F4"));
+            } else {
+                cardPaint.setColor(Color.parseColor("#FFFFFF"));
+            }
+            canvas.drawRoundRect(r, cardCorner, cardCorner, cardPaint);
+
+            // Card border
+            if (isActive) {
+                borderPaint.setColor(Color.parseColor("#00C853"));
+                borderPaint.setStrokeWidth(3.0f);
+            } else {
+                borderPaint.setColor(Color.parseColor("#DFE3EC"));
+                borderPaint.setStrokeWidth(1.5f);
+            }
+            canvas.drawRoundRect(r, cardCorner, cardCorner, borderPaint);
+
+            // Active badge pill in top right corner
+            if (isActive) {
+                float abW = r.width() * 0.26f;
+                float abH = r.height() * 0.16f;
+                RectF activePill = new RectF(r.right - abW - 10f, r.top + 8f, r.right - 10f, r.top + 8f + abH);
+                cardPaint.setColor(Color.parseColor("#00C853"));
+                canvas.drawRoundRect(activePill, abH * 0.5f, abH * 0.5f, cardPaint);
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                textPaint.setColor(Color.WHITE);
+                textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+                textPaint.setTextSize(abH * 0.65f);
+                canvas.drawText("ACTIVE", activePill.centerX(), activePill.centerY() + abH * 0.22f, textPaint);
+            } else if (i == 4) {
+                // Variation badge
+                float abW = r.width() * 0.28f;
+                float abH = r.height() * 0.16f;
+                RectF cyclePill = new RectF(r.right - abW - 10f, r.top + 8f, r.right - 10f, r.top + 8f + abH);
+                cardPaint.setColor(Color.parseColor("#E0E0E0"));
+                canvas.drawRoundRect(cyclePill, abH * 0.5f, abH * 0.5f, cardPaint);
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                textPaint.setColor(Color.parseColor("#424242"));
+                textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+                textPaint.setTextSize(abH * 0.60f);
+                canvas.drawText("CYCLE", cyclePill.centerX(), cyclePill.centerY() + abH * 0.22f, textPaint);
+            }
+
+            // Draw Icon
+            float iconCx = r.centerX();
+            float iconCy = r.top + r.height() * 0.36f;
+            drawTrainingCardIcon(canvas, i, iconCx, iconCy, iconR, isActive);
+
+            // Title
+            textPaint.setTextAlign(Paint.Align.CENTER);
+            textPaint.setColor(isActive ? Color.parseColor("#1565C0") : Color.parseColor("#1B1B1B"));
+            textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+            textPaint.setTextSize(titleTextSize);
+            canvas.drawText(titles[i], r.centerX(), r.top + r.height() * 0.72f, textPaint);
+
+            // Subtitle
+            subTextPaint.setTextAlign(Paint.Align.CENTER);
+            subTextPaint.setColor(Color.parseColor("#546E7A"));
+            subTextPaint.setTextSize(subTextSize);
+            canvas.drawText(subs[i], r.centerX(), r.top + r.height() * 0.88f, subTextPaint);
+        }
+
+        // 4 Bottom Action Buttons
+        float bGap = Math.max(w * 0.015f, 12f);
+        float bW = (gridW - 3f * bGap) / 4f;
+        RectF resumeBtn = new RectF(padL + 0 * (bW + bGap), btnY, padL + 0 * (bW + bGap) + bW, btnY + btnH);
+        RectF resetBtn = new RectF(padL + 1 * (bW + bGap), btnY, padL + 1 * (bW + bGap) + bW, btnY + btnH);
+        RectF camSettingsBtn = new RectF(padL + 2 * (bW + bGap), btnY, padL + 2 * (bW + bGap) + bW, btnY + btnH);
+        RectF exitBtn = new RectF(padL + 3 * (bW + bGap), btnY, padL + 3 * (bW + bGap) + bW, btnY + btnH);
+
+        // Resume Button
+        cardPaint.setColor(Color.parseColor("#007AFF"));
+        canvas.drawRoundRect(resumeBtn, btnH * 0.5f, btnH * 0.5f, cardPaint);
+        borderPaint.setColor(Color.argb(120, 255, 255, 255));
+        borderPaint.setStrokeWidth(1.8f);
+        canvas.drawRoundRect(resumeBtn, btnH * 0.5f, btnH * 0.5f, borderPaint);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextSize(btnH * 0.38f);
+        canvas.drawText("❮  Resume", resumeBtn.centerX(), resumeBtn.centerY() + btnH * 0.12f, textPaint);
+
+        // Reset Drill Button
+        cardPaint.setColor(Color.parseColor("#37474F"));
+        canvas.drawRoundRect(resetBtn, btnH * 0.5f, btnH * 0.5f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#546E7A"));
+        canvas.drawRoundRect(resetBtn, btnH * 0.5f, btnH * 0.5f, borderPaint);
+        textPaint.setColor(Color.WHITE);
+        canvas.drawText("↺  Reset", resetBtn.centerX(), resetBtn.centerY() + btnH * 0.12f, textPaint);
+
+        // Camera Settings Button
+        cardPaint.setColor(Color.parseColor("#455A64"));
+        canvas.drawRoundRect(camSettingsBtn, btnH * 0.5f, btnH * 0.5f, cardPaint);
+        borderPaint.setColor(Color.parseColor("#607D8B"));
+        canvas.drawRoundRect(camSettingsBtn, btnH * 0.5f, btnH * 0.5f, borderPaint);
+        textPaint.setColor(Color.WHITE);
+        canvas.drawText("⚙  Settings", camSettingsBtn.centerX(), camSettingsBtn.centerY() + btnH * 0.12f, textPaint);
+
+        // Exit Menu Button
+        cardPaint.setColor(Color.parseColor("#D32F2F"));
+        canvas.drawRoundRect(exitBtn, btnH * 0.5f, btnH * 0.5f, cardPaint);
+        borderPaint.setColor(Color.argb(120, 255, 255, 255));
+        canvas.drawRoundRect(exitBtn, btnH * 0.5f, btnH * 0.5f, borderPaint);
+        textPaint.setColor(Color.WHITE);
+        canvas.drawText("✕  Exit", exitBtn.centerX(), exitBtn.centerY() + btnH * 0.12f, textPaint);
+    }
+
+    private void drawTrainingCardIcon(Canvas canvas, int index, float cx, float cy, float radius, boolean isActive) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        if (index == 0) { // Free Play: Pitch outline + center circle + green ball
+            p.setColor(Color.parseColor("#1E88E5"));
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(Math.max(2.5f, radius * 0.08f));
+            RectF pitch = new RectF(cx - radius * 0.8f, cy - radius * 0.55f, cx + radius * 0.8f, cy + radius * 0.55f);
+            canvas.drawRoundRect(pitch, 4f, 4f, p);
+            canvas.drawLine(cx, pitch.top, cx, pitch.bottom, p);
+            canvas.drawCircle(cx, cy, radius * 0.22f, p);
+
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.parseColor("#00C853"));
+            canvas.drawCircle(cx, cy, radius * 0.12f, p);
+
+        } else if (index == 1) { // Free Kick: Goal post + ball with curving trajectory
+            p.setColor(Color.parseColor("#1E88E5"));
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(Math.max(2.5f, radius * 0.08f));
+            canvas.drawLine(cx - radius * 0.6f, cy - radius * 0.5f, cx + radius * 0.6f, cy - radius * 0.5f, p);
+            canvas.drawLine(cx - radius * 0.6f, cy - radius * 0.5f, cx - radius * 0.6f, cy - radius * 0.1f, p);
+            canvas.drawLine(cx + radius * 0.6f, cy - radius * 0.5f, cx + radius * 0.6f, cy - radius * 0.1f, p);
+
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.parseColor("#00C853"));
+            canvas.drawCircle(cx - radius * 0.35f, cy + radius * 0.45f, radius * 0.14f, p);
+
+            p.setStyle(Paint.Style.STROKE);
+            p.setColor(Color.parseColor("#FF9800"));
+            p.setStrokeWidth(2.5f);
+            Path arc = new Path();
+            arc.moveTo(cx - radius * 0.35f, cy + radius * 0.45f);
+            arc.quadTo(cx + radius * 0.1f, cy + radius * 0.1f, cx + radius * 0.45f, cy - radius * 0.4f);
+            canvas.drawPath(arc, p);
+
+        } else if (index == 2) { // Corner Kick: Corner quadrant + flag + cross arc
+            p.setColor(Color.parseColor("#1E88E5"));
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(Math.max(2.5f, radius * 0.08f));
+            canvas.drawLine(cx - radius * 0.6f, cy + radius * 0.5f, cx + radius * 0.6f, cy + radius * 0.5f, p);
+            canvas.drawLine(cx - radius * 0.6f, cy - radius * 0.5f, cx - radius * 0.6f, cy + radius * 0.5f, p);
+
+            RectF cArc = new RectF(cx - radius * 0.9f, cy + radius * 0.2f, cx - radius * 0.3f, cy + radius * 0.8f);
+            canvas.drawArc(cArc, 270, 90, false, p);
+
+            p.setColor(Color.parseColor("#E53935"));
+            canvas.drawLine(cx - radius * 0.58f, cy + radius * 0.48f, cx - radius * 0.58f, cy, p);
+            p.setStyle(Paint.Style.FILL);
+            Path flag = new Path();
+            flag.moveTo(cx - radius * 0.58f, cy);
+            flag.lineTo(cx - radius * 0.25f, cy + radius * 0.14f);
+            flag.lineTo(cx - radius * 0.58f, cy + radius * 0.28f);
+            flag.close();
+            canvas.drawPath(flag, p);
+
+            p.setStyle(Paint.Style.STROKE);
+            p.setColor(Color.parseColor("#00C853"));
+            Path crossPath = new Path();
+            crossPath.moveTo(cx - radius * 0.45f, cy + radius * 0.35f);
+            crossPath.quadTo(cx + radius * 0.1f, cy - radius * 0.1f, cx + radius * 0.45f, cy - radius * 0.45f);
+            canvas.drawPath(crossPath, p);
+
+        } else if (index == 3) { // Penalty Kick: Goal + spot + target crosshair
+            p.setColor(Color.parseColor("#1E88E5"));
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(Math.max(2.5f, radius * 0.08f));
+            canvas.drawLine(cx - radius * 0.65f, cy - radius * 0.45f, cx + radius * 0.65f, cy - radius * 0.45f, p);
+            canvas.drawLine(cx - radius * 0.65f, cy - radius * 0.45f, cx - radius * 0.65f, cy - radius * 0.05f, p);
+            canvas.drawLine(cx + radius * 0.65f, cy - radius * 0.45f, cx + radius * 0.65f, cy - radius * 0.05f, p);
+
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.parseColor("#00C853"));
+            canvas.drawCircle(cx, cy + radius * 0.42f, radius * 0.15f, p);
+
+            p.setStyle(Paint.Style.STROKE);
+            p.setColor(Color.parseColor("#E53935"));
+            canvas.drawCircle(cx + radius * 0.35f, cy - radius * 0.25f, radius * 0.16f, p);
+            canvas.drawLine(cx + radius * 0.35f - radius * 0.22f, cy - radius * 0.25f, cx + radius * 0.35f + radius * 0.22f, cy - radius * 0.25f, p);
+            canvas.drawLine(cx + radius * 0.35f, cy - radius * 0.25f - radius * 0.22f, cx + radius * 0.35f, cy - radius * 0.25f + radius * 0.22f, p);
+
+        } else if (index == 4) { // Angle / Position: Cycle curved arrows
+            p.setColor(Color.parseColor("#1E88E5"));
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(Math.max(2.8f, radius * 0.08f));
+            RectF circle = new RectF(cx - radius * 0.45f, cy - radius * 0.45f, cx + radius * 0.45f, cy + radius * 0.45f);
+            canvas.drawArc(circle, 30, 140, false, p);
+            canvas.drawArc(circle, 210, 140, false, p);
+
+            p.setStyle(Paint.Style.FILL);
+            Path ah1 = new Path();
+            ah1.moveTo(cx + radius * 0.48f, cy);
+            ah1.lineTo(cx + radius * 0.65f, cy - radius * 0.15f);
+            ah1.lineTo(cx + radius * 0.65f, cy + radius * 0.15f);
+            ah1.close();
+            canvas.drawPath(ah1, p);
+
+            Path ah2 = new Path();
+            ah2.moveTo(cx - radius * 0.48f, cy);
+            ah2.lineTo(cx - radius * 0.65f, cy - radius * 0.15f);
+            ah2.lineTo(cx - radius * 0.65f, cy + radius * 0.15f);
+            ah2.close();
+            canvas.drawPath(ah2, p);
+
+        } else if (index == 5) { // Player Cam: Behind-kicker 3D view camera
+            p.setColor(isActive ? Color.parseColor("#00C853") : Color.parseColor("#1E88E5"));
+            p.setStyle(Paint.Style.FILL);
+            RectF camBody = new RectF(cx - radius * 0.55f, cy - radius * 0.35f, cx + radius * 0.25f, cy + radius * 0.35f);
+            canvas.drawRoundRect(camBody, 6f, 6f, p);
+
+            Path lensP = new Path();
+            lensP.moveTo(cx + radius * 0.28f, cy - radius * 0.20f);
+            lensP.lineTo(cx + radius * 0.65f, cy - radius * 0.36f);
+            lensP.lineTo(cx + radius * 0.65f, cy + radius * 0.36f);
+            lensP.lineTo(cx + radius * 0.28f, cy + radius * 0.20f);
+            lensP.close();
+            canvas.drawPath(lensP, p);
+
+            p.setColor(Color.WHITE);
+            canvas.drawCircle(cx - radius * 0.15f, cy, radius * 0.16f, p);
+            p.setColor(isActive ? Color.parseColor("#00C853") : Color.parseColor("#1E88E5"));
+            canvas.drawCircle(cx - radius * 0.15f, cy, radius * 0.08f, p);
+        }
     }
 
     /**
@@ -2389,6 +2929,120 @@ public class MobileControlsView extends View {
 
         // 2. PAUSE MENU TOUCHES
         if (isPaused) {
+            // 2.T: TRAINING_MENU TOUCHES (PES Mobile Training Drill Picker)
+            if (pauseSubView == PauseSubView.TRAINING_MENU) {
+                float cardH = Math.max(getHeight() * 0.22f, 150f);
+                float gapY = Math.max(getHeight() * 0.024f, 16f);
+                float actualGridH = 2f * cardH + gapY;
+
+                float btnH = Math.max(getHeight() * 0.075f, 44f);
+                float btnY = getHeight() - Math.max(getHeight() * 0.045f, safeInsetBottom + 14f) - btnH;
+
+                float topY = Math.max(getHeight() * 0.045f, safeInsetTop + 12f);
+                float badgeH = Math.max(getHeight() * 0.038f, 22f);
+                float titleY = topY + badgeH + Math.max(getHeight() * 0.045f, 28f);
+                float subY = titleY + Math.max(getHeight() * 0.028f, 18f);
+
+                float gridTop = subY + Math.max(getHeight() * 0.035f, 20f);
+                float gridBottom = btnY - Math.max(getHeight() * 0.025f, 14f);
+                float availableH = Math.max(gridBottom - gridTop, actualGridH);
+                float startGridY = gridTop + (availableH - actualGridH) * 0.45f;
+
+                float sideMargin = Math.max(getWidth() * 0.09f, safeInsetLeft + 24f);
+                float availableW = getWidth() - 2f * sideMargin;
+                float gapX = Math.max(availableW * 0.024f, 18f);
+                float targetCardW = Math.min((availableW - 2f * gapX) / 3f, cardH * 2.25f);
+                float cardW = Math.max(targetCardW, 200f);
+                float gridW = 3f * cardW + 2f * gapX;
+                float padL = (getWidth() - gridW) * 0.5f;
+
+                float bGap = Math.max(getWidth() * 0.015f, 12f);
+                float bW = (gridW - 3f * bGap) / 4f;
+                RectF resumeBtn = new RectF(padL + 0 * (bW + bGap), btnY, padL + 0 * (bW + bGap) + bW, btnY + btnH);
+                RectF resetBtn = new RectF(padL + 1 * (bW + bGap), btnY, padL + 1 * (bW + bGap) + bW, btnY + btnH);
+                RectF camSettingsBtn = new RectF(padL + 2 * (bW + bGap), btnY, padL + 2 * (bW + bGap) + bW, btnY + btnH);
+                RectF exitBtn = new RectF(padL + 3 * (bW + bGap), btnY, padL + 3 * (bW + bGap) + bW, btnY + btnH);
+
+                RectF card0 = new RectF(padL + 0 * (cardW + gapX), startGridY, padL + 0 * (cardW + gapX) + cardW, startGridY + cardH);
+                RectF card1 = new RectF(padL + 1 * (cardW + gapX), startGridY, padL + 1 * (cardW + gapX) + cardW, startGridY + cardH);
+                RectF card2 = new RectF(padL + 2 * (cardW + gapX), startGridY, padL + 2 * (cardW + gapX) + cardW, startGridY + cardH);
+                RectF card3 = new RectF(padL + 0 * (cardW + gapX), startGridY + cardH + gapY, padL + 0 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
+                RectF card4 = new RectF(padL + 1 * (cardW + gapX), startGridY + cardH + gapY, padL + 1 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
+                RectF card5 = new RectF(padL + 2 * (cardW + gapX), startGridY + cardH + gapY, padL + 2 * (cardW + gapX) + cardW, startGridY + 2 * cardH + gapY);
+
+                switch (action) {
+                    case MotionEvent.ACTION_DOWN:
+                    case MotionEvent.ACTION_POINTER_DOWN:
+                        if (resumeBtn.contains(x, y)) {
+                            isPaused = false;
+                            try { SDLActivity.setMatchPaused(false); } catch (Throwable ignored) {}
+                            invalidate();
+                            return true;
+                        }
+                        if (resetBtn.contains(x, y)) {
+                            try { SDLActivity.resetTrainingDrill(); } catch (Throwable ignored) {}
+                            isPaused = false;
+                            try { SDLActivity.setMatchPaused(false); } catch (Throwable ignored) {}
+                            invalidate();
+                            return true;
+                        }
+                        if (camSettingsBtn.contains(x, y)) {
+                            pauseSubView = PauseSubView.CAMERA_SETTINGS;
+                            invalidate();
+                            return true;
+                        }
+                        if (exitBtn.contains(x, y)) {
+                            pauseSubView = PauseSubView.CONFIRM_QUIT;
+                            invalidate();
+                            return true;
+                        }
+                        if (card0.contains(x, y)) pressedTrainingCardIndex = 0;
+                        else if (card1.contains(x, y)) pressedTrainingCardIndex = 1;
+                        else if (card2.contains(x, y)) pressedTrainingCardIndex = 2;
+                        else if (card3.contains(x, y)) pressedTrainingCardIndex = 3;
+                        else if (card4.contains(x, y)) pressedTrainingCardIndex = 4;
+                        else if (card5.contains(x, y)) pressedTrainingCardIndex = 5;
+                        invalidate();
+                        return true;
+
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_POINTER_UP:
+                        if (pressedTrainingCardIndex != -1) {
+                            int idx = pressedTrainingCardIndex;
+                            pressedTrainingCardIndex = -1;
+                            int curDrill = 1;
+                            try { curDrill = SDLActivity.getTrainingType(); } catch (Throwable ignored) {}
+
+                            if (idx >= 0 && idx <= 3) {
+                                int targetDrill = idx + 1;
+                                try {
+                                    SDLActivity.setTrainingType(targetDrill);
+                                    SDLActivity.resetTrainingDrill();
+                                } catch (Throwable ignored) {}
+                                if (curDrill == targetDrill) {
+                                    isPaused = false;
+                                    try { SDLActivity.setMatchPaused(false); } catch (Throwable ignored) {}
+                                }
+                            } else if (idx == 4) {
+                                try {
+                                    SDLActivity.nextTrainingVariation();
+                                } catch (Throwable ignored) {}
+                            } else if (idx == 5) {
+                                try {
+                                    SDLActivity.toggleTrainingPlayerCam();
+                                    boolean active = SDLActivity.isTrainingPlayerCam();
+                                    cameraBannerText = active ? "PLAYER CAM (3D VIEW)" : "TACTICAL CAM (TRAINING)";
+                                    cameraBannerExpiry = System.currentTimeMillis() + 1800;
+                                } catch (Throwable ignored) {}
+                            }
+                            invalidate();
+                            return true;
+                        }
+                        break;
+                }
+                return true;
+            }
+
             // 2.A: SETTINGS_GRID TOUCHES (PES Mobile 6-Card Grid)
             if (pauseSubView == PauseSubView.SETTINGS_GRID) {
                 float cardH = Math.max(getHeight() * 0.215f, 150f);
@@ -2639,7 +3293,7 @@ public class MobileControlsView extends View {
                     case MotionEvent.ACTION_DOWN:
                     case MotionEvent.ACTION_POINTER_DOWN:
                         if (backBtn.contains(x, y)) {
-                            pauseSubView = PauseSubView.SETTINGS_GRID;
+                            pauseSubView = isTrainingModeActive() ? PauseSubView.TRAINING_MENU : PauseSubView.SETTINGS_GRID;
                             saveSettingsToPrefs();
                             invalidate();
                             return true;
@@ -2826,7 +3480,7 @@ public class MobileControlsView extends View {
 
                 if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
                     if (cancelBtn.contains(x, y)) {
-                        pauseSubView = PauseSubView.SETTINGS_GRID;
+                        pauseSubView = isTrainingModeActive() ? PauseSubView.TRAINING_MENU : PauseSubView.SETTINGS_GRID;
                         invalidate();
                         return true;
                     } else if (quitBtn.contains(x, y)) {
@@ -2874,7 +3528,11 @@ public class MobileControlsView extends View {
                 // Check Pause Button (Square ☰ button)
                 if (pauseRect.contains(x, y)) {
                     isPaused = true;
-                    pauseSubView = PauseSubView.SETTINGS_GRID;
+                    if (isTrainingModeActive()) {
+                        pauseSubView = PauseSubView.TRAINING_MENU;
+                    } else {
+                        pauseSubView = PauseSubView.SETTINGS_GRID;
+                    }
                     try {
                         SDLActivity.setMatchPaused(true);
                     } catch (Throwable ignored) {}
@@ -2886,16 +3544,54 @@ public class MobileControlsView extends View {
 
                 // Check Camera Switch Button (Square ⇄ button)
                 if (cameraRect.contains(x, y)) {
-                    cycleCameraPreset();
+                    if (isTrainingModeActive()) {
+                        try {
+                            SDLActivity.toggleTrainingPlayerCam();
+                            boolean active = SDLActivity.isTrainingPlayerCam();
+                            cameraBannerText = active ? "PLAYER CAM (3D VIEW)" : "TACTICAL CAM (TRAINING)";
+                            cameraBannerExpiry = System.currentTimeMillis() + 1800;
+                        } catch (Throwable ignored) {
+                            cycleCameraPreset();
+                        }
+                    } else {
+                        cycleCameraPreset();
+                    }
                     invalidate();
                     return true;
                 }
 
-                // Check Tactics Pill
-                if (tacticsRect.contains(x, y)) {
-                    cycleTactics();
-                    invalidate();
-                    return true;
+                if (isTrainingModeActive()) {
+                    // Check Reset Button
+                    if (trainingResetRect.contains(x, y)) {
+                        try {
+                            SDLActivity.resetTrainingDrill();
+                        } catch (Throwable ignored) {}
+                        invalidate();
+                        return true;
+                    }
+                    // Check Drill Cycle Button
+                    if (trainingDrillRect.contains(x, y)) {
+                        try {
+                            SDLActivity.nextTrainingDrill();
+                        } catch (Throwable ignored) {}
+                        invalidate();
+                        return true;
+                    }
+                    // Check Variation Cycle Button
+                    if (trainingVariationRect.contains(x, y)) {
+                        try {
+                            SDLActivity.nextTrainingVariation();
+                        } catch (Throwable ignored) {}
+                        invalidate();
+                        return true;
+                    }
+                } else {
+                    // Check Tactics Pill
+                    if (tacticsRect.contains(x, y)) {
+                        cycleTactics();
+                        invalidate();
+                        return true;
+                    }
                 }
 
                 // Check Left Screen: Floating / Centered Virtual Joystick

@@ -8,6 +8,17 @@ MatchData::MatchData(int team1DatabaseID, int team2DatabaseID) {
   teamData[0] = new TeamData(team1DatabaseID);
   teamData[1] = new TeamData(team2DatabaseID);
 
+  isTrainingMode = false;
+  trainingType = 1; // default to e_TrainingType_FreePlay
+  const char *envTraining = std::getenv("TRAINING_MODE");
+  if (envTraining && std::string(envTraining) == "1") {
+    isTrainingMode = true;
+    const char *envType = std::getenv("TRAINING_TYPE");
+    if (envType) {
+      trainingType = atoi(envType);
+    }
+  }
+
   goalCount[0] = 0;
   goalCount[1] = 0;
 

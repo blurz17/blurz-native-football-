@@ -50,19 +50,23 @@ void main(void) {
   vec3 localBiTang = bitangent;
 
   if (u_SkinningEnabled == 1) {
-    int idx0 = clamp(int(boneIndices.x), 0, 31);
-    int idx1 = clamp(int(boneIndices.y), 0, 31);
-    int idx2 = clamp(int(boneIndices.z), 0, 31);
+    int idx0 = clamp(int(boneIndices.x + 0.5), 0, 31);
+    int idx1 = clamp(int(boneIndices.y + 0.5), 0, 31);
+    int idx2 = clamp(int(boneIndices.z + 0.5), 0, 31);
 
-    mat4 skinMat = boneWeights.x * u_Bones[idx0] +
-                   boneWeights.y * u_Bones[idx1] +
-                   boneWeights.z * u_Bones[idx2];
+    float wTotal = boneWeights.x + boneWeights.y + boneWeights.z;
+    if (wTotal > 0.001) {
+      mat4 skinMat = (boneWeights.x * u_Bones[idx0] +
+                      boneWeights.y * u_Bones[idx1] +
+                      boneWeights.z * u_Bones[idx2]) / wTotal;
 
-    localPos = skinMat * position;
-    mat3 skinMat3 = mat3(skinMat);
-    localNorm = skinMat3 * normal;
-    localTang = skinMat3 * tangent;
-    localBiTang = skinMat3 * bitangent;
+      localPos = skinMat * vec4(position.xyz, 1.0);
+      localPos.w = 1.0;
+      mat3 skinMat3 = mat3(skinMat);
+      localNorm = skinMat3 * normal;
+      localTang = skinMat3 * tangent;
+      localBiTang = skinMat3 * bitangent;
+    }
   }
 
   mat4 modelViewMatrix = viewMatrix * modelMatrix;

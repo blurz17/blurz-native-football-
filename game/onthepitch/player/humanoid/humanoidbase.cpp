@@ -64,7 +64,7 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
 
   decayingPositionOffset = Vector3(0);
   decayingDifficultyFactor = 0.0f;
-  gpuSkinningActive = false;
+  gpuSkinningActive = GetContext()->config->GetBool("graphics3d_gpu_skinning", (GetTriangleMeshElementCount() >= 7));
 
   _cache_AgilityFactor = GetContext()->config->GetReal("gameplay_agilityfactor", _default_AgilityFactor);
   _cache_AccelerationFactor = GetContext()->config->GetReal("gameplay_accelerationfactor", _default_AccelerationFactor);
@@ -106,8 +106,6 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
   preferredDirectionAngles.push_back(-0.999 * pi);
 
   assert(match);
-
-  gpuSkinningActive = false;
 
   float playerHeight = player->GetPlayerData()->GetHeight();
   zMultiplier = (1.0f / defaultPlayerHeight) * playerHeight;
@@ -557,6 +555,7 @@ void HumanoidBase::UpdateFullbodyNodes() {
 }
 
 bool HumanoidBase::NeedsModelUpdate() {
+  if (gpuSkinningActive) return true;
   if (fetchedbuf_LowDetailMode && fetchedbuf_bodyUpdatePhase != 1 - fetchedbuf_bodyUpdatePhaseOffset) return false; else return true;
 }
 
@@ -909,8 +908,11 @@ void HumanoidBase::PreparePutBuffers(unsigned long snapshotTime_ms) {
   // offsets
   CalculateGeomOffsets(); // todo: in a perfect world, we don't want to do cpu intensive and/or stuff that uses a lot of mutex locking in this here function
 
-  buf_animApplyBuffer = animApplyBuffer;
-  buf_animApplyBuffer.snapshotTime_ms = snapshotTime_ms;
+  {
+    boost::mutex::scoped_lock lock(putBufferMutex);
+    buf_animApplyBuffer = animApplyBuffer;
+    buf_animApplyBuffer.snapshotTime_ms = snapshotTime_ms;
+  }
   /*
   // some temporal buffers fail when switching anims - can't interpolate between these values from previous and new anim
   if (currentAnim->frameNum == 0) {
@@ -937,7 +939,10 @@ void HumanoidBase::PreparePutBuffers(unsigned long snapshotTime_ms) {
 
 void HumanoidBase::FetchPutBuffers(unsigned long putTime_ms) {
 
-  fetchedbuf_animApplyBuffer = buf_animApplyBuffer;
+  {
+    boost::mutex::scoped_lock lock(putBufferMutex);
+    fetchedbuf_animApplyBuffer = buf_animApplyBuffer;
+  }
   assert(fetchedbuf_animApplyBuffer.anim == buf_animApplyBuffer.anim);
 
   fetchedbuf_LowDetailMode = buf_LowDetailMode;
@@ -1192,7 +1197,10 @@ void HumanoidBase::ResetPosition(const Vector3 &newPos, const Vector3 &focusPos)
   animApplyBuffer.position = startPos;
   animApplyBuffer.orientation = startAngle;
   animApplyBuffer.offsets.clear();
-  buf_animApplyBuffer = animApplyBuffer;
+  {
+    boost::mutex::scoped_lock lock(putBufferMutex);
+    buf_animApplyBuffer = animApplyBuffer;
+  }
 
   interruptAnim = e_InterruptAnim_None;
   tripType = 0;
@@ -1275,7 +1283,7 @@ void HumanoidBase::SetKit(boost::intrusive_ptr < Resource<Surface> > newKit) {
 }
 
 void HumanoidBase::ResetSituation(const Vector3 &focusPos) {
-  currentMentalImage = 0;
+  currentMentalImage = match->GetMentalImage(0);
 
   ResetPosition(spatialState.position, focusPos);
 }

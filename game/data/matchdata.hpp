@@ -57,8 +57,16 @@ class MatchData {
     void AddSave(int teamID) { saves[teamID] += 1; }
     int GetSaves(int teamID) const { return saves[teamID]; }
 
+    bool IsTrainingMode() const { return isTrainingMode; }
+    void SetTrainingMode(bool mode) { isTrainingMode = mode; }
+    int GetTrainingType() const { return trainingType; }
+    void SetTrainingType(int type) { trainingType = type; }
+
   protected:
     TeamData *teamData[2];
+
+    bool isTrainingMode;
+    int trainingType;
 
     int goalCount[2];
 

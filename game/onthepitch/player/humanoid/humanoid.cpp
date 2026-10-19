@@ -797,6 +797,11 @@ void Humanoid::Process() {
 }
 
 void Humanoid::CalculateGeomOffsets() {
+  if (!currentMentalImage) {
+    currentMentalImage = match->GetMentalImage(0);
+    if (!currentMentalImage) return;
+  }
+
   SetOffset("middle", 0.0, QUATERNION_IDENTITY);
   SetOffset("neck", 0.0, QUATERNION_IDENTITY);
   SetOffset("left_thigh", 0.0, QUATERNION_IDENTITY);
@@ -2393,6 +2398,11 @@ signed int Humanoid::GetBestCheatableAnimID(const DataSet &sortedDataSet, bool u
 Vector3 Humanoid::CalculateMovementSmuggle(const Vector3 &desiredDirection, float desiredVelocityFloat) {
 
   if (!enableMovementSmuggle) return Vector3(0);
+
+  if (!currentMentalImage) {
+    currentMentalImage = match->GetMentalImage(0);
+    if (!currentMentalImage) return Vector3(0);
+  }
 
   if (team->GetDesignatedTeamPossessionPlayer() != player || match->GetDesignatedPossessionPlayer() != player ||
       currentAnim->touchFrame != -1 || (currentAnim->functionType == e_FunctionType_Trip && currentAnim->anim->GetVariable("triptype").compare("1") != 0) || currentAnim->anim->GetVariable("incoming_special_state").compare("") != 0 || currentAnim->anim->GetVariable("outgoing_special_state").compare("") != 0 ||

@@ -86,7 +86,7 @@ Referee::~Referee() {
 void Referee::Process() {
   //printf("%i", match->GetMatchState());
 
-  if (match->IsInPlay() && !match->IsInSetPiece()) {
+  if (!match->IsTrainingMode() && match->IsInPlay() && !match->IsInSetPiece()) {
 
     Vector3 ballPos = match->GetBall()->Predict(0);
 
@@ -277,6 +277,25 @@ void Referee::PrepareSetPiece(e_SetPiece setPiece) {
   match->GetTeam(1)->GetController()->PrepareSetPiece(setPiece, buffer.teamID);
 
   buffer.taker = match->GetTeam(buffer.teamID)->GetController()->GetPieceTaker();
+}
+
+void Referee::TriggerSetPiece(e_SetPiece setPiece, signed int teamID, const Vector3 &restartPos, unsigned long delay_ms) {
+  match->StopPlay();
+  match->StopSetPiece();
+  buffer.desiredSetPiece = setPiece;
+  buffer.teamID = teamID;
+  buffer.restartPos = restartPos;
+  unsigned long now = match->GetActualTime_ms();
+  buffer.stopTime = now;
+  unsigned long delay = ((delay_ms + 9) / 10) * 10;
+  buffer.prepareTime = now + delay;
+  buffer.startTime = buffer.prepareTime + 800;
+  buffer.endPhase = false;
+  buffer.active = true;
+  foul.foulPlayer = 0;
+  foul.foulType = 0;
+  foul.advantage = false;
+  afterSetPieceRelaxTime_ms = 0;
 }
 
 void Referee::AlterSetPiecePrepareTime(unsigned long newTime_ms) {

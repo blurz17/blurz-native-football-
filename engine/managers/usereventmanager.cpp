@@ -29,6 +29,7 @@
 #include "onthepitch/match.hpp"
 #include "onthepitch/team.hpp"
 #include "data/teamdata.hpp"
+#include "training/training_manager.hpp"
 
 SDL_Joystick* virtual_joystick = nullptr;
 
@@ -222,6 +223,95 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_org_libsdl_app_SDLActivity_getTea
     env->SetObjectArrayElement(array, 2, env->NewStringUTF(logoUrl.c_str()));
     env->SetObjectArrayElement(array, 3, env->NewStringUTF(kitUrl.c_str()));
     return array;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL Java_org_libsdl_app_SDLActivity_isTrainingMode(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch()) {
+        return gTask->GetMatch()->IsTrainingMode() ? JNI_TRUE : JNI_FALSE;
+    }
+    return JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jint JNICALL Java_org_libsdl_app_SDLActivity_getTrainingType(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch() && gTask->GetMatch()->GetTrainingManager()) {
+        return (jint)gTask->GetMatch()->GetTrainingManager()->GetDrill();
+    }
+    return 0;
+}
+
+extern "C" JNIEXPORT jstring JNICALL Java_org_libsdl_app_SDLActivity_getTrainingDrillName(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch() && gTask->GetMatch()->GetTrainingManager()) {
+        return env->NewStringUTF(gTask->GetMatch()->GetTrainingManager()->GetDrillName().c_str());
+    }
+    return env->NewStringUTF("Free Play");
+}
+
+extern "C" JNIEXPORT jstring JNICALL Java_org_libsdl_app_SDLActivity_getTrainingVariationName(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch() && gTask->GetMatch()->GetTrainingManager()) {
+        return env->NewStringUTF(gTask->GetMatch()->GetTrainingManager()->GetVariationName().c_str());
+    }
+    return env->NewStringUTF("Standard");
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_resetTrainingDrill(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch() && gTask->GetMatch()->GetTrainingManager()) {
+        gTask->GetMatch()->GetTrainingManager()->ResetDrill();
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setTrainingType(JNIEnv* env, jclass cls, jint type) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch() && gTask->GetMatch()->GetTrainingManager()) {
+        gTask->GetMatch()->GetTrainingManager()->SetDrill((blunted::e_TrainingType)type);
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_nextTrainingDrill(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch() && gTask->GetMatch()->GetTrainingManager()) {
+        gTask->GetMatch()->GetTrainingManager()->NextDrill();
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_nextTrainingVariation(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch() && gTask->GetMatch()->GetTrainingManager()) {
+        gTask->GetMatch()->GetTrainingManager()->NextVariation();
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_toggleTrainingOpponents(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch() && gTask->GetMatch()->GetTrainingManager()) {
+        gTask->GetMatch()->GetTrainingManager()->ToggleOpponents();
+    }
+}
+
+extern "C" JNIEXPORT jboolean JNICALL Java_org_libsdl_app_SDLActivity_isTrainingPlayerCam(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch() && gTask->GetMatch()->GetTrainingManager()) {
+        return gTask->GetMatch()->GetTrainingManager()->IsPlayerCamActive() ? JNI_TRUE : JNI_FALSE;
+    }
+    return JNI_FALSE;
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_toggleTrainingPlayerCam(JNIEnv* env, jclass cls) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch() && gTask->GetMatch()->GetTrainingManager()) {
+        gTask->GetMatch()->GetTrainingManager()->TogglePlayerCam();
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setTrainingPlayerCam(JNIEnv* env, jclass cls, jboolean active) {
+    boost::shared_ptr<GameTask> gTask = GetGameTask();
+    if (gTask && gTask->GetMatch() && gTask->GetMatch()->GetTrainingManager()) {
+        gTask->GetMatch()->GetTrainingManager()->SetPlayerCam(active == JNI_TRUE);
+    }
 }
 
 extern "C" JNIEXPORT jintArray JNICALL Java_org_libsdl_app_SDLActivity_getMatchStats(JNIEnv* env, jclass cls) {

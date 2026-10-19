@@ -23,6 +23,7 @@
 
 #include "team.hpp"
 #include "match.hpp"
+#include "training/training_manager.hpp"
 
 #include "misc/hungarian.h"
 
@@ -105,6 +106,12 @@ Player *SelectAttackingRunPlayer(Team *team) {
 }
 
 void TeamAIController::Process() {
+
+  if (match->IsTrainingMode() && team->GetID() != 0) {
+    if (!match->GetTrainingManager() || !match->GetTrainingManager()->GetOpponentsEnabled()) {
+      return;
+    }
+  }
 
   if (match->GetActualTime_ms() % 1000 == 0) UpdateTactics();
 
@@ -697,6 +704,14 @@ void TeamAIController::PrepareSetPiece(e_SetPiece setPiece, int takerTeamID) {
 
   bool isTakerTeam = takerTeamID == team->GetID() ? true : false;
   Team *takerTeam = isTakerTeam ? team : match->GetTeam(abs(team->GetID() - 1));
+
+  if (match->IsTrainingMode() && !isTakerTeam) {
+    // In training mode, park all opponent outfielders away so the player has clean practice vs GK
+    for (unsigned int i = 0; i < players.size(); i++) {
+      players.at(i)->ResetPosition(Vector3(-team->GetSide() * pitchHalfW * 0.7f, ((i % 2 == 1) ? 1.0f : -1.0f) * (pitchHalfH - 2.0f), 0.0f), match->GetBall()->Predict(0).Get2D());
+    }
+    return;
+  }
 
   if (isTakerTeam) team->SetFadingTeamPossessionAmount(1.5);
               else team->SetFadingTeamPossessionAmount(0.5);

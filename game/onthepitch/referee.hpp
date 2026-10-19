@@ -46,6 +46,7 @@ class Referee {
     void Process();
 
     void PrepareSetPiece(e_SetPiece setPiece);
+    void TriggerSetPiece(e_SetPiece setPiece, signed int teamID, const Vector3 &restartPos, unsigned long delay_ms = 50);
 
     const RefereeBuffer &GetBuffer() { return buffer; };
 
