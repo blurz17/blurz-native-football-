@@ -1,5 +1,12 @@
 # Architecture & Concurrency Model
 
+> [!NOTE]
+> This document provides an executive summary of the architecture. For the in-depth modular guides and formal Architectural Decision Records, see:
+> - **[System Architecture & Overview](architecture/overview.md)**
+> - **[Threading & Concurrency Deep-Dive](architecture/threading_and_concurrency.md)**
+> - **[ADR-001: Thread Synchronization (`putBufferMutex`)](adr/ADR-001_putbuffer_mutex_synchronization.md)**
+> - **[Master Documentation Hub](README.md)**
+
 This document outlines the technical architecture, threading model, memory synchronization, and pipeline of Android Native Football.
 
 ---

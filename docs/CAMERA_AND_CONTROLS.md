@@ -1,5 +1,12 @@
 # Camera Systems & Camera-Relative Controls
 
+> [!NOTE]
+> For the modular subsystem architecture and mathematical formulations, see:
+> - **[Touch Input & Camera Systems Architecture](architecture/input_and_camera_systems.md)**
+> - **[Mobile Controls & HUD Specification](reference/controls_and_hud_spec.md)**
+> - **[ADR-002: Camera-Relative Analog Movement in SO(2)](adr/ADR-002_camera_relative_analog_movement_so2.md)**
+> - **[Master Documentation Hub](README.md)**
+
 This document details the camera modes, 3rd-person Player Cam tracking, and the mathematical resolution of screen-relative vs. world-relative analog movement.
 
 ---

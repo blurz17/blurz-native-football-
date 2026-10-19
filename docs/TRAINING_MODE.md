@@ -1,5 +1,12 @@
 # Training Mode Subsystem
 
+> [!NOTE]
+> For the modular subsystem architecture and user walkthroughs, see:
+> - **[Training Mode Subsystem Architecture](architecture/training_mode_subsystem.md)**
+> - **[Training Mode User Guide & Drill Strategies](guides/training_mode_user_guide.md)**
+> - **[ADR-003: Training Mode Isolation & Atomics](adr/ADR-003_training_mode_isolation_and_atomic_queues.md)**
+> - **[Master Documentation Hub](README.md)**
+
 The Training Mode is an isolated, decoupled subsystem designed for targeted football skill development without competing against opponent AI.
 
 ---
