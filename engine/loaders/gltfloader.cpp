@@ -358,7 +358,8 @@ namespace blunted {
           std::string customTexPath = "";
           if (lowerMatName.find("kit") != std::string::npos) {
             customTexPath = "media/objects/players/textures/kit_template.png";
-          } else if (lowerMatName.find("hair") != std::string::npos) {
+          } else if (lowerMatName.find("hair") != std::string::npos ||
+                     lowerMatName.find("eyelash") != std::string::npos) {
             customTexPath = "media/objects/players/textures/alnassr_cr7_hair.png";
             material.specular_amount = 0.05f;
             material.shininess = 0.1f;
