@@ -148,28 +148,31 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
   fullbodyTargetNode->AddNode(fullbodyNode);
 
 #ifndef GPFB_HEADLESS
-  boost::intrusive_ptr< Resource<GeometryData> > bodyGeom = boost::static_pointer_cast<Geometry>(fullbodyNode->GetObject("fullbody"))->GetGeometryData();
-  bodyGeom->resourceMutex.lock();
-  std::vector < MaterializedTriangleMesh > &tmesh = bodyGeom->GetResource()->GetTriangleMeshesRef();
-  for (unsigned int i = 0; i < tmesh.size(); i++) {
-    if (tmesh.at(i).material.diffuseTexture != boost::intrusive_ptr< Resource<Surface> >()) {
-      std::string texIdent = tmesh.at(i).material.diffuseTexture->GetIdentString();
-      if (texIdent == "skin.jpg" || texIdent.find("skin.jpg") != std::string::npos) {
-        tmesh.at(i).material.diffuseTexture = skin;
-        tmesh.at(i).material.specular_amount = 0.002f;
-        tmesh.at(i).material.shininess = 0.2f;
-      } else if (boots && (texIdent == "shoe.jpg" || texIdent.find("shoe.jpg") != std::string::npos)) {
-        tmesh.at(i).material.diffuseTexture = boots;
+  bool hasEmbeddedWeightsModel = (GetTriangleMeshElementCount() >= 7);
+  if (!hasEmbeddedWeightsModel) {
+    boost::intrusive_ptr< Resource<GeometryData> > bodyGeom = boost::static_pointer_cast<Geometry>(fullbodyNode->GetObject("fullbody"))->GetGeometryData();
+    bodyGeom->resourceMutex.lock();
+    std::vector < MaterializedTriangleMesh > &tmesh = bodyGeom->GetResource()->GetTriangleMeshesRef();
+    for (unsigned int i = 0; i < tmesh.size(); i++) {
+      if (tmesh.at(i).material.diffuseTexture != boost::intrusive_ptr< Resource<Surface> >()) {
+        std::string texIdent = tmesh.at(i).material.diffuseTexture->GetIdentString();
+        if (texIdent == "skin.jpg" || texIdent.find("skin.jpg") != std::string::npos) {
+          tmesh.at(i).material.diffuseTexture = skin;
+          tmesh.at(i).material.specular_amount = 0.002f;
+          tmesh.at(i).material.shininess = 0.2f;
+        } else if (boots && (texIdent == "shoe.jpg" || texIdent.find("shoe.jpg") != std::string::npos)) {
+          tmesh.at(i).material.diffuseTexture = boots;
+        }
       }
     }
+    bodyGeom->resourceMutex.unlock();
+
+    boost::static_pointer_cast<Geometry>(fullbodyNode->GetObject("fullbody"))->OnUpdateGeometryData();
+
+    kitDiffuseTextureIdentString = "kit_template.png";
+    SetKit(kit);
   }
-  bodyGeom->resourceMutex.unlock();
-
-  boost::static_pointer_cast<Geometry>(fullbodyNode->GetObject("fullbody"))->OnUpdateGeometryData();
 #endif
-
-  kitDiffuseTextureIdentString = "kit_template.png";
-  SetKit(kit);
 
 
 #ifndef GPFB_HEADLESS
@@ -193,7 +196,6 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
 
 
   // hairstyle
-  bool hasEmbeddedWeightsModel = (GetTriangleMeshElementCount() >= 7);
   if (!hasEmbeddedWeightsModel) {
     boost::intrusive_ptr < Resource<GeometryData> > geometry = ResourceManagerPool::GetInstance().GetManager<GeometryData>(e_ResourceType_GeometryData)->Fetch("media/objects/players/hairstyles/" + player->GetPlayerData()->GetHairStyle() + ".ase", true, true);
     hairStyle = static_pointer_cast<Geometry>(ObjectFactory::GetInstance().CreateObject("hairstyle", e_ObjectType_Geometry));
@@ -1083,6 +1085,24 @@ void HumanoidBase::Put() {
     buf_TemporalHumanoidNodes.at(i).actualNode->SetRotation(buf_TemporalHumanoidNodes.at(i).orientation.GetValue(match->GetPreviousPutTime_ms()), false);
   }
 
+  if (GetTriangleMeshElementCount() >= 7) {
+    // Naturalize thigh lateral flare so legs hang vertically and parallel instead of squatting
+    auto lThighIt = nodeMap.find("left_thigh");
+    if (lThighIt != nodeMap.end()) {
+      Quaternion q = lThighIt->second->GetRotation();
+      q.elements[1] *= 0.20f;
+      q.Normalize();
+      lThighIt->second->SetRotation(q, false);
+    }
+    auto rThighIt = nodeMap.find("right_thigh");
+    if (rThighIt != nodeMap.end()) {
+      Quaternion q = rThighIt->second->GetRotation();
+      q.elements[1] *= 0.20f;
+      q.Normalize();
+      rThighIt->second->SetRotation(q, false);
+    }
+  }
+
   humanoidNode->RecursiveUpdateSpatialData(e_SpatialDataType_Both);
 
   UpdateFullbodyNodes();
@@ -1346,6 +1366,10 @@ void HumanoidBase::TripMe(const Vector3 &tripVector, int tripType) {
 }
 
 void HumanoidBase::SetKit(boost::intrusive_ptr < Resource<Surface> > newKit) {
+  if (GetTriangleMeshElementCount() >= 7) {
+    // When using modern realistic player model, preserve player's authentic kit textures
+    return;
+  }
   if (Verbose()) printf("setting new kit: %s\n", newKit->GetIdentString().c_str());
   boost::intrusive_ptr< Resource<GeometryData> > bodyGeom = boost::static_pointer_cast<Geometry>(fullbodyNode->GetObject("fullbody"))->GetGeometryData();
 

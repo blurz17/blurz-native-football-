@@ -358,11 +358,19 @@ namespace blunted {
           std::string customTexPath = "";
           if (lowerMatName.find("kit") != std::string::npos) {
             customTexPath = "media/objects/players/textures/kit_template.png";
-          } else if (lowerMatName.find("hair") != std::string::npos ||
-                     lowerMatName.find("eyelash") != std::string::npos) {
+          } else if (lowerMatName.find("hair") != std::string::npos) {
             customTexPath = "media/objects/players/textures/alnassr_cr7_hair.png";
             material.specular_amount = 0.05f;
             material.shininess = 0.1f;
+          } else if (lowerMatName.find("eyelash") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/yamal/yamal_head.jpg";
+            material.specular_amount = 0.01f;
+            material.shininess = 0.05f;
+          } else if (lowerMatName.find("teeth") != std::string::npos ||
+                     lowerMatName.find("tooth") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/yamal/yamal_teeth.jpg";
+            material.specular_amount = 0.05f;
+            material.shininess = 0.2f;
           } else if (lowerMatName.find("player") != std::string::npos ||
                      lowerMatName.find("cr7") != std::string::npos ||
                      lowerMatName.find("ronaldo") != std::string::npos) {
@@ -409,9 +417,8 @@ namespace blunted {
             material.shininess = 0.12f;
           }
 
-          if (!customTexPath.empty()) {
-            material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(customTexPath, true, true);
-          } else if (gltfMat.pbrMetallicRoughness.baseColorTexture.index >= 0) {
+          // 1. First, check if the material specifies a baseColorTexture in the GLTF model
+          if (gltfMat.pbrMetallicRoughness.baseColorTexture.index >= 0) {
             int texIdx = gltfMat.pbrMetallicRoughness.baseColorTexture.index;
             if (texIdx >= 0 && texIdx < (int)model.textures.size()) {
               int imgIdx = model.textures[texIdx].source;
@@ -420,9 +427,35 @@ namespace blunted {
                 if (!img.uri.empty()) {
                   std::string texPath = baseDir.empty() ? img.uri : (baseDir + "/" + img.uri);
                   material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texPath, true, true);
+                } else if (!img.image.empty() && img.width > 0 && img.height > 0) {
+                  // Direct embedded image loading from GLB memory
+                  std::string texIdent = filename + ":embedded_img_" + int_to_str(imgIdx);
+                  boost::intrusive_ptr<Resource<Surface>> surfRes = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texIdent, false, false);
+                  if (!surfRes->GetResource()->GetData()) {
+                    Uint32 srcFormat = (img.component == 3) ? SDL_PIXELFORMAT_RGB24 : SDL_PIXELFORMAT_RGBA32;
+                    int pitch = img.width * img.component;
+                    SDL_Surface *rawSurf = SDL_CreateRGBSurfaceWithFormatFrom(
+                        (void*)img.image.data(),
+                        img.width,
+                        img.height,
+                        img.component * 8,
+                        pitch,
+                        srcFormat);
+                    if (rawSurf) {
+                      SDL_Surface *converted = SDL_ConvertSurfaceFormat(rawSurf, SDL_PIXELFORMAT_RGBA32, 0);
+                      SDL_FreeSurface(rawSurf);
+                      surfRes->GetResource()->SetData(converted);
+                    }
+                  }
+                  material.diffuseTexture = surfRes;
                 }
               }
             }
+          }
+
+          // 2. If no GLTF baseColorTexture or it failed, fall back to customTexPath
+          if (!material.diffuseTexture && !customTexPath.empty()) {
+            material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(customTexPath, true, true);
           }
 
           // Normal maps for player body parts
