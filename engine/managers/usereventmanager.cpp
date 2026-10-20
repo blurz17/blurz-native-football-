@@ -51,7 +51,9 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoys
     Sint16 int_val = (Sint16)(value * 32767.0f);
 
     // Immediate zero-latency update directly to UserEventManager
-    blunted::UserEventManager::GetInstance().SetVirtualJoystickAxisDirect(axis, (float)int_val);
+    if (blunted::UserEventManager::GetInstancePtr()) {
+        blunted::UserEventManager::GetInstance().SetVirtualJoystickAxisDirect(axis, (float)int_val);
+    }
 
     if (virtual_joystick) {
         SDL_JoystickSetVirtualAxis(virtual_joystick, axis, int_val);
@@ -60,7 +62,7 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoys
 
     static unsigned long lastLogTime = 0;
     static float lastLoggedAxes[4] = {0, 0, 0, 0};
-    unsigned long now = blunted::EnvironmentManager::GetInstance().GetTime_ms();
+    unsigned long now = blunted::EnvironmentManager::GetInstancePtr() ? blunted::EnvironmentManager::GetInstance().GetTime_ms() : 0;
     bool changed = (axis >= 0 && axis < 4 && (fabs(value - lastLoggedAxes[axis]) > 0.08f || (value == 0.0f && lastLoggedAxes[axis] != 0.0f)));
     if (changed || (now - lastLogTime > 250 && value != 0.0f)) {
         if (axis >= 0 && axis < 4) lastLoggedAxes[axis] = value;
@@ -71,7 +73,9 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoys
 
 extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_setVirtualJoystickButton(JNIEnv* env, jclass cls, jint button, jboolean pressed) {
     // Immediate zero-latency update directly to UserEventManager
-    blunted::UserEventManager::GetInstance().SetVirtualJoystickButtonDirect(button, pressed == JNI_TRUE);
+    if (blunted::UserEventManager::GetInstancePtr()) {
+        blunted::UserEventManager::GetInstance().SetVirtualJoystickButtonDirect(button, pressed == JNI_TRUE);
+    }
 
     if (virtual_joystick) {
         SDL_JoystickSetVirtualButton(virtual_joystick, button, pressed ? SDL_PRESSED : SDL_RELEASED);
@@ -366,11 +370,15 @@ extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_pauseEngine(JN
 }
 
 extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_forceQuitEngine(JNIEnv* env, jclass cls) {
-    blunted::EnvironmentManager::GetInstance().SignalQuit();
+    if (blunted::EnvironmentManager::GetInstancePtr()) {
+        blunted::EnvironmentManager::GetInstance().SignalQuit();
+    }
 }
 
 extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_triggerInGamePause(JNIEnv* env, jclass cls) {
-    blunted::UserEventManager::GetInstance().SetKeyboardState(SDLK_ESCAPE, true);
+    if (blunted::UserEventManager::GetInstancePtr()) {
+        blunted::UserEventManager::GetInstance().SetKeyboardState(SDLK_ESCAPE, true);
+    }
 }
 #endif
 

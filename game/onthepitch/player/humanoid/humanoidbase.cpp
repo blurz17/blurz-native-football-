@@ -549,6 +549,19 @@ void HumanoidBase::UpdateFullbodyNodes() {
     joints[i].position = joints[i].node->GetDerivedPosition() - fullbodyOffset;
   }
 
+  // Dynamic ground clearance clamping: ensure player cleats rest cleanly on top of pitch turf (Z >= 0.0)
+  // across all animations and prevent feet from ever sinking below the grass.
+  if (GetTriangleMeshElementCount() >= 7 && joints.size() >= 13) {
+    float minAnkleHeight = 0.082f;
+    float lowestAnkleZ = std::min(joints[9].position.coords[2], joints[12].position.coords[2]);
+    if (lowestAnkleZ < minAnkleHeight) {
+      float groundPenetration = clamp(minAnkleHeight - lowestAnkleZ, 0.0f, 0.20f);
+      for (unsigned int i = 0; i < joints.size(); i++) {
+        joints[i].position.coords[2] += groundPenetration;
+      }
+    }
+  }
+
 #ifndef GPFB_HEADLESS
 #endif
 
@@ -1140,6 +1153,16 @@ void HumanoidBase::Put() {
       }
     }
     if (isIdleAnim) {
+      // Compensate legacy squat root drop (-0.16m) so upright posture stands at natural ground level
+      auto playerIt = nodeMap.find("player");
+      if (playerIt != nodeMap.end()) {
+        Vector3 pos = playerIt->second->GetPosition();
+        if (pos.coords[2] < -0.02f) {
+          pos.coords[2] = -0.02f;
+          playerIt->second->SetPosition(pos, false);
+        }
+      }
+
       // Moderate forward spine pitch
       auto midIt = nodeMap.find("middle");
       if (midIt != nodeMap.end()) {
