@@ -595,7 +595,7 @@ void HumanoidBase::UpdateFullbodyModel(bool updateSrc) {
       currentLeftWristLag = currentLeftWristLag.GetSlerped(0.25f, targetLeftLag).GetNormalized();
       prevLeftElbowRot = joints[4].orientation;
 
-      Vector3 lWristOffsetScaled = (joints[4].origPos * zMultiplier) + joints[4].orientation * Vector3(0.0f, 0.0f, -0.25f * zMultiplier);
+      Vector3 lWristOffsetScaled = (joints[4].origPos + Vector3(0.0f, 0.0f, -0.25f)) * zMultiplier;
       Quaternion lHandRot = joints[4].orientation * currentLeftWristLag;
       lHandRot.Normalize();
       Vector3 lHandTrans = (jointPosScaled[4] + joints[4].orientation * Vector3(0.0f, 0.0f, -0.25f * zMultiplier)) - (lHandRot * lWristOffsetScaled);
@@ -608,7 +608,7 @@ void HumanoidBase::UpdateFullbodyModel(bool updateSrc) {
       currentRightWristLag = currentRightWristLag.GetSlerped(0.25f, targetRightLag).GetNormalized();
       prevRightElbowRot = joints[6].orientation;
 
-      Vector3 rWristOffsetScaled = (joints[6].origPos * zMultiplier) + joints[6].orientation * Vector3(0.0f, 0.0f, -0.25f * zMultiplier);
+      Vector3 rWristOffsetScaled = (joints[6].origPos + Vector3(0.0f, 0.0f, -0.25f)) * zMultiplier;
       Quaternion rHandRot = joints[6].orientation * currentRightWristLag;
       rHandRot.Normalize();
       Vector3 rHandTrans = (jointPosScaled[6] + joints[6].orientation * Vector3(0.0f, 0.0f, -0.25f * zMultiplier)) - (rHandRot * rWristOffsetScaled);
@@ -630,7 +630,7 @@ void HumanoidBase::UpdateFullbodyModel(bool updateSrc) {
       Quaternion lToeRot = joints[9].orientation * lToeFlex;
       lToeRot.Normalize();
 
-      Vector3 lToeOffsetScaled = (joints[9].origPos * zMultiplier) + joints[9].orientation * Vector3(0.0f, -0.12f * zMultiplier, -0.04f * zMultiplier);
+      Vector3 lToeOffsetScaled = (joints[9].origPos + Vector3(0.0f, -0.12f, -0.04f)) * zMultiplier;
       Vector3 lToeTrans = (jointPosScaled[9] + joints[9].orientation * Vector3(0.0f, -0.12f * zMultiplier, -0.04f * zMultiplier)) - (lToeRot * lToeOffsetScaled);
       boneMatrices[15].Construct(lToeTrans, Vector3(1, 1, 1), lToeRot);
 
@@ -650,7 +650,7 @@ void HumanoidBase::UpdateFullbodyModel(bool updateSrc) {
       Quaternion rToeRot = joints[12].orientation * rToeFlex;
       rToeRot.Normalize();
 
-      Vector3 rToeOffsetScaled = (joints[12].origPos * zMultiplier) + joints[12].orientation * Vector3(0.0f, -0.12f * zMultiplier, -0.04f * zMultiplier);
+      Vector3 rToeOffsetScaled = (joints[12].origPos + Vector3(0.0f, -0.12f, -0.04f)) * zMultiplier;
       Vector3 rToeTrans = (jointPosScaled[12] + joints[12].orientation * Vector3(0.0f, -0.12f * zMultiplier, -0.04f * zMultiplier)) - (rToeRot * rToeOffsetScaled);
       boneMatrices[16].Construct(rToeTrans, Vector3(1, 1, 1), rToeRot);
     }
