@@ -32,24 +32,28 @@ namespace blunted {
   static int MapBoneNameToJointId(const std::string &boneName) {
     std::string name = boneName;
     std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-    if (name.find("body") != std::string::npos || name.find("pelvis") != std::string::npos || name.find("hips") != std::string::npos) return 0;
-    if (name.find("middle") != std::string::npos || name.find("spine") != std::string::npos || name.find("trunk") != std::string::npos) return 1;
-    if (name.find("neck") != std::string::npos || name.find("head") != std::string::npos) return 2;
+    if (name.find("neck") != std::string::npos || name.find("head") != std::string::npos || name.find("eye") != std::string::npos || name.find("jaw") != std::string::npos) return 2;
+    if (name.find("body") != std::string::npos || name.find("pelvis") != std::string::npos || name.find("hips") != std::string::npos || name.find("root") != std::string::npos) return 0;
+    if (name.find("middle") != std::string::npos || name.find("spine") != std::string::npos || name.find("trunk") != std::string::npos || name.find("chest") != std::string::npos) return 1;
     bool isLeft = (name.find("left") != std::string::npos || name.find(".l") != std::string::npos || name.find("_l") != std::string::npos);
     bool isRight = (name.find("right") != std::string::npos || name.find(".r") != std::string::npos || name.find("_r") != std::string::npos);
     if (isLeft) {
       if (name.find("shoulder") != std::string::npos || (name.find("arm") != std::string::npos && name.find("fore") == std::string::npos && name.find("lower") == std::string::npos && name.find("elbow") == std::string::npos)) return 3;
-      if (name.find("elbow") != std::string::npos || name.find("forearm") != std::string::npos || name.find("lowerarm") != std::string::npos || name.find("hand") != std::string::npos) return 4;
-      if (name.find("thigh") != std::string::npos || name.find("upperleg") != std::string::npos || (name.find("leg") != std::string::npos && name.find("lower") == std::string::npos && name.find("calf") == std::string::npos && name.find("knee") == std::string::npos && name.find("foot") == std::string::npos)) return 7;
-      if (name.find("knee") != std::string::npos || name.find("lowerleg") != std::string::npos || name.find("calf") != std::string::npos || name.find("shin") != std::string::npos) return 8;
-      if (name.find("ankle") != std::string::npos || name.find("foot") != std::string::npos || name.find("toe") != std::string::npos) return 9;
+      if (name.find("hand") != std::string::npos || name.find("wrist") != std::string::npos) return 13;
+      if (name.find("elbow") != std::string::npos || name.find("forearm") != std::string::npos || name.find("lowerarm") != std::string::npos) return 4;
+      if (name.find("upleg") != std::string::npos || name.find("thigh") != std::string::npos || name.find("upperleg") != std::string::npos) return 7;
+      if (name.find("knee") != std::string::npos || name.find("lowerleg") != std::string::npos || name.find("calf") != std::string::npos || name.find("shin") != std::string::npos || (name.find("leg") != std::string::npos && name.find("foot") == std::string::npos && name.find("up") == std::string::npos)) return 8;
+      if (name.find("toe") != std::string::npos) return 15;
+      if (name.find("ankle") != std::string::npos || name.find("foot") != std::string::npos) return 9;
     }
     if (isRight) {
       if (name.find("shoulder") != std::string::npos || (name.find("arm") != std::string::npos && name.find("fore") == std::string::npos && name.find("lower") == std::string::npos && name.find("elbow") == std::string::npos)) return 5;
-      if (name.find("elbow") != std::string::npos || name.find("forearm") != std::string::npos || name.find("lowerarm") != std::string::npos || name.find("hand") != std::string::npos) return 6;
-      if (name.find("thigh") != std::string::npos || name.find("upperleg") != std::string::npos || (name.find("leg") != std::string::npos && name.find("lower") == std::string::npos && name.find("calf") == std::string::npos && name.find("knee") == std::string::npos && name.find("foot") == std::string::npos)) return 10;
-      if (name.find("knee") != std::string::npos || name.find("lowerleg") != std::string::npos || name.find("calf") != std::string::npos || name.find("shin") != std::string::npos) return 11;
-      if (name.find("ankle") != std::string::npos || name.find("foot") != std::string::npos || name.find("toe") != std::string::npos) return 12;
+      if (name.find("hand") != std::string::npos || name.find("wrist") != std::string::npos) return 14;
+      if (name.find("elbow") != std::string::npos || name.find("forearm") != std::string::npos || name.find("lowerarm") != std::string::npos) return 6;
+      if (name.find("upleg") != std::string::npos || name.find("thigh") != std::string::npos || name.find("upperleg") != std::string::npos) return 10;
+      if (name.find("knee") != std::string::npos || name.find("lowerleg") != std::string::npos || name.find("calf") != std::string::npos || name.find("shin") != std::string::npos || (name.find("leg") != std::string::npos && name.find("foot") == std::string::npos && name.find("up") == std::string::npos)) return 11;
+      if (name.find("toe") != std::string::npos) return 16;
+      if (name.find("ankle") != std::string::npos || name.find("foot") != std::string::npos) return 12;
     }
     return 0;
   }

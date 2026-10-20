@@ -33,24 +33,28 @@ namespace blunted {
   static int MapGLTFBoneNameToJointId(const std::string &boneName) {
     std::string name = boneName;
     std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-    if (name.find("body") != std::string::npos || name.find("pelvis") != std::string::npos || name.find("hips") != std::string::npos) return 0;
-    if (name.find("middle") != std::string::npos || name.find("spine") != std::string::npos || name.find("trunk") != std::string::npos) return 1;
-    if (name.find("neck") != std::string::npos || name.find("head") != std::string::npos) return 2;
+    if (name.find("neck") != std::string::npos || name.find("head") != std::string::npos || name.find("eye") != std::string::npos || name.find("jaw") != std::string::npos) return 2;
+    if (name.find("body") != std::string::npos || name.find("pelvis") != std::string::npos || name.find("hips") != std::string::npos || name.find("root") != std::string::npos) return 0;
+    if (name.find("middle") != std::string::npos || name.find("spine") != std::string::npos || name.find("trunk") != std::string::npos || name.find("chest") != std::string::npos) return 1;
     bool isLeft = (name.find("left") != std::string::npos || name.find(".l") != std::string::npos || name.find("_l") != std::string::npos);
     bool isRight = (name.find("right") != std::string::npos || name.find(".r") != std::string::npos || name.find("_r") != std::string::npos);
     if (isLeft) {
       if (name.find("shoulder") != std::string::npos || (name.find("arm") != std::string::npos && name.find("fore") == std::string::npos && name.find("lower") == std::string::npos && name.find("elbow") == std::string::npos)) return 3;
-      if (name.find("elbow") != std::string::npos || name.find("forearm") != std::string::npos || name.find("lowerarm") != std::string::npos || name.find("hand") != std::string::npos) return 4;
-      if (name.find("thigh") != std::string::npos || name.find("upperleg") != std::string::npos || (name.find("leg") != std::string::npos && name.find("lower") == std::string::npos && name.find("calf") == std::string::npos && name.find("knee") == std::string::npos && name.find("foot") == std::string::npos)) return 7;
-      if (name.find("knee") != std::string::npos || name.find("lowerleg") != std::string::npos || name.find("calf") != std::string::npos || name.find("shin") != std::string::npos) return 8;
-      if (name.find("ankle") != std::string::npos || name.find("foot") != std::string::npos || name.find("toe") != std::string::npos) return 9;
+      if (name.find("hand") != std::string::npos || name.find("wrist") != std::string::npos) return 13;
+      if (name.find("elbow") != std::string::npos || name.find("forearm") != std::string::npos || name.find("lowerarm") != std::string::npos) return 4;
+      if (name.find("upleg") != std::string::npos || name.find("thigh") != std::string::npos || name.find("upperleg") != std::string::npos) return 7;
+      if (name.find("knee") != std::string::npos || name.find("lowerleg") != std::string::npos || name.find("calf") != std::string::npos || name.find("shin") != std::string::npos || (name.find("leg") != std::string::npos && name.find("foot") == std::string::npos && name.find("up") == std::string::npos)) return 8;
+      if (name.find("toe") != std::string::npos) return 15;
+      if (name.find("ankle") != std::string::npos || name.find("foot") != std::string::npos) return 9;
     }
     if (isRight) {
       if (name.find("shoulder") != std::string::npos || (name.find("arm") != std::string::npos && name.find("fore") == std::string::npos && name.find("lower") == std::string::npos && name.find("elbow") == std::string::npos)) return 5;
-      if (name.find("elbow") != std::string::npos || name.find("forearm") != std::string::npos || name.find("lowerarm") != std::string::npos || name.find("hand") != std::string::npos) return 6;
-      if (name.find("thigh") != std::string::npos || name.find("upperleg") != std::string::npos || (name.find("leg") != std::string::npos && name.find("lower") == std::string::npos && name.find("calf") == std::string::npos && name.find("knee") == std::string::npos && name.find("foot") == std::string::npos)) return 10;
-      if (name.find("knee") != std::string::npos || name.find("lowerleg") != std::string::npos || name.find("calf") != std::string::npos || name.find("shin") != std::string::npos) return 11;
-      if (name.find("ankle") != std::string::npos || name.find("foot") != std::string::npos || name.find("toe") != std::string::npos) return 12;
+      if (name.find("hand") != std::string::npos || name.find("wrist") != std::string::npos) return 14;
+      if (name.find("elbow") != std::string::npos || name.find("forearm") != std::string::npos || name.find("lowerarm") != std::string::npos) return 6;
+      if (name.find("upleg") != std::string::npos || name.find("thigh") != std::string::npos || name.find("upperleg") != std::string::npos) return 10;
+      if (name.find("knee") != std::string::npos || name.find("lowerleg") != std::string::npos || name.find("calf") != std::string::npos || name.find("shin") != std::string::npos || (name.find("leg") != std::string::npos && name.find("foot") == std::string::npos && name.find("up") == std::string::npos)) return 11;
+      if (name.find("toe") != std::string::npos) return 16;
+      if (name.find("ankle") != std::string::npos || name.find("foot") != std::string::npos) return 12;
     }
     return 0;
   }
@@ -368,15 +372,40 @@ namespace blunted {
             customTexPath = "media/objects/balls/ball.png";
             material.specular_amount = 0.05f;
             material.shininess = 0.10f;
-          } else if (lowerMatName.find("skin") != std::string::npos ||
-                     lowerMatName.find("arm") != std::string::npos ||
-                     lowerMatName.find("head") != std::string::npos ||
-                     lowerMatName.find("knee") != std::string::npos) {
-            customTexPath = "media/objects/players/textures/skin.jpg";
-          } else if (lowerMatName.find("shoe") != std::string::npos) {
-            customTexPath = "media/objects/players/textures/shoe.jpg";
+          } else if (lowerMatName.find("head") != std::string::npos ||
+                     lowerMatName.find("face") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/yamal/yamal_head.jpg";
+            material.specular_amount = 0.03f;
+            material.shininess = 0.12f;
+          } else if (lowerMatName.find("eye") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/yamal/yamal_eye.jpg";
+            material.specular_amount = 0.08f;
+            material.shininess = 0.3f;
+          } else if (lowerMatName.find("top") != std::string::npos ||
+                     lowerMatName.find("shirt") != std::string::npos ||
+                     lowerMatName.find("jersey") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/yamal/yamal_top.jpg";
+            material.specular_amount = 0.01f;
+            material.shininess = 0.05f;
+          } else if (lowerMatName.find("bottom") != std::string::npos ||
+                     lowerMatName.find("short") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/yamal/yamal_bottom.jpg";
+            material.specular_amount = 0.01f;
+            material.shininess = 0.05f;
+          } else if (lowerMatName.find("shoe") != std::string::npos ||
+                     lowerMatName.find("boot") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/yamal/yamal_shoes.jpg";
+            material.specular_amount = 0.05f;
+            material.shininess = 0.2f;
           } else if (lowerMatName.find("sole") != std::string::npos) {
             customTexPath = "media/objects/players/textures/shoe_sole.jpg";
+          } else if (lowerMatName.find("skin") != std::string::npos ||
+                     lowerMatName.find("arm") != std::string::npos ||
+                     lowerMatName.find("body") != std::string::npos ||
+                     lowerMatName.find("knee") != std::string::npos) {
+            customTexPath = "media/objects/players/textures/yamal/yamal_body.jpg";
+            material.specular_amount = 0.02f;
+            material.shininess = 0.12f;
           }
 
           if (!customTexPath.empty()) {

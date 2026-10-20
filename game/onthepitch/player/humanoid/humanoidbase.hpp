@@ -322,6 +322,14 @@ class HumanoidBase {
     Vector3 fullbodyOffset;
     boost::intrusive_ptr<Node> fullbodyTargetNode;
 
+    // Procedural secondary motion tracking
+    Quaternion prevLeftElbowRot;
+    Quaternion prevRightElbowRot;
+    Quaternion currentLeftWristLag;
+    Quaternion currentRightWristLag;
+    float currentLeftToeRollAngle;
+    float currentRightToeRollAngle;
+
     boost::intrusive_ptr<Node> humanoidNode;
     boost::shared_ptr<Scene3D> scene3D;
 
