@@ -58,6 +58,8 @@ void InitAndroidAssets() {
   mkdir((internalPath + "/media/objects").c_str(), 0777);
   mkdir((internalPath + "/media/objects/players").c_str(), 0777);
   mkdir((internalPath + "/media/objects/players/models").c_str(), 0777);
+  mkdir((internalPath + "/media/objects/players/textures").c_str(), 0777);
+  mkdir((internalPath + "/media/objects/players/textures/yamal").c_str(), 0777);
 
   // Explicitly remove stale or 0-byte disk files before extracting so SDL_RWFromFile reads directly from APK
   remove((internalPath + "/media/objects/players/fullbody.object").c_str());
@@ -69,6 +71,20 @@ void InitAndroidAssets() {
   ExtractAsset("media/objects/players/fullbody.object", internalPath + "/media/objects/players/fullbody.object");
   ExtractAsset("media/objects/players/models/fullbody.fbx", internalPath + "/media/objects/players/models/fullbody.fbx");
   ExtractAsset("media/objects/players/models/fullbody.glb", internalPath + "/media/objects/players/models/fullbody.glb");
+
+  const char* yamal_textures[] = {
+    "media/objects/players/textures/yamal/yamal_body.jpg",
+    "media/objects/players/textures/yamal/yamal_bottom.jpg",
+    "media/objects/players/textures/yamal/yamal_eye.jpg",
+    "media/objects/players/textures/yamal/yamal_head.jpg",
+    "media/objects/players/textures/yamal/yamal_shoes.jpg",
+    "media/objects/players/textures/yamal/yamal_top.jpg",
+    nullptr
+  };
+  for (int i = 0; yamal_textures[i] != nullptr; i++) {
+    remove((internalPath + "/" + yamal_textures[i]).c_str());
+    ExtractAsset(yamal_textures[i], internalPath + "/" + yamal_textures[i]);
+  }
 
   chdir(internalPath.c_str());
 }

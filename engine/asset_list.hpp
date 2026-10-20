@@ -810,6 +810,12 @@ const char* asset_files[] = {
   "media/textures/stadium/crowd01_normal.png",
   "media/textures/stadium/goalnetting.png",
   "media/textures/stadium/greenish_floor.png",
+  "media/objects/players/textures/yamal/yamal_body.jpg",
+  "media/objects/players/textures/yamal/yamal_bottom.jpg",
+  "media/objects/players/textures/yamal/yamal_eye.jpg",
+  "media/objects/players/textures/yamal/yamal_head.jpg",
+  "media/objects/players/textures/yamal/yamal_shoes.jpg",
+  "media/objects/players/textures/yamal/yamal_top.jpg",
   nullptr
 };
 
