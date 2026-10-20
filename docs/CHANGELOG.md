@@ -21,6 +21,25 @@ Over the last 30 commits (`abf0aef` through `4365f41`), the engine has undergone
 
 ## Detailed 30-Commit Chronology
 
+### Milestone 6: Universal Player Model Rigging, Shoulder Horn Fix & 13-Bone Engine Alignment
+
+#### [2026-10-20] - Universal 13-Bone Engine Player Rigging & Clavicle Fix
+##### Added
+- **Automated Engine Model Rigging Pipeline (	ools/build_perfect_engine_player.py)**:
+  - Automatically poses arbitrary A-pose / T-pose human models into the engine's canonical vertical hang rest pose ( = \pm 0.160	ext{ m}$ shoulder, $\pm 0.150	ext{ m}$ elbow, $\pm 0.150	ext{ m}$ wrist).
+  - Scales characters uniformly by .198	imes$ to align all 13 joint pivots with sub-millimeter precision against defaultPlayerHeight = 1.92m in player.object.
+  - Re-exports 7 clean modular meshes with full diffuse and normal textures: Mesh_Head_Face (Yamal head/hair), Mesh_Skin_Body, Mesh_Shirt_Jersey, Mesh_Shorts, Mesh_Boots_Socks, and eyes.
+##### Fixed
+- **Shoulder Horn Mutation & Chest Tearing**:
+  - Reallocated 356 vertices on Mesh_Shirt_Jersey across the sternum, collarbone, and clavicle ($|X| < 0.14	ext{ m}$) from left_shoulder/
+ight_shoulder to middle (torso). Stabilizes the jersey and chest during arm swing.
+- **Flared Mantis Arms in Locomotion**:
+  - Eliminated the 	ext{ cm}$ lateral rest-pose displacement error that multiplied into a .45	ext{ m}$ wingspan during sprint. Sprint hand offset reduced from .726	ext{ m}$ to .212	ext{ m}$ (70.8% reduction).
+- **Procedural Secondary Motion Bind-Pose Drift**:
+  - In HumanoidBase::UpdateFullbodyModel, corrected dynamic rotation multiplication on procedural wrist and toe offsets (lWristOffsetScaled, 
+WristOffsetScaled, lToeOffsetScaled, 
+ToeOffsetScaled) to use static reference bind-pose offsets.
+
 ### Milestone 5: Isolated Training Mode, 3rd-Person Player Cam & Thread Synchronization
 
 #### [`4365f41`](https://github.com/example/android-native-football/commit/4365f41) - 2026-10-20
