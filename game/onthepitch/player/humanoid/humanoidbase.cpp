@@ -171,6 +171,16 @@ HumanoidBase::HumanoidBase(PlayerBase *player, Match *match, boost::intrusive_pt
 
     kitDiffuseTextureIdentString = "kit_template.png";
     SetKit(kit);
+  } else {
+    boost::intrusive_ptr< Resource<GeometryData> > bodyGeom = boost::static_pointer_cast<Geometry>(fullbodyNode->GetObject("fullbody"))->GetGeometryData();
+    bodyGeom->resourceMutex.lock();
+    std::vector < MaterializedTriangleMesh > &tmesh = bodyGeom->GetResource()->GetTriangleMeshesRef();
+    for (unsigned int i = 0; i < tmesh.size(); i++) {
+      if (!tmesh.at(i).material.diffuseTexture || !tmesh.at(i).material.diffuseTexture->GetResource()->GetData()) {
+        tmesh.at(i).material.diffuseTexture = skin;
+      }
+    }
+    bodyGeom->resourceMutex.unlock();
   }
 #endif
 
@@ -1086,11 +1096,12 @@ void HumanoidBase::Put() {
   }
 
   if (GetTriangleMeshElementCount() >= 7) {
-    // Naturalize thigh lateral flare so legs hang vertically and parallel instead of squatting
+    // 1. Naturalize thigh alignment (both lateral roll and hip yaw) so legs track straight forward
     auto lThighIt = nodeMap.find("left_thigh");
     if (lThighIt != nodeMap.end()) {
       Quaternion q = lThighIt->second->GetRotation();
       q.elements[1] *= 0.20f;
+      q.elements[2] *= 0.20f;
       q.Normalize();
       lThighIt->second->SetRotation(q, false);
     }
@@ -1098,8 +1109,88 @@ void HumanoidBase::Put() {
     if (rThighIt != nodeMap.end()) {
       Quaternion q = rThighIt->second->GetRotation();
       q.elements[1] *= 0.20f;
+      q.elements[2] *= 0.20f;
       q.Normalize();
       rThighIt->second->SetRotation(q, false);
+    }
+
+    // 2. Align feet/ankles parallel: eliminate duck-foot toe yaw and lateral roll tilt during walk & run
+    auto lAnkleIt = nodeMap.find("left_ankle");
+    if (lAnkleIt != nodeMap.end()) {
+      Quaternion q = lAnkleIt->second->GetRotation();
+      q.elements[1] *= 0.10f;
+      q.elements[2] *= 0.10f;
+      q.Normalize();
+      lAnkleIt->second->SetRotation(q, false);
+    }
+    auto rAnkleIt = nodeMap.find("right_ankle");
+    if (rAnkleIt != nodeMap.end()) {
+      Quaternion q = rAnkleIt->second->GetRotation();
+      q.elements[1] *= 0.10f;
+      q.elements[2] *= 0.10f;
+      q.Normalize();
+      rAnkleIt->second->SetRotation(q, false);
+    }
+
+    // 3. Naturalize idle stance: athletic upright posture instead of deep crouch / gorilla hunch
+    bool isIdleAnim = false;
+    if (fetchedbuf_animApplyBuffer.anim) {
+      if (fetchedbuf_animApplyBuffer.anim->GetOutgoingVelocity() < 0.5f && fetchedbuf_animApplyBuffer.anim->GetIncomingVelocity() < 0.5f) {
+        isIdleAnim = true;
+      }
+    }
+    if (isIdleAnim) {
+      // Moderate forward spine pitch
+      auto midIt = nodeMap.find("middle");
+      if (midIt != nodeMap.end()) {
+        Quaternion q = midIt->second->GetRotation();
+        if (q.elements[0] > 0.03f) {
+          q.elements[0] = 0.03f + (q.elements[0] - 0.03f) * 0.25f;
+          q.Normalize();
+          midIt->second->SetRotation(q, false);
+        }
+      }
+      // Relax deep squat knee bend from 71 deg (0.58) to athletic ready bend (~26 deg)
+      auto lKneeIt = nodeMap.find("left_knee");
+      if (lKneeIt != nodeMap.end()) {
+        Quaternion q = lKneeIt->second->GetRotation();
+        q.elements[0] *= 0.40f;
+        q.Normalize();
+        lKneeIt->second->SetRotation(q, false);
+      }
+      auto rKneeIt = nodeMap.find("right_knee");
+      if (rKneeIt != nodeMap.end()) {
+        Quaternion q = rKneeIt->second->GetRotation();
+        q.elements[0] *= 0.40f;
+        q.Normalize();
+        rKneeIt->second->SetRotation(q, false);
+      }
+      // Relax hip flexion to match knee extension
+      if (lThighIt != nodeMap.end()) {
+        Quaternion q = lThighIt->second->GetRotation();
+        q.elements[0] *= 0.50f;
+        q.Normalize();
+        lThighIt->second->SetRotation(q, false);
+      }
+      if (rThighIt != nodeMap.end()) {
+        Quaternion q = rThighIt->second->GetRotation();
+        q.elements[0] *= 0.50f;
+        q.Normalize();
+        rThighIt->second->SetRotation(q, false);
+      }
+      // Relax ankle dorsiflexion
+      if (lAnkleIt != nodeMap.end()) {
+        Quaternion q = lAnkleIt->second->GetRotation();
+        q.elements[0] *= 0.45f;
+        q.Normalize();
+        lAnkleIt->second->SetRotation(q, false);
+      }
+      if (rAnkleIt != nodeMap.end()) {
+        Quaternion q = rAnkleIt->second->GetRotation();
+        q.elements[0] *= 0.45f;
+        q.Normalize();
+        rAnkleIt->second->SetRotation(q, false);
+      }
     }
   }
 

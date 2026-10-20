@@ -110,8 +110,6 @@ namespace blunted {
       baseDir = filename.substr(0, lastSlash);
     }
 
-    loader.SetImageLoader([](tinygltf::Image *, const int, std::string *, std::string *, int, int, const unsigned char *, int, void *) { return true; }, nullptr);
-
     bool ret = false;
     if (filename.find(".glb") != std::string::npos) {
       ret = loader.LoadBinaryFromMemory(&model, &err, &warn, fileBuffer.data(), (unsigned int)fileBuffer.size(), baseDir);
@@ -345,7 +343,7 @@ namespace blunted {
 
         // Material extraction
         Material material;
-        material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch("media/textures/white.png", true, true);
+        material.diffuseTexture = boost::intrusive_ptr<Resource<Surface>>();
         material.specular_amount = 0.05f;
         material.shininess = 0.1f;
 
@@ -430,8 +428,9 @@ namespace blunted {
                 } else if (!img.image.empty() && img.width > 0 && img.height > 0) {
                   // Direct embedded image loading from GLB memory
                   std::string texIdent = filename + ":embedded_img_" + int_to_str(imgIdx);
-                  boost::intrusive_ptr<Resource<Surface>> surfRes = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texIdent, false, false);
-                  if (!surfRes->GetResource()->GetData()) {
+                  bool alreadyThere = false;
+                  boost::intrusive_ptr<Resource<Surface>> surfRes = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(texIdent, false, alreadyThere, true);
+                  if (!alreadyThere || !surfRes->GetResource()->GetData()) {
                     Uint32 srcFormat = (img.component == 3) ? SDL_PIXELFORMAT_RGB24 : SDL_PIXELFORMAT_RGBA32;
                     int pitch = img.width * img.component;
                     SDL_Surface *rawSurf = SDL_CreateRGBSurfaceWithFormatFrom(
@@ -447,15 +446,22 @@ namespace blunted {
                       surfRes->GetResource()->SetData(converted);
                     }
                   }
-                  material.diffuseTexture = surfRes;
+                  if (surfRes && surfRes->GetResource()->GetData()) {
+                    material.diffuseTexture = surfRes;
+                  }
                 }
               }
             }
           }
 
           // 2. If no GLTF baseColorTexture or it failed, fall back to customTexPath
-          if (!material.diffuseTexture && !customTexPath.empty()) {
+          if ((!material.diffuseTexture || !material.diffuseTexture->GetResource()->GetData()) && !customTexPath.empty()) {
             material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch(customTexPath, true, true);
+          }
+
+          // 3. Fall back to white.png only if all other sources failed
+          if (!material.diffuseTexture || !material.diffuseTexture->GetResource()->GetData()) {
+            material.diffuseTexture = ResourceManagerPool::GetInstance().GetManager<Surface>(e_ResourceType_Surface)->Fetch("media/textures/white.png", true, true);
           }
 
           // Normal maps for player body parts

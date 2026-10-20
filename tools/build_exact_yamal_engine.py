@@ -172,27 +172,8 @@ def build_exact_yamal():
                 if w > 0.0:
                     obj.vertex_groups[eb].add([v.index], w, 'REPLACE')
 
-        # Clavicle lock check: ensure collarbone / chest |X| < 0.14m does not move with shoulder
-        vg_lsh = obj.vertex_groups.get('left_shoulder')
-        vg_rsh = obj.vertex_groups.get('right_shoulder')
-        vg_mid = obj.vertex_groups.get('middle')
-        for v in obj.data.vertices:
-            if vg_lsh:
-                try:
-                    w = vg_lsh.weight(v.index)
-                    if w > 0.0 and v.co.x < 0.14:
-                        vg_lsh.remove([v.index])
-                        vg_mid.add([v.index], w, 'ADD')
-                except RuntimeError:
-                    pass
-            if vg_rsh:
-                try:
-                    w = vg_rsh.weight(v.index)
-                    if w > 0.0 and v.co.x > -0.14:
-                        vg_rsh.remove([v.index])
-                        vg_mid.add([v.index], w, 'ADD')
-                except RuntimeError:
-                    pass
+        # Clavicle is already cleanly locked to torso via LeftShoulder_012 -> middle
+        # No artificial X-coordinate threshold that corrupts inner arm vertices into armpit webbing.
 
         # Remove old vertex groups that are not part of the 13 engine bones
         for vg in list(obj.vertex_groups):
