@@ -116,5 +116,5 @@ adb install -r app-release.apk
 
 ---
 
-if you love to make this game alive you support me :)
+if you love to make this game alive you can support me :)
 https://paypal.me/blurz7
